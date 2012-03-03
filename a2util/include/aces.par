@@ -1,0 +1,70 @@
+
+#ifndef _ACES_PAR_
+#define _ACES_PAR_
+
+c This file contains parameters which are used in defining common blocks in
+c the other include files and any common blocks which are global to ALL
+c routines.  See the individual files for their description.
+
+c mem.com
+      integer dynmem,nondynimem,nondyndmem
+      parameter (dynmem=1)
+      parameter (nondynimem=1)
+      parameter (nondyndmem=1)
+c      parameter (nondynimem=1000000)
+c     parameter (nondyndmem=4000000)
+
+c flags.com
+c      integer nflags,nflags2
+c      parameter (nflags=100)
+c      parameter (nflags2=500)
+
+c jobarc.com
+      integer jamaxrec,jarecwrd
+      parameter (jamaxrec=1000)
+      parameter (jarecwrd=128)
+
+c callstack.com
+c      integer callstack_num,callstack_len
+c      parameter (callstack_num=100)
+c      parameter (callstack_len=20)
+c      character*(callstack_len) callstack_curr
+c      common /callstack_curr/ callstack_curr
+
+c namelist.com
+c      integer nlmaxline,nllinelen
+c      parameter (nlmaxline=64)
+c      parameter (nllinelen=132)
+
+c mol.com
+c     12 => s,p,d,f,g,h,i,j,k,l,m,n
+c     ***NOTE*** This is a genuine (though not serious) limit on what Aces3
+c                can do.
+      integer maxangshell
+      parameter (maxangshell=12)
+c     ***NOTE*** Another constraint (the number of symmetry unique atoms)
+      integer maxorbit
+      parameter (maxorbit=1000)
+
+c pertab.com
+      integer maxpertab
+      parameter (maxpertab=103)
+
+c sym.com
+c      integer maxirrep,num2comb,max2comb,numlist,numsublis,
+c     &    numlistfile,scrlistfile,totlistfile,scrlist,totlist,
+c     &    listperfile
+c    parameter (maxirrep=8)
+c    parameter (num2comb=22)
+c    parameter (max2comb=25)
+c    parameter (numlistfile=5)
+c    parameter (scrlistfile=2)
+c    parameter (totlistfile=numlistfile+scrlistfile)
+c    parameter (listperfile=100)
+c    parameter (numlist=numlistfile*listperfile)
+c    parameter (scrlist=scrlistfile*listperfile)
+c    parameter (totlist=numlist+scrlist)
+c    parameter (numsublis=10)
+
+#endif /* _ACES_PAR_ */
+

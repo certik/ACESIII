@@ -1,0 +1,83 @@
+
+C THIS PROJECTS THE TRANSLATIONAL MODES FROM THE SYMMETRY
+C ADAPTED COORDINATES IN THE ABELIAN SUBGROUP
+
+c INPUT
+c integer NATOM
+
+c OUTPUT
+c double TPROJ(*)
+c double SCR(*)
+c double SYMQ(*)
+c double ATMASS(*)
+
+c RECORDS
+c get 'ATOMMASS'
+c put TRAREC(IXYZ)
+c get 'COMPNSYQ'
+c get 'COMPSYMQ'
+c put 'COMPSYMQ'
+
+      SUBROUTINE TRAPRJ(NATOM,TPROJ,SCR,SYMQ,ATMASS)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+
+      DIMENSION SCR(1),SYMQ(1),TPROJ(1),ATMASS(1)
+
+      CHARACTER*8 TRAREC(3)
+
+      COMMON /MACHSP/ IINTLN,IFLTLN,IINTFP,IALONE,IBITWD
+
+      DATA ONE /1.0/
+      DATA TOL /1.D-10/
+      DATA TRAREC /'TRAVECX ','TRAVECY ','TRAVECZ '/
+
+      CALL GETREC(20,'JOBARC','ATOMMASS',IINTFP*NATOM,ATMASS)
+
+C CONSTRUCT THE TRANSLATIONAL PROJECTOR IN MASS WEIGHTED COORDS
+C           1 - SUM |T><T|
+
+      NSIZE=3*NATOM
+      CALL ZERO(TPROJ,NSIZE*NSIZE)
+      IOFF=1
+      DO I=1,NSIZE
+         TPROJ(IOFF)=ONE
+         IOFF=IOFF+NSIZE+1
+      END DO
+      DO IXYZ=1,3
+         CALL ZERO(SCR,NSIZE)
+         ndx = IXYZ
+         DO I=1,NATOM
+            SCR(ndx)=SQRT(ATMASS(I))
+            ndx = ndx + 3
+         END DO
+         FACT=ONE/DNRM2(NSIZE,SCR,1)
+         CALL DSCAL(NSIZE,FACT,SCR,1)
+         CALL PUTREC(20,'JOBARC',TRAREC(IXYZ),NSIZE*IINTFP,SCR)
+         CALL XGEMM('N','N',NSIZE,NSIZE,1,
+     &              -1.d0,SCR,  NSIZE,
+     &                    SCR,  1,
+     &              ONE,  TPROJ,NSIZE)
+      END DO
+
+c   o hit symmetry adapted coordinates with projector
+      CALL GETREC(20,'JOBARC','COMPNSYQ',1,NSYMOLD)
+      CALL GETREC(20,'JOBARC','COMPSYMQ',NSYMOLD*NSIZE*IINTFP,SCR)
+      CALL XGEMM('N','N',NSIZE,NSYMOLD,NSIZE,ONE,TPROJ,NSIZE,
+     &           SCR,NSIZE,0.d0,SYMQ,NSIZE)
+
+c   o renormalize
+      IOFF=1
+      DO I=1,NSYMOLD
+         X=DNRM2(NSIZE,SYMQ(IOFF),1)
+         IF (ABS(X).GT.TOL) THEN
+            Z=ONE/X
+            CALL DSCAL(NSIZE,Z,SYMQ(IOFF),1)
+            IOFF=IOFF+NSIZE
+         END IF
+      END DO
+
+      CALL PUTREC(20,'JOBARC','COMPSYMQ',NSYMOLD*NSIZE*IINTFP,SYMQ)
+
+      RETURN
+      END
+

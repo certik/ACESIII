@@ -1,0 +1,11 @@
+#ifndef _TRPS_PAR_
+#define _TRPS_PAR_
+c trps.par : begin
+
+c NUMT3 := the maximum number of triples amplitudes allowed for
+c          incore processing
+      INTEGER NUMT3
+      PARAMETER (NUMT3=200000)
+
+c trps.par : end
+#endif /* _TRPS_PAR_ */

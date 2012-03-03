@@ -1,0 +1,3 @@
+c     Maximum string length of terminal lines
+      INTEGER LINELEN
+      PARAMETER (LINELEN=80)

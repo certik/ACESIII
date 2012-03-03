@@ -1,0 +1,664 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+      SIAL MP2_N6_UHF_SYMM   
+#
+# Make index definitions 
+#
+      aoindex mu     = 1, norb 
+      aoindex nu     = 1, norb 
+      aoindex lambda = 1, norb 
+      aoindex sigma  = 1, norb 
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt 
+#
+      moaindex p = baocc, eavirt  
+      moaindex p1= baocc, eavirt  
+      moaindex p2= baocc, eavirt  
+      moaindex p3= baocc, eavirt  
+#
+      mobindex q = bbocc, ebvirt  
+      mobindex q1= bbocc, ebvirt  
+      mobindex q2= bbocc, ebvirt  
+      mobindex q3= bbocc, ebvirt  
+#
+# Declare distributed arrays which are used 
+# 
+      served Vxixi(mu,i,nu,i1) 
+      served Vxjxj(mu,j,nu,j1) 
+      served Vxixj(mu,i,nu,j) 
+      served Vpipi(a,i,a1,i1) 
+      served Vqjqj(b,j,b1,j1) 
+      served Vpiqj(a,i,b,j) 
+#
+      local Vxipi(mu,i,a,i1) 
+      local Vxjqj(mu,j,b,j1) 
+      local Vxiqj(mu,i,b,j1) 
+#
+# Declare Temporary arrays which are used 
+# 
+      temp Txxxi(mu,nu,lambda,i) 
+      temp T1xxxi(mu,nu,lambda,i) 
+      temp Txxxj(mu,nu,lambda,j) 
+      temp T1xxxj(mu,nu,lambda,j) 
+      temp Txipi(mu,i,a,i1) 
+      temp Txjqj(mu,j,b,j1) 
+      temp Txiqj(mu,i,b,j1) 
+      temp Txixi(mu,i,nu,i1) 
+      temp T1xixi(mu,i,nu,i1) 
+      temp T2xixi(mu,i,nu,i1) 
+      temp T3xixi(mu,i,nu,i1) 
+      temp Txjxj(mu,j,nu,j1) 
+      temp T1xjxj(mu,j,nu,j1) 
+      temp T2xjxj(mu,j,nu,j1) 
+      temp T3xjxj(mu,j,nu,j1) 
+      temp Txixj(mu,i,nu,j) 
+      temp T1xixj(mu,i,nu,j) 
+      temp T2xixj(mu,i,nu,j) 
+      temp T3xixj(mu,i,nu,j) 
+      temp Tpipi(a,i,a1,i1) 
+      temp T1pipi(a,i,a1,i1) 
+      temp Tqjqj(b,j,b1,j1) 
+      temp Tpiqj(a,i,b,j) 
+# 
+      temp Vblock(i,i1,i2,i3) 
+      temp Taiai(a,i,a1,i1) 
+      temp T1aiai(a,i,a1,i1) 
+      temp Tbjbj(b,j,b1,j1) 
+      temp T1bjbj(b,j,b1,j1) 
+      temp Taibj(a,i,b,j) 
+#
+      temp  Vxxxi(mu,nu,sigma,i)
+      temp V0xxxi(mu,nu,sigma,i)
+      local V1xxxi(mu,nu,sigma,i)
+      temp V2xxxi(mu,nu,sigma,i)
+      local V3xxxi(mu,nu,sigma,i) 
+#
+      temp  Vxxxj(mu,nu,sigma,j)
+      temp V0xxxj(mu,nu,sigma,j)
+      local V1xxxj(mu,nu,sigma,j)
+      temp V2xxxj(mu,nu,sigma,j)
+      local V3xxxj(mu,nu,sigma,j) 
+#
+      temp a0(mu,nu,lambda,sigma)
+      temp a4(mu,nu,lambda,sigma)
+      temp a2(mu,nu,lambda,sigma)
+      temp a3(mu,nu,lambda,sigma)
+#
+# Declare served arrays 
+# 
+      served AOINT(mu,nu,lambda,sigma)
+#
+# Declare Scalars 
+#
+     scalar etemp 
+     scalar esumaa 
+     scalar esumbb
+     scalar esumab
+     scalar ecorraa 
+     scalar ecorrbb 
+     scalar ecorrab 
+     scalar mp2_energy 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XXOO 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PARDO mu, nu, lambda 
+#
+           DO sigma 
+#
+           IF mu     < nu
+           IF lambda < sigma
+#
+              compute_integrals AOINT(mu,nu,lambda,sigma)
+#
+              allocate V1xxxi(mu,nu,lambda,*) 
+              allocate V3xxxi(mu,nu,lambda,*) 
+#
+              DO i
+#
+                 V0xxxi(mu,nu,lambda,i)  = AOINT(mu,nu,lambda,sigma)*ca(sigma,i)
+                 V1xxxi(mu,nu,lambda,i) += V0xxxi(mu,nu,lambda,i)
+                 V2xxxi(mu,nu,sigma,i)  = AOINT(mu,nu,lambda,sigma)*ca(lambda,i)
+                 V3xxxi(mu,nu,sigma,i)  += V2xxxi(mu,nu,sigma,i)
+              ENDDO i
+#
+              DO i
+              DO i1
+                 Txixi(mu,i1,lambda,i)      = V1xxxi(mu,nu,lambda,i)*ca(nu,i1)
+                 prepare Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i)
+                 T3xixi(mu,i1,sigma,i)       = V3xxxi(mu,nu,sigma,i)*ca(nu,i1)
+                 prepare Vxixi(mu,i1,sigma,i)  += T3xixi(mu,i1,sigma,i)
+              ENDDO i1
+              ENDDO i
+#
+              DO i
+              DO i1
+                 T1xixi(nu,i1,lambda,i)     = V1xxxi(mu,nu,lambda,i)*ca(mu,i1)
+                 prepare Vxixi(nu,i1,lambda,i) += T1xixi(nu,i1,lambda,i)
+                 T2xixi(nu,i1,sigma,i)      = V3xxxi(mu,nu,sigma,i)*ca(mu,i1)
+                 prepare Vxixi(nu,i1,sigma,i)  += T2xixi(nu,i1,sigma,i)
+              ENDDO i1
+              ENDDO i
+#
+              deallocate V1xxxi(mu,nu,lambda,*) 
+              deallocate V3xxxi(mu,nu,lambda,*) 
+#
+              allocate V1xxxj(mu,nu,lambda,*) 
+              allocate V3xxxj(mu,nu,lambda,*) 
+#
+              DO j
+#
+                 V0xxxj(mu,nu,lambda,j)  = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+                 V1xxxj(mu,nu,lambda,j) += V0xxxj(mu,nu,lambda,j)
+                 V2xxxj(mu,nu,sigma,j)   = AOINT(mu,nu,lambda,sigma)*cb(lambda,j)
+                 V3xxxj(mu,nu,sigma,j)  += V2xxxj(mu,nu,sigma,j)
+              ENDDO j
+#
+#
+              DO j
+              DO j1
+                 Txjxj(mu,j1,lambda,j)      = V1xxxj(mu,nu,lambda,j)*cb(nu,j1)
+                 prepare Vxjxj(mu,j1,lambda,j) += Txjxj(mu,j1,lambda,j)
+                 T3xjxj(mu,j1,sigma,j)       = V3xxxj(mu,nu,sigma,j)*cb(nu,j1)
+                 prepare Vxjxj(mu,j1,sigma,j)  += T3xjxj(mu,j1,sigma,j)
+              ENDDO j1
+              ENDDO j
+#
+              DO j
+              DO j1
+                 T1xjxj(nu,j1,lambda,j)     = V1xxxj(mu,nu,lambda,j)*cb(mu,j1)
+                 prepare Vxjxj(nu,j1,lambda,j) += T1xjxj(nu,j1,lambda,j)
+                 T2xjxj(nu,j1,sigma,j)      = V3xxxj(mu,nu,sigma,j)*cb(mu,j1)
+                 prepare Vxjxj(nu,j1,sigma,j)  += T2xjxj(nu,j1,sigma,j)
+              ENDDO j1
+              ENDDO j
+#
+              DO j
+              DO i
+                 Txixj(nu,i,lambda,j)      = V1xxxj(mu,nu,lambda,j)*ca(mu,i)
+                 prepare Vxixj(nu,i,lambda,j) += Txixj(nu,i,lambda,j)
+                 T3xixj(nu,i,sigma,j)       = V3xxxj(mu,nu,sigma,j)*ca(mu,i)
+                 prepare Vxixj(nu,i,sigma,j)  += T3xixj(nu,i,sigma,j)
+              ENDDO i
+              ENDDO j
+#
+              DO j
+              DO i
+                 T1xixj(mu,i,lambda,j)     = V1xxxj(mu,nu,lambda,j)*ca(nu,i)
+                 prepare Vxixj(mu,i,lambda,j) += T1xixj(mu,i,lambda,j)
+                 T2xixj(mu,i,sigma,j)      = V3xxxj(mu,nu,sigma,j)*ca(nu,i)
+                 prepare Vxixj(mu,i,sigma,j)  += T2xixj(mu,i,sigma,j)
+              ENDDO i
+              ENDDO j
+#
+              deallocate V1xxxj(mu,nu,lambda,*) 
+              deallocate V3xxxj(mu,nu,lambda,*) 
+#
+           ENDIF # lambda < sigma
+           ENDIF # mu     < nu
+#
+           IF mu    == nu
+           IF lambda < sigma
+#
+              compute_integrals AOINT(mu,nu,lambda,sigma)
+#
+              allocate V1xxxi(mu,nu,lambda,*) 
+              allocate V3xxxi(mu,nu,lambda,*) 
+#
+              DO i
+#
+                 V0xxxi(mu,nu,lambda,i)  = AOINT(mu,nu,lambda,sigma)*ca(sigma,i)
+                 V1xxxi(mu,nu,lambda,i) += V0xxxi(mu,nu,lambda,i)  
+                 V2xxxi(mu,nu,sigma,i)   = AOINT(mu,nu,lambda,sigma)*ca(lambda,i)
+                 V3xxxi(mu,nu,sigma,i)  += V2xxxi(mu,nu,sigma,i)   
+              ENDDO i
+#
+              DO i
+              DO i1
+                 Txixi(mu,i1,lambda,i)      = V1xxxi(mu,nu,lambda,i)*ca(nu,i1)
+                 prepare Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i)
+                 T3xixi(mu,i1,sigma,i)       = V3xxxi(mu,nu,sigma,i)*ca(nu,i1)
+                 prepare Vxixi(mu,i1,sigma,i)  += T3xixi(mu,i1,sigma,i)
+              ENDDO i1
+              ENDDO i
+#
+              deallocate V1xxxi(mu,nu,lambda,*) 
+              deallocate V3xxxi(mu,nu,lambda,*) 
+#
+              allocate V1xxxj(mu,nu,lambda,*) 
+              allocate V3xxxj(mu,nu,lambda,*) 
+#
+              DO j
+#
+                 V0xxxj(mu,nu,lambda,j)  = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+                 V1xxxj(mu,nu,lambda,j) += V0xxxj(mu,nu,lambda,j)   
+                 V2xxxj(mu,nu,sigma,j)   = AOINT(mu,nu,lambda,sigma)*cb(lambda,j)
+                 V3xxxj(mu,nu,sigma,j)  += V2xxxj(mu,nu,sigma,j)  
+              ENDDO j
+#
+              DO j
+              DO j1
+                 Txjxj(nu,j1,lambda,j)      = V1xxxj(mu,nu,lambda,j)*cb(mu,j1)
+                 prepare Vxjxj(nu,j1,lambda,j) += Txjxj(nu,j1,lambda,j)
+                 T1xjxj(nu,j1,sigma,j)       = V3xxxj(mu,nu,sigma,j)*cb(mu,j1)
+                 prepare Vxjxj(nu,j1,sigma,j)  += T1xjxj(nu,j1,sigma,j)
+              ENDDO j1
+              ENDDO j
+#
+              DO j
+              DO i
+                 T2xixj(nu,i,lambda,j)      = V1xxxj(mu,nu,lambda,j)*ca(mu,i)
+                 prepare Vxixj(nu,i,lambda,j) += T2xixj(nu,i,lambda,j)
+                 T3xixj(nu,i,sigma,j)       = V3xxxj(mu,nu,sigma,j)*ca(mu,i)
+                 prepare Vxixj(nu,i,sigma,j)  += T3xixj(nu,i,sigma,j)
+              ENDDO i
+              ENDDO j
+#
+              deallocate V1xxxj(mu,nu,lambda,*) 
+              deallocate V3xxxj(mu,nu,lambda,*) 
+#
+           ENDIF # lambda < sigma
+           ENDIF # mu    == nu
+#
+           IF mu      < nu
+           IF lambda == sigma
+#
+              compute_integrals AOINT(mu,nu,lambda,sigma)
+#
+              allocate V1xxxi(mu,nu,lambda,*) 
+              allocate V3xxxi(mu,nu,lambda,*) 
+#
+              DO i
+                 V0xxxi(mu,nu,lambda,i)  = AOINT(mu,nu,lambda,sigma)*ca(sigma,i)
+                 V1xxxi(mu,nu,lambda,i) += V0xxxi(mu,nu,lambda,i)
+              ENDDO i
+#
+              DO i
+              DO i1
+                 Txixi(mu,i1,lambda,i)      = V1xxxi(mu,nu,lambda,i)*ca(nu,i1)
+                 prepare Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i)
+              ENDDO i1
+              ENDDO i
+#
+              DO i 
+              DO i1
+                 T1xixi(nu,i1,lambda,i)     = V1xxxi(mu,nu,lambda,i)*ca(mu,i1)
+                 prepare Vxixi(nu,i1,lambda,i) += T1xixi(nu,i1,lambda,i)
+              ENDDO i1
+              ENDDO i
+
+              deallocate V1xxxi(mu,nu,lambda,*) 
+              deallocate V3xxxi(mu,nu,lambda,*) 
+#
+              allocate V1xxxj(mu,nu,lambda,*) 
+              allocate V3xxxj(mu,nu,lambda,*) 
+#
+              DO j
+#
+                 V0xxxj(mu,nu,lambda,j)  = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+                 V1xxxj(mu,nu,lambda,j) += V0xxxj(mu,nu,lambda,j)
+              ENDDO j
+#
+              DO j
+              DO j1
+                 Txjxj(mu,j1,lambda,j)      = V1xxxj(mu,nu,lambda,j)*cb(nu,j1)
+                 prepare Vxjxj(mu,j1,lambda,j) += Txjxj(mu,j1,lambda,j)
+              ENDDO j1
+              ENDDO j
+#
+              DO j
+              DO j1
+                 T1xjxj(nu,j1,lambda,j)      = V1xxxj(mu,nu,lambda,j)*cb(mu,j1)
+                 prepare Vxjxj(nu,j1,lambda,j) += T1xjxj(nu,j1,lambda,j)
+              ENDDO j1
+              ENDDO j
+#
+              DO j
+              DO i
+                 Txixj(mu,i,lambda,j)      = V1xxxj(mu,nu,lambda,j)*ca(nu,i)
+                 prepare Vxixj(mu,i,lambda,j) += Txixj(mu,i,lambda,j)
+              ENDDO i
+              ENDDO j
+#
+              DO j
+              DO i
+                 T1xixj(nu,i,lambda,j)     = V1xxxj(mu,nu,lambda,j)*ca(mu,i)
+                 prepare Vxixj(nu,i,lambda,j) += T1xixj(nu,i,lambda,j)
+              ENDDO i
+              ENDDO j
+#
+              deallocate V1xxxj(mu,nu,lambda,*) 
+              deallocate V3xxxj(mu,nu,lambda,*) 
+#
+           ENDIF # lambda == sigma
+           ENDIF # mu      < nu
+#
+           IF mu     == nu
+           IF lambda == sigma
+#
+              compute_integrals AOINT(mu,nu,lambda,sigma)
+#
+              allocate V1xxxi(mu,nu,lambda,*) 
+#
+              DO i
+#
+                 V0xxxi(mu,nu,lambda,i)  = AOINT(mu,nu,lambda,sigma)*ca(sigma,i)
+                 V1xxxi(mu,nu,lambda,i) += V0xxxi(mu,nu,lambda,i)  
+              ENDDO i
+#
+              DO i
+              DO i1
+                 Txixi(mu,i1,lambda,i)      = V1xxxi(mu,nu,lambda,i)*ca(nu,i1)
+                 prepare Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i)
+              ENDDO i1
+              ENDDO i
+#
+              deallocate V1xxxi(mu,nu,lambda,*) 
+#
+              allocate V1xxxj(mu,nu,lambda,*) 
+#
+              DO j
+#
+                 V0xxxj(mu,nu,lambda,j)  = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+                 V1xxxj(mu,nu,lambda,j) += V0xxxj(mu,nu,lambda,j)  
+              ENDDO j
+#
+              Do j
+              DO j1
+                 Txjxj(nu,j1,lambda,j)      = V1xxxj(mu,nu,lambda,j)*cb(mu,j1)
+                 prepare Vxjxj(nu,j1,lambda,j) += Txjxj(nu,j1,lambda,j)
+              ENDDO j1
+              ENDDO j
+#
+              DO j
+              DO i
+                 Txixj(nu,i,lambda,j)      = V1xxxj(mu,nu,lambda,j)*ca(mu,i)
+                 prepare Vxixj(nu,i,lambda,j) += Txixj(nu,i,lambda,j)
+              ENDDO i
+              ENDDO j
+#
+              deallocate V1xxxj(mu,nu,lambda,*) 
+#
+           ENDIF # lambda < sigma
+           ENDIF # mu     < nu
+#
+           ENDDO sigma 
+#
+     ENDPARDO mu, nu, lambda 
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XXOO 
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XIXI  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     PARDO mu, a
+#
+           allocate Vxipi(mu,*,a,*) 
+#
+           DO nu 
+#
+              DO i
+              DO i1
+#
+                 REQUEST Vxixi(mu,i,nu,i1) i1 
+#
+                 Txipi(mu,i,a,i1) = Vxixi(mu,i,nu,i1)*ca(nu,a)
+                 Vxipi(mu,i,a,i1) += Txipi(mu,i,a,i1)
+#
+              ENDDO i1
+              ENDDO i
+#
+           ENDDO nu 
+#
+           DO i
+           DO i1
+#
+              DO a1
+                 Tpipi(a1,i,a,i1) = Vxipi(mu,i,a,i1)*ca(mu,a1)
+                 PREPARE Vpipi(a1,i,a,i1) += Tpipi(a1,i,a,i1)
+              ENDDO a1
+#
+           ENDDO i1
+           ENDDO i
+#
+           deallocate Vxipi(mu,*,a,*) 
+#
+     ENDPARDO mu, a
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XIXI  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XJXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     PARDO mu, b
+#
+           allocate Vxjqj(mu,*,b,*) 
+#
+           DO nu 
+#
+              DO j
+              DO j1
+#
+                 REQUEST Vxjxj(mu,j,nu,j1) j1 
+#
+                 Txjqj(mu,j,b,j1) = Vxjxj(mu,j,nu,j1)*cb(nu,b)
+                 Vxjqj(mu,j,b,j1) += Txjqj(mu,j,b,j1)
+#
+              ENDDO j1
+              ENDDO j
+#
+           ENDDO nu 
+#
+           DO j
+           DO j1
+#
+              DO b1
+                 Tqjqj(b1,j,b,j1) = Vxjqj(mu,j,b,j1)*cb(mu,b1)
+                 PREPARE Vqjqj(b1,j,b,j1) += Tqjqj(b1,j,b,j1)
+              ENDDO b1
+#
+           ENDDO j1
+           ENDDO j
+#
+           deallocate Vxjqj(mu,*,b,*) 
+#
+     ENDPARDO mu, b
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XJXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XIXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     PARDO mu, b
+#
+           allocate Vxiqj(mu,*,b,*) 
+#
+           DO nu 
+#
+              DO i
+              DO j
+#
+                 REQUEST Vxixj(mu,i,nu,j) j 
+#
+                 Txiqj(mu,i,b,j) = Vxixj(mu,i,nu,j)*cb(nu,b)
+                 Vxiqj(mu,i,b,j) += Txiqj(mu,i,b,j)
+#
+              ENDDO j
+              ENDDO i
+#
+           ENDDO nu 
+#
+           DO i
+           DO j
+#
+              DO a
+                 Tpiqj(a,i,b,j) = Vxiqj(mu,i,b,j)*ca(mu,a)
+                 PREPARE Vpiqj(a,i,b,j) += Tpiqj(a,i,b,j)
+              ENDDO a
+#
+           ENDDO j
+           ENDDO i
+#
+           deallocate Vxiqj(mu,*,b,*) 
+#
+     ENDPARDO mu, b
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XIXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC MP2_UHF 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     esumaa    = 0.0
+     ecorraa = 0.0
+     PARDO a, a1, i, i1
+#
+           REQUEST Vpipi(a,i,a1,i1) a 
+           REQUEST Vpipi(a,i1,a1,i) a 
+#
+           Taiai(a,i,a1,i1)   = Vpipi(a,i1,a1,i)
+           T1aiai(a,i,a1,i1)  = Vpipi(a,i,a1,i1)
+           T1aiai(a,i,a1,i1) -= Taiai(a,i,a1,i1)
+#
+           execute energy_denominator T1aiai
+#
+           etemp = T1aiai(a,i,a1,i1)*Vpipi(a,i,a1,i1)
+           etemp = 0.5*etemp
+           esumaa += etemp
+     ENDPARDO a, a1, i, i1
+#
+     ecorrbb = 0.0 
+     esumbb    = 0.0 
+     PARDO b, b1, j, j1 
+#
+           REQUEST Vqjqj(b,j,b1,j1) b  
+           REQUEST Vqjqj(b,j1,b1,j) b  
+#
+           Tbjbj(b,j,b1,j1)  = Vqjqj(b,j1,b1,j)
+           Tbjbj(b,j,b1,j1) -= Vqjqj(b,j,b1,j1) 
+#
+           execute energy_denominator Tbjbj 
+#
+           etemp = Tbjbj(b,j,b1,j1)*Vqjqj(b,j,b1,j1) 
+           etemp = -0.5*etemp 
+           esumbb += etemp 
+#
+     ENDPARDO b, b1, j, j1 
+
+     ecorrab = 0.0 
+     esumab    = 0.0 
+     PARDO a, b, i, j 
+#
+           REQUEST Vpiqj(a,i,b,j) a  
+#
+           Taibj(a,i,b,j) = Vpiqj(a,i,b,j)
+#
+           execute energy_denominator Taibj 
+#
+           etemp = Taibj(a,i,b,j)*Vpiqj(a,i,b,j) 
+           esumab += etemp 
+#
+     ENDPARDO a, b, i, j 
+     execute sip_barrier 
+     collective ecorraa += esumaa
+     execute print_scalar ecorraa
+#
+     collective ecorrbb += esumbb 
+     execute print_scalar ecorrbb 
+#
+     collective ecorrab += esumab 
+     execute print_scalar ecorrab 
+#
+     mp2_energy  = ecorraa 
+     mp2_energy += ecorrbb 
+     mp2_energy += ecorrab 
+     execute print_scalar mp2_energy  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     ENDPROC MP2_UHF 
+# 
+#    ------------------------------------------------------------------------ 
+#
+# ************************************************************************* 
+#
+#    Main program which performs a two-electron transformation and then
+#    a second-order energy calculation. 
+#
+# ************************************************************************* 
+# 
+     execute server_barrier
+     CALL TRAN_XXOO
+     execute server_barrier
+#
+     CALL TRAN_XIXI
+#
+     CALL TRAN_XJXJ
+#
+     CALL TRAN_XIXJ
+#
+     execute server_barrier
+     CALL MP2_UHF
+     totenerg = mp2_energy + scfeneg
+     execute sip_barrier
+# 
+     ENDSIAL MP2_N6_UHF_SYMM   
+#

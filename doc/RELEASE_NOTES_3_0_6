@@ -1,0 +1,28 @@
+      Release Notes for ACESIII version 3.0.6
+
+1. The maximum number of shells was increased from 200 to 5000.  
+
+2. The maximum number of contracted basis functions possible was changed from
+   255 to 5000.  
+
+*3. The geometry optimization underwent extensive modification to handle larger and 
+   more complicated molecules. 
+
+4. All default jobflows use the SCF using the atomic density guess. 
+
+5. The following sial codes have undergone optimizations.
+   - uhf/rhf ccsd(t) use original subsegments but are not partitioned.  
+     > max occupied subindex(input) dictates the subsegment size now.  
+   - rhf/uhf mbpt(2) geometry codes make better use of symmetry and uses an improved
+     two-electron integral transformation 
+   - rhf/uhf cis codes 
+*   - rhf/uhf eom-ccsd codes optimized and compute properties right after the state. 
+   - bug fix in rhf lambda codes. Slight mismatch in DIIS vectors and amplitudes fixed. 
+   - minor optimzation in uhf lambda codes. 
+   - rhf/uhf one_grad codes optimized further(minor).  
+   - rhf ccsd codes optimized(slightly) to scale higher. 
+
+
+6. A highly optimized LCCD(RHF) gradient code has been added.  
+
+Entries with a * represent significant improvements in capability. 

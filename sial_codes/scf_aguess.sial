@@ -1,0 +1,146 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+#
+                           SIAL SCF_AGUESS 
+#
+# ----------------------------------------------------------------------------
+#
+# Declare indeces 
+# --------------- 
+#
+      index   kiter  = 1, scf_iter  
+      index   katom  = 1, Natoms  
+      index   jatom  = 1, Natoms  
+
+      aoindex mu = 1, norb 
+      aoindex nu = 1, norb 
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+#
+      mobindex q = bbocc, ebvirt
+      mobindex q1= bbocc, ebvirt
+#
+      temp Txx(mu,nu) 
+      distributed Da(mu,nu) 
+      distributed Db(mu,nu) 
+      distributed Nai_d(mu,nu) 
+      static atom(katom,jatom) 
+      temp tatom(katom,jatom) 
+#
+# Declare scalars 
+# --------------- 
+#
+      scalar etemp 
+      scalar one 
+      scalar two 
+#
+# ---------------------------------------------------------------------------- 
+#
+      PROC IGUESS   
+#     ----------- 
+
+       etemp = 0.0 
+       DO katom 
+       DO jatom 
+         IF katom == jatom 
+          etemp             = etemp + 1.0  
+          atom(katom,jatom) = etemp 
+         endif 
+       ENDDO jatom 
+       ENDDO katom 
+
+       PARDO mu, nu 
+          Txx(mu,nu)        = 0.0
+          Fockrohf_a(mu,nu) = Txx(mu,nu)
+          Fockrohf_b(mu,nu) = Txx(mu,nu)
+          Txx(mu,nu)        = oed_ovl(mu,nu) 
+          Txx(mu,nu)        = oed_nai(mu,nu) 
+          Txx(mu,nu)        = oed_kin(mu,nu) 
+       ENDPARDO mu, nu 
+#
+      execute sip_barrier 
+      PARDO katom  
+        DO jatom 
+         IF katom == jatom  
+
+            tatom(katom,jatom) = atom(katom,jatom) 
+            execute return_sval tatom etemp   
+            execute print_scalar etemp 
+            execute scf_atom etemp 
+ 
+         ENDIF # katom == jatom  
+        ENDDO jatom 
+      ENDPARDO katom   
+#
+      ENDPROC IGUESS   
+#     -------------- 
+#
+# -----------------------------------------------------------------------------
+#
+#     Construct the initial guess of the Fock matrix. 
+#     ----------------------------------------------- 
+#
+      execute load_balance_off 
+      execute sip_barrier 
+      DO mu  
+      DO nu 
+         txx(mu,nu) = 0.0  
+         oed_nai(mu,nu) = txx(mu,nu)
+      ENDDO nu 
+      ENDDO mu  
+      execute sip_barrier 
+#
+      CALL IGUESS  
+      create Da 
+      create Db 
+      create Nai_d  
+      execute sip_barrier 
+# IF RHF THEN 
+      DO mu  
+      DO nu 
+            txx(mu,nu) = Fockrohf_a(mu,nu) 
+            PUT DA(mu,nu) += txx(mu,nu) 
+      ENDDO nu 
+      ENDDO mu  
+
+# IF UHF THEN 
+      DO mu  
+      DO nu 
+            txx(mu,nu) = Fockrohf_b(mu,nu) 
+            PUT DB(mu,nu) += txx(mu,nu) 
+      ENDDO nu 
+      ENDDO mu  
+
+# IF RHF/UHF THEN 
+      DO mu  
+      DO nu 
+            txx(mu,nu) = oed_nai(mu,nu) 
+            PUT Nai_d(mu,nu) += txx(mu,nu) 
+      ENDDO nu 
+      ENDDO mu  
+
+      execute sip_barrier
+      execute blocks_to_list Da
+      execute blocks_to_list Db
+      execute blocks_to_list Nai_d  
+      execute write_blocks_to_list
+      execute sip_barrier
+#
+# -----------------------------------------------------------------------------
+#
+                           ENDSIAL SCF_AGUESS 
+#
+###############################################################################

@@ -1,0 +1,1199 @@
+                           SIAL SCF_UHF        
+#
+# ----------------------------------------------------------------------------
+#
+# The sial program SIAL_UHF performs a UHF based SCF calculation. No DIIS
+# is implimented but Davidson damping is. 
+#
+# Fock matrix final arrays:
+# ------------------------- 
+#
+# 1. Fpq_a  
+# 2. Fpq_b  
+#
+# Transformation coefficients final arrays:
+# ----------------------------------------- 
+#
+# 1. Ca  
+# 2. Cb  
+#
+# Converged SCF energy:
+# --------------------- 
+#
+# 1. scfeneg 
+#
+# BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+#
+# Declare indeces 
+# --------------- 
+#
+      index   kiter  = 1, 150  
+#
+      aoindex mu     = 1, norb
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      mobindex q = bbocc, ebvirt
+      mobindex q1= bbocc, ebvirt
+      mobindex q2= bbocc, ebvirt
+      mobindex q3= bbocc, ebvirt
+# 
+# Declare one-particle density arrays 
+# ----------------------------------- 
+#
+      distributed Dhfa(mu,nu) 
+      distributed Dhfb(mu,nu) 
+      distributed Dhfa_old(mu,nu) 
+      distributed Dhfb_old(mu,nu) 
+#
+      distributed Fpq_a(mu,nu) 
+      distributed Fpq_b(mu,nu) 
+      distributed FTpq_a(mu,nu) 
+      distributed FTpq_b(mu,nu) 
+      distributed CBT_a(mu,p) 
+      distributed CBT_b(mu,q) 
+#
+# Declare temporary arrays 
+# ------------------------ 
+#
+      temp Txxxx(mu,nu,lambda,sigma) 
+      temp TSxxxx(mu,nu,lambda,sigma) 
+      temp T1xxxx(mu,nu,lambda,sigma) 
+      temp T2xxxx(mu,nu,lambda,sigma) 
+      temp T3xxxx(mu,nu,lambda,sigma) 
+      temp T4xxxx(mu,nu,lambda,sigma) 
+      temp T5xxxx(mu,nu,lambda,sigma) 
+      temp Txxxi(mu,nu,lambda,i) 
+      temp T1xxxi(mu,nu,lambda,i) 
+      temp T2xxxi(mu,nu,lambda,i) 
+      temp T3xxxi(mu,nu,lambda,i) 
+      temp T4xxxi(mu,nu,lambda,i) 
+      temp TAxxxi(mu,nu,lambda,i) 
+      temp TBxxxi(mu,nu,lambda,i) 
+      temp Txxxj(mu,nu,lambda,j) 
+      temp T1xxxj(mu,nu,lambda,j) 
+      temp T2xxxj(mu,nu,lambda,j) 
+      temp T3xxxj(mu,nu,lambda,j) 
+      temp T4xxxj(mu,nu,lambda,j) 
+      temp TAxxxj(mu,nu,lambda,j) 
+      temp TBxxxj(mu,nu,lambda,j) 
+      temp Txixx(mu,i,nu,lambda) 
+      temp Txjxx(mu,j,nu,lambda) 
+      temp Tixxx(i,mu,nu,lambda) 
+      temp Tjxxx(j,mu,nu,lambda) 
+      temp Ixi(mu,i) 
+      temp I1xi(mu,i) 
+      temp Ixj(mu,j) 
+      temp I1xj(mu,j) 
+      temp Tpq(mu,nu) 
+      temp T1pq(mu,nu) 
+      temp Txi(mu,i) 
+      temp T1xi(mu,i) 
+      temp Txj(mu,j) 
+      temp T1xj(mu,j) 
+      temp Txx(mu,nu) 
+      temp TAxx(mu,nu) 
+      temp TBxx(mu,nu) 
+      temp T1xx(mu,nu) 
+      temp T2xx(mu,nu) 
+      temp Tii(i,i1) 
+      temp T1ii(i,i1) 
+      temp Tjj(j,j1) 
+      temp T1jj(j,j1) 
+      temp Txp(mu,p) 
+      temp T1xp(mu,p) 
+      temp Tpp(p,p1) 
+      temp T1pp(p,p1) 
+      temp Txq(mu,q) 
+      temp T1xq(mu,q) 
+      temp Tqq(q,q1) 
+      temp T1qq(q,q1) 
+#
+# Declare served arrays 
+# --------------------- 
+#
+      served aoint(mu,nu,lambda,sigma)
+#
+# Declare static arrays 
+# --------------------- 
+#
+      static FSpq_a(mu,nu) 
+      static FSpq_b(mu,nu) 
+      distributed Qxx(mu,nu) 
+      distributed FTa(p,p1) 
+      distributed FTb(q,q1) 
+      static X1(mu,nu) 
+#
+# Declare scalars 
+# --------------- 
+#
+      scalar e_a     
+      scalar e_b     
+      scalar escf_a 
+      scalar escf_b 
+      scalar etemp 
+      scalar esum 
+      scalar energy 
+      scalar energy1 
+      scalar energy2 
+      scalar ecrit 
+      scalar ediff  
+      scalar damp1 
+#
+# ---------------------------------------------------------------------------- 
+#
+      PROC IGUESS   
+#     ----------- 
+#
+#     Initialize the Fock matrix to the bare 1-electron hamiltonian.
+#     -------------------------------------------------------------- 
+#
+      PARDO mu, nu 
+#
+            Txx(mu,nu)       = oed_nai(mu,nu)  
+            Txx(mu,nu)      += oed_kin(mu,nu)  
+#
+            PUT Fpq_a(mu,nu) = Txx(mu,nu) 
+            PUT Fpq_b(mu,nu) = Txx(mu,nu) 
+#
+      ENDPARDO mu, nu 
+#
+      ENDPROC IGUESS   
+#     -------------- 
+#
+# -----------------------------------------------------------------------------
+#
+      PROC HFDENS
+#     -----------
+#
+#     The HF density is computed. Davidson damping is incorporated thus
+#     knowledge of the previous iteration is needed. 
+#     ----------------------------------------------------------------- 
+#
+      PARDO mu, nu 
+#
+#           alpha component first 
+#           --------------------- 
+#
+            GET           DHFa_old(mu,nu) 
+            GET           DHFb_old(mu,nu) 
+            Tpq(mu,nu)  = DHFa_old(mu,nu)   
+            Tpq(mu,nu) *= damp  
+#
+            DO i 
+#
+               Txi(nu,i)   = ca(nu,i)
+               T1pq(mu,nu) = Txi(nu,i)*ca(mu,i)
+               Tpq(mu,nu) += T1pq(mu,nu) 
+#
+            ENDDO i 
+#
+            Tpq(mu,nu)     *= damp1   
+            PUT Dhfa(mu,nu) = Tpq(mu,nu)
+#
+#           beta component next  
+#           ------------------- 
+#
+            Tpq(mu,nu)  = DHFb_old(mu,nu)   
+            Tpq(mu,nu) *= damp  
+#
+            DO j 
+#
+               Txj(nu,j)   = cb(nu,j)
+               T1pq(mu,nu) = cb(mu,j)*Txj(nu,j)
+               Tpq(mu,nu) += T1pq(mu,nu) 
+#
+            ENDDO j 
+#
+            Tpq(mu,nu)     *= damp1   
+            PUT Dhfb(mu,nu) = Tpq(mu,nu)
+#
+      ENDPARDO mu, nu 
+#
+      ENDPROC HFDENS
+#     --------------
+#
+# ---------------------------------------------------------------------------- 
+#
+# -----------------------------------------------------------------------------
+#
+      PROC HFIDENS
+#     ------------
+#
+#     Procedure which computes the HF density without Davidson damping. 
+#     ----------------------------------------------------------------- 
+#
+      PARDO mu, nu 
+#
+#           alpha component 
+#           --------------- 
+#
+            Tpq(mu,nu) = 0.0 
+#
+            DO i 
+#
+               Txi(nu,i)   = ca(nu,i)
+               T1pq(mu,nu) = Txi(nu,i)*ca(mu,i)
+               Tpq(mu,nu) += T1pq(mu,nu) 
+#
+            ENDDO i 
+# 
+            PUT Dhfa(mu,nu) = Tpq(mu,nu)
+#
+#           beta component 
+#           -------------- 
+#
+            Tpq(mu,nu) = 0.0 
+#
+            DO j 
+#
+               Txj(nu,j)   = cb(nu,j)
+               T1pq(mu,nu) = cb(mu,j)*Txj(nu,j)
+               Tpq(mu,nu) += T1pq(mu,nu) 
+#
+            ENDDO j 
+#
+            PUT Dhfb(mu,nu) = Tpq(mu,nu)
+#
+      ENDPARDO mu, nu 
+#
+      ENDPROC HFIDENS
+#     ---------------
+#
+# ---------------------------------------------------------------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+      PROC SCFENERGY 
+#     -------------- 
+#
+#     The total SCF energy is computed from a know Hartee-Fock density.  
+#     ----------------------------------------------------------------- 
+#
+      esum   = 0.0 
+      etemp  = 0.0 
+      energy = 0.0 
+      energy1= 0.0 
+      energy2= 0.0 
+      execute sip_barrier 
+#
+#     One-particle contribution. 
+#     -------------------------- 
+#
+      PARDO mu, nu 
+#
+            GET DHFa(mu,nu) 
+            GET DHFb(mu,nu) 
+#
+            Txx(mu,nu)   = oed_nai(mu,nu)  
+            Txx(mu,nu)  += oed_kin(mu,nu)  
+#
+            T1xx(mu,nu)  = DHFa(mu,nu) 
+            T1xx(mu,nu) += DHFb(mu,nu) 
+#          
+            etemp = Txx(mu,nu)*T1xx(mu,nu)  
+            esum += etemp 
+#
+      ENDPARDO mu, nu 
+      execute sip_barrier 
+#
+      collective energy1 += esum  
+      execute sip_barrier 
+      execute print_scalar energy1 
+#
+#     Two-particle contribution. 
+#     -------------------------- 
+#
+      esum   = 0.0 
+      etemp  = 0.0 
+      execute sip_barrier 
+      PARDO mu, lambda
+#
+            DO nu
+            DO sigma
+#
+               GET DHFa(nu,sigma) 
+               GET DHFa(nu,lambda) 
+               GET DHFa(mu,lambda) 
+               GET DHFa(mu,sigma) 
+#
+               GET DHFb(nu,sigma) 
+               GET DHFb(nu,lambda) 
+               GET DHFb(mu,lambda) 
+               GET DHFb(mu,sigma) 
+#
+               compute_integrals            AOINT(mu,lambda,nu,sigma)
+#
+#              ------------------------------------------------------------- 
+#
+               txx(nu,sigma)              = DHFa(nu,sigma) 
+               t1xx(nu,lambda)            = DHFa(nu,lambda) 
+#
+               Txxxx(mu,nu,lambda,sigma)  = DHFa(mu,lambda)^txx(nu,sigma)   
+               T1xxxx(mu,nu,lambda,sigma) = DHFa(mu,sigma)^t1xx(nu,lambda)   
+               Txxxx(mu,nu,lambda,sigma) -= T1xxxx(mu,nu,lambda,sigma) 
+#
+               txx(nu,sigma)              = DHFb(nu,sigma) 
+               t1xx(nu,lambda)            = DHFb(nu,lambda) 
+#
+               T1xxxx(mu,nu,lambda,sigma) = DHFb(mu,lambda)^txx(nu,sigma)   
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma) 
+               T1xxxx(mu,nu,lambda,sigma) = DHFb(mu,sigma)^t1xx(nu,lambda)   
+               Txxxx(mu,nu,lambda,sigma) -= T1xxxx(mu,nu,lambda,sigma) 
+#
+#              ------------------------------------------------------------- 
+#
+               T1xxxx(mu,nu,lambda,sigma) = DHFa(mu,lambda)^DHFb(nu,sigma)   
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma) 
+#
+               T1xxxx(mu,nu,lambda,sigma) = DHFb(mu,lambda)^DHFa(nu,sigma)   
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma) 
+#
+#              ------------------------------------------------------------- 
+#
+               etemp  = AOINT(mu,lambda,nu,sigma)*Txxxx(mu,nu,lambda,sigma) 
+               etemp *= 0.5 
+               esum  += etemp 
+#
+            ENDDO sigma
+            ENDDO nu
+#
+       ENDPARDO mu, lambda
+       execute sip_barrier 
+#
+       collective energy2 += esum  
+       execute sip_barrier 
+       execute print_scalar energy2 
+       energy  = energy1 
+       energy += energy2 
+       execute print_scalar energy 
+#
+       ENDPROC SCFENERGY 
+#      ----------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC FOCK_MATRIX  
+#      ----------------- 
+#
+#      The complete Fock matrix is constructed. Four fold symmetry of the
+#      two-electron integrals is incorporated. 
+#      ------------------------------------------------------------------
+#
+#      Initialize the Fock matrix to the bare 1-electron hamiltonian.
+#      -------------------------------------------------------------- 
+#
+       PARDO mu, nu 
+#
+             Txx(mu,nu)        = oed_nai(mu,nu)  
+             Txx(mu,nu)       += oed_kin(mu,nu)  
+#
+             PUT Fpq_a(mu,nu) += Txx(mu,nu) 
+             PUT Fpq_b(mu,nu) += Txx(mu,nu) 
+#
+       ENDPARDO mu, nu 
+#
+#      Add contributions containing two-particle integral contributions.
+#      -----------------------------------------------------------------
+#
+       PARDO mu, lambda
+#
+             DO nu
+             DO sigma
+#
+                IF mu     == nu
+                IF lambda == sigma
+#
+                   compute_integrals aoint(mu,nu,lambda,sigma)
+#
+#                  alpha and beta components together
+#                  ----------------------------------
+#
+                   GET DHFa(lambda,sigma)
+                   GET DHFb(lambda,sigma)
+                   GET DHFa(nu,sigma)
+                   GET DHFb(nu,sigma)
+#
+                   T1xx(lambda,sigma)    = DHFa(lambda,sigma)
+                   T1xx(lambda,sigma)   += DHFb(lambda,sigma)
+#
+                   T2xx(mu,nu)           = aoint(mu,nu,lambda,sigma)*T1xx(lambda,sigma)
+#
+                   PUT Fpq_a(mu,nu)     += T2xx(mu,nu)
+                   PUT Fpq_b(mu,nu)     += T2xx(mu,nu)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFa(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_a(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFb(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_b(mu,lambda) += T2xx(mu,lambda)
+#
+                ENDIF
+                ENDIF
+#
+                IF mu     < nu
+                IF lambda < sigma
+#
+                   compute_integrals aoint(mu,nu,lambda,sigma)
+#
+#                  alpha and beta components together
+#                  ----------------------------------
+#
+                   GET DHFa(lambda,sigma)
+                   GET DHFb(lambda,sigma)
+                   GET DHFa(nu,sigma)
+                   GET DHFb(nu,sigma)
+
+                   GET DHFa(sigma,lambda)
+                   GET DHFa(mu,sigma)
+                   GET DHFa(nu,lambda)
+                   GET DHFa(mu,lambda)
+
+                   GET DHFb(sigma,lambda)
+                   GET DHFb(mu,sigma)
+                   GET DHFb(nu,lambda)
+                   GET DHFb(mu,lambda)
+#
+                   T1xx(lambda,sigma)    = DHFa(lambda,sigma)
+                   T1xx(lambda,sigma)   += DHFb(lambda,sigma)
+                   Txx(lambda,sigma)     = DHFa(sigma,lambda)
+                   T1xx(lambda,sigma)   += Txx(lambda,sigma)
+                   Txx(lambda,sigma)     = DHFb(sigma,lambda)
+                   T1xx(lambda,sigma)   += Txx(lambda,sigma)
+#
+                   T2xx(mu,nu)           = aoint(mu,nu,lambda,sigma)*T1xx(lambda,sigma)
+#
+                   PUT Fpq_a(mu,nu)     += T2xx(mu,nu)
+                   PUT Fpq_b(mu,nu)     += T2xx(mu,nu)
+#
+                   Txx(nu,mu)            = T2xx(mu,nu)
+#
+                   PUT Fpq_a(nu,mu)     += Txx(nu,mu)
+                   PUT Fpq_b(nu,mu)     += Txx(nu,mu)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFa(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_a(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(mu,sigma)        = aoint(mu,nu,lambda,sigma)*DHFa(nu,lambda)
+                   T2xx(mu,sigma)       *= -1.0
+                   PUT Fpq_a(mu,sigma)  += T2xx(mu,sigma)
+#
+                   T2xx(nu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFa(mu,sigma)
+                   T2xx(nu,lambda)      *= -1.0
+                   PUT Fpq_a(nu,lambda) += T2xx(nu,lambda)
+#
+                   T2xx(nu,sigma)        = aoint(mu,nu,lambda,sigma)*DHFa(mu,lambda)
+                   T2xx(nu,sigma)       *= -1.0
+                   PUT Fpq_a(nu,sigma)  += T2xx(nu,sigma)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFb(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_b(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(mu,sigma)        = aoint(mu,nu,lambda,sigma)*DHFb(nu,lambda)
+                   T2xx(mu,sigma)       *= -1.0
+                   PUT Fpq_b(mu,sigma)  += T2xx(mu,sigma)
+#
+                   T2xx(nu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFb(mu,sigma)
+                   T2xx(nu,lambda)      *= -1.0
+                   PUT Fpq_b(nu,lambda) += T2xx(nu,lambda)
+#
+                   T2xx(nu,sigma)        = aoint(mu,nu,lambda,sigma)*DHFb(mu,lambda)
+                   T2xx(nu,sigma)       *= -1.0
+                   PUT Fpq_b(nu,sigma)  += T2xx(nu,sigma)
+#
+                ENDIF
+                ENDIF
+#
+                IF mu      < nu
+                IF lambda == sigma
+#
+                   compute_integrals aoint(mu,nu,lambda,sigma)
+#
+#                  alpha and beta components together
+#                  --------------------------------#
+                   GET DHFa(lambda,sigma)
+                   GET DHFb(lambda,sigma)
+                   GET DHFa(nu,sigma)
+                   GET DHFb(nu,sigma)
+
+                   GET DHFa(mu,sigma)
+                   GET DHFa(nu,lambda)
+                   GET DHFa(mu,lambda)
+
+                   GET DHFb(mu,sigma)
+                   GET DHFb(nu,lambda)
+                   GET DHFb(mu,lambda)
+#
+                   T1xx(lambda,sigma)    = DHFa(lambda,sigma)
+                   T1xx(lambda,sigma)   += DHFb(lambda,sigma)
+#
+                   T2xx(mu,nu)           = aoint(mu,nu,lambda,sigma)*T1xx(lambda,sigma)
+
+                   PUT Fpq_a(mu,nu)     += T2xx(mu,nu)
+                   PUT Fpq_b(mu,nu)     += T2xx(mu,nu)
+#
+                   Txx(nu,mu)            = T2xx(mu,nu)
+#
+                   PUT Fpq_a(nu,mu)     += Txx(nu,mu)
+                   PUT Fpq_b(nu,mu)     += Txx(nu,mu)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFa(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_a(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(nu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFa(mu,sigma)
+                   T2xx(nu,lambda)      *= -1.0
+                   PUT Fpq_a(nu,lambda) += T2xx(nu,lambda)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFb(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_b(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(nu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFb(mu,sigma)
+                   T2xx(nu,lambda)      *= -1.0
+                   PUT Fpq_b(nu,lambda) += T2xx(nu,lambda)
+#
+                ENDIF
+                ENDIF
+#
+                IF mu     == nu
+                IF lambda  < sigma
+#
+                   compute_integrals aoint(mu,nu,lambda,sigma)
+#
+#                  alpha and beta components together
+#                  ----------------------------------
+#
+                   GET DHFa(lambda,sigma)
+                   GET DHFb(lambda,sigma)
+                   GET DHFa(nu,sigma)
+                   GET DHFb(nu,sigma)
+
+                   GET DHFa(sigma,lambda)
+                   GET DHFa(nu,lambda)
+
+                   GET DHFb(sigma,lambda)
+                   GET DHFb(nu,lambda)
+#
+                   T1xx(lambda,sigma)    = DHFa(lambda,sigma)
+                   T1xx(lambda,sigma)   += DHFb(lambda,sigma)
+#
+                   T2xx(mu,nu)           = aoint(mu,nu,lambda,sigma)*T1xx(lambda,sigma)
+
+#
+                   PUT Fpq_a(mu,nu)     += T2xx(mu,nu)
+                   PUT Fpq_b(mu,nu)     += T2xx(mu,nu)
+#
+                   T1xx(sigma,lambda)    = DHFa(sigma,lambda)
+                   T1xx(sigma,lambda)   += DHFb(sigma,lambda)
+#
+                   T2xx(mu,nu)           = aoint(mu,nu,lambda,sigma)*T1xx(sigma,lambda)
+
+                   PUT Fpq_a(mu,nu)     += T2xx(mu,nu)
+                   PUT Fpq_b(mu,nu)     += T2xx(mu,nu)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFa(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_a(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(mu,sigma)        = aoint(mu,nu,lambda,sigma)*DHFa(nu,lambda)
+                   T2xx(mu,sigma)       *= -1.0
+                   PUT Fpq_a(mu,sigma)  += T2xx(mu,sigma)
+#
+                   T2xx(mu,lambda)       = aoint(mu,nu,lambda,sigma)*DHFb(nu,sigma)
+                   T2xx(mu,lambda)      *= -1.0
+                   PUT Fpq_b(mu,lambda) += T2xx(mu,lambda)
+#
+                   T2xx(mu,sigma)        = aoint(mu,nu,lambda,sigma)*DHFb(nu,lambda)
+                   T2xx(mu,sigma)       *= -1.0
+                   PUT Fpq_b(mu,sigma)  += T2xx(mu,sigma)
+#
+                ENDIF
+                ENDIF
+#
+             ENDDO sigma
+             ENDDO nu
+#
+       ENDPARDO mu, lambda
+       execute sip_barrier
+#
+       ENDPROC FOCK_MATRIX  
+#      ------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC HF_ENERGY  
+#      -------------- 
+#
+#      The HF energy is computed from the HF density (DHFa(b)) and the 
+#      Fock matrix (Fpq_a(b)). 
+#      --------------------------------------------------------------- 
+#
+       energy = 0.0
+       esum = 0.0 
+       PARDO mu, nu 
+#
+             GET Fpq_a(mu,nu)
+             GET Fpq_b(mu,nu)
+             GET DHFa(mu,nu) 
+             GET DHFb(mu,nu) 
+#
+             Txx(mu,nu)   = oed_nai(mu,nu)  
+             Txx(mu,nu)  += oed_kin(mu,nu)  
+#
+             T1xx(mu,nu)  = Txx(mu,nu) 
+             T1xx(mu,nu) += Fpq_a(mu,nu) 
+#
+             etemp        = T1xx(mu,nu)*DHFa(mu,nu)  
+             esum        += etemp 
+#
+             T1xx(mu,nu)  = Txx(mu,nu) 
+             T1xx(mu,nu) += Fpq_b(mu,nu) 
+#
+             etemp        = T1xx(mu,nu)*DHFb(mu,nu)  
+             esum        += etemp 
+#
+       ENDPARDO mu, nu 
+       execute sip_barrier 
+       esum *= 0.5 
+       collective energy += esum 
+#
+       execute print_scalar energy 
+#
+       ENDPROC HF_ENERGY   
+#      ----------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC OVER_HALF 
+#      -------------- 
+#
+#      Diagonalize the overlap matrix, invert and take the square
+#      root of the diagonal elements. 
+#      -------------------------------------------------------------- 
+#
+       execute eig_sr_inv oed_ovl x1   
+#
+#      Form the Q-matrix --> U s**{-1/2) 
+#      --------------------------------- 
+#
+       PARDO mu, nu  
+#
+          Txx(mu,nu) = 0.0 
+#
+          DO lambda 
+             T1xx(mu,nu) = x1(mu,lambda)*oed_ovl(lambda,nu) 
+             Txx(mu,nu) += T1xx(mu,nu) 
+          ENDDO lambda  
+#
+          PUT Qxx(mu,nu) = Txx(mu,nu)  
+#
+       ENDPARDO mu, nu  
+#
+       ENDPROC OVER_HALF 
+#      ----------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC FOCK_TRANSPOSE 
+#      ------------------- 
+#
+#      Form the transposed Fock matrix --> Q+ F Q 
+#      ------------------------------------------ 
+#
+       PARDO mu, sigma   
+#
+             TAxx(mu,sigma) = 0.0 
+             TBxx(mu,sigma) = 0.0 
+#
+             DO lambda 
+#
+                GET Fpq_a(lambda,sigma) 
+                GET Fpq_b(lambda,sigma) 
+                GET Qxx(lambda,mu) 
+#
+                T1xx(mu,sigma)  = Qxx(lambda,mu)*Fpq_a(lambda,sigma)  
+                TAxx(mu,sigma) += T1xx(mu,sigma) 
+#
+                T1xx(mu,sigma)  = Qxx(lambda,mu)*Fpq_b(lambda,sigma)  
+                TBxx(mu,sigma) += T1xx(mu,sigma) 
+#
+             ENDDO lambda 
+#
+             DO nu 
+#
+                GET Qxx(sigma,nu) 
+#
+                T1xx(mu,nu) = TAxx(mu,sigma)*Qxx(sigma,nu) 
+                PUT FTpq_a(mu,nu) += T1xx(mu,nu) 
+#
+                T1xx(mu,nu) = TBxx(mu,sigma)*Qxx(sigma,nu) 
+                PUT FTpq_b(mu,nu) += T1xx(mu,nu) 
+#
+             ENDDO nu 
+#
+       ENDPARDO mu, sigma   
+#
+       ENDPROC FOCK_TRANSPOSE 
+#      ---------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC FOCK_DIAG  
+#      -------------- 
+#
+#      First put the transposed Fock arrays into static arrays 
+#      ------------------------------------------------------- 
+#
+       DO mu   
+       DO nu  
+#
+          GET             FTpq_a(mu,nu) 
+          FSpq_a(mu,nu) = FTpq_a(mu,nu) 
+#
+       ENDDO nu  
+       ENDDO mu   
+#
+       execute eig FSpq_a ca   
+#
+       DO mu 
+       DO nu 
+#
+          GET             FTpq_b(mu,nu) 
+          FSpq_b(mu,nu) = FTpq_b(mu,nu) 
+#
+       ENDDO nu 
+       ENDDO mu 
+#
+       execute eig FSpq_b Cb  
+#
+       ENDPROC FOCK_DIAG 
+#      ----------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC C_BTRAN 
+#      ------------ 
+#
+#      Transform the coefficient array back to the original basis 
+#      ---------------------------------------------------------- 
+#
+       PARDO mu, p  
+#
+          Txp(mu,p) = 0.0 
+#
+          DO nu 
+#
+             GET          Qxx(mu,nu) 
+#
+             T1xp(mu,p) = Qxx(mu,nu)*ca(nu,p)   
+             Txp(mu,p) += T1xp(mu,p) 
+#
+          ENDDO nu 
+#
+          PUT CBT_a(mu,p) = Txp(mu,p) 
+#
+       ENDPARDO mu, p  
+#
+       PARDO mu, q
+# 
+          Txq(mu,q) = 0.0 
+#
+          DO nu 
+#
+             GET          Qxx(mu,nu) 
+#
+             T1xq(mu,q) = Qxx(mu,nu)*cb(nu,q)   
+             Txq(mu,q) += T1xq(mu,q) 
+#
+          ENDDO nu 
+#
+          PUT CBT_b(mu,q) = Txq(mu,q) 
+#
+       ENDPARDO mu, q
+       execute sip_barrier 
+#
+#      Put the transfomed coefficients into static arrays 
+#      -------------------------------------------------- 
+#
+       DO mu 
+       DO p 
+          GET        CBT_a(mu,p) 
+          ca(mu,p) = CBT_a(mu,p) 
+       ENDDO p 
+       ENDDO mu  
+#
+       DO mu 
+       DO q 
+          GET        CBT_b(mu,q) 
+          cb(mu,q) = CBT_b(mu,q) 
+       ENDDO q 
+       ENDDO mu  
+#
+       ENDPROC C_BTRAN 
+#      --------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC HF_DAMP  
+#      ------------ 
+#
+       PARDO mu, nu 
+#
+             GET DHFa(mu,nu) 
+             GET DHFb(mu,nu) 
+             GET DHFa_old(mu,nu) 
+             GET DHFb_old(mu,nu) 
+#
+             Txx(mu,nu)   = DHFa(mu,nu) 
+             T1xx(mu,nu)  = DHFa_old(mu,nu) 
+             T1xx(mu,nu) *= damp  
+             Txx(mu,nu)  += T1xx(mu,nu) 
+             Txx(mu,nu)  *= damp1 
+             PUT DHFa(mu,nu) = Txx(mu,nu)  
+#
+             Txx(mu,nu)   = DHFb(mu,nu) 
+             T1xx(mu,nu)  = DHFb_old(mu,nu) 
+             T1xx(mu,nu) *= damp  
+             Txx(mu,nu)  += T1xx(mu,nu) 
+             Txx(mu,nu)  *= damp1 
+             PUT DHFb(mu,nu) = Txx(mu,nu)  
+#
+       ENDPARDO mu, nu 
+#
+       ENDPROC HF_DAMP  
+#      --------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC HFDENS_ZERO   
+#      ----------------  
+#  
+#      Zero out the n-1'th density array. 
+#      ---------------------------------- 
+#
+       PARDO mu, nu 
+#
+             Txx(mu,nu)   = 0.0   
+             PUT DHFa_old(mu,nu) = Txx(mu,nu)  
+             PUT DHFb_old(mu,nu) = Txx(mu,nu)  
+#
+       ENDPARDO mu, nu 
+#
+       ENDPROC HFDENS_ZERO   
+#      ------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+       PROC HFDENS_REPLACE    
+#      -------------------   
+#
+#      Replace the 'old' HF density by the 'new' HF density. 
+#      ----------------------------------------------------- 
+#
+       PARDO mu, nu 
+#
+             GET DHFa(mu,nu) 
+             GET DHFb(mu,nu) 
+             PUT DHFa_old(mu,nu) = DHFa(mu,nu)  
+             PUT DHFb_old(mu,nu) = DHFb(mu,nu)  
+#
+       ENDPARDO mu, nu 
+#
+       ENDPROC HFDENS_REPLACE    
+#      ----------------------  
+#
+# ---------------------------------------------------------------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+############################################################################## 
+#
+#                         START OF MAIN PROGRAM 
+#
+############################################################################## 
+#
+#     Define a few constants 
+#     ---------------------- 
+#
+      ecrit  = 0.0000000001
+      damp   = 0.25    
+      damp1  = 0.8    
+#
+#     Create the one-particle arrays needed for the computation. 
+#     ---------------------------------------------------------- 
+#
+#     Fock matrix
+#     ----------- 
+      CREATE Fpq_a  
+      CREATE Fpq_b  
+#
+#     New HF density 
+#     -------------- 
+#
+      CREATE DHFa   
+      CREATE DHFb   
+#
+#     Old HF density 
+#     -------------- 
+#
+      CREATE DHFa_old    
+      CREATE DHFb_old    
+#
+#     Orthonormalizing transformation coefficient
+#     ------------------------------------------- 
+#
+      CREATE Qxx 
+      execute sip_barrier 
+#
+#     Construct the initial guess of the Fock matrix. 
+#     ----------------------------------------------- 
+# 
+      CALL   IGUESS  
+      #execute sip_barrier
+#
+#     Construct the array S**(-1/2) 
+#     ----------------------------- 
+#
+      CALL OVER_HALF 
+      #execute sip_barrier
+#
+#     Construct S^(-1/2) F S^(-1/2) 
+#     ----------------------------- 
+#
+      CREATE FTpq_a  
+      CREATE FTpq_b  
+      execute sip_barrier 
+      CALL FOCK_TRANSPOSE 
+      execute sip_barrier 
+#
+#     Diagonalize the transposed Fock matrix 
+#     -------------------------------------- 
+#
+      CALL FOCK_DIAG 
+#
+#     Back transform the coefficient array 
+#     ------------------------------------ 
+#
+      CREATE CBT_a 
+      CREATE CBT_b 
+      execute sip_barrier
+      CALL   C_BTRAN 
+      execute sip_barrier
+#
+#     Zero out the 'old' HF density 
+#     ----------------------------- 
+#
+      CALL HFDENS_ZERO 
+      execute sip_barrier
+#
+#     Compute the HF density 
+#     ---------------------- 
+#
+      CALL HFDENS
+      execute sip_barrier
+#
+#     Damp the HF density 
+#     ------------------- 
+#
+#     CALL HF_DAMP 
+#     execute sip_barrier
+#
+#     Compute the energy 
+#     ------------------ 
+#
+      CALL HF_ENERGY 
+      energy1 = energy 
+      execute sip_barrier
+#
+#     Replace 'old' HF density by 'new' HF density 
+#     -------------------------------------------- 
+#
+      CALL HFDENS_REPLACE 
+      execute sip_barrier
+#
+      DELETE FTpq_a  
+      DELETE FTpq_b  
+      DELETE Fpq_a  
+      DELETE Fpq_b  
+      DELETE CBT_a 
+      DELETE CBT_b 
+#
+# Start iterations 
+# ---------------- 
+#
+      DO kiter 
+#
+#        Create 1-particle arrays 
+#        ------------------------ 
+#
+         CREATE Fpq_a 
+         CREATE Fpq_b 
+         CREATE CBT_a 
+         CREATE CBT_b 
+         CREATE FTpq_a  
+         CREATE FTpq_b  
+         execute sip_barrier
+#
+#        Construct the new Fock matrix 
+#        -----------------------------
+#
+         CALL FOCK_MATRIX  
+         execute sip_barrier 
+#
+#        Transpose the new Fock matrix 
+#        -----------------------------
+#
+         CALL FOCK_TRANSPOSE 
+         execute sip_barrier
+#
+#        Diagonalize the transposed Fock matrix 
+#        -------------------------------------- 
+#
+         CALL FOCK_DIAG 
+         execute sip_barrier
+#
+#        Back transform the coefficient array 
+#        ------------------------------------ 
+#
+         CALL C_BTRAN 
+         execute sip_barrier
+#
+#        Damp the HF density 
+#        ------------------- 
+#
+#        CALL HF_DAMP 
+#
+#        Compute the energy 
+#        ------------------ 
+#
+         CALL HF_ENERGY 
+         energy2 = energy 
+         execute sip_barrier
+#
+#        Check on convergence.  
+#        --------------------- 
+#
+         IF energy2 < energy1  
+            ediff = energy1 -energy2  
+            IF ediff < ecrit
+               exit # kiter
+            ENDIF
+         ENDIF
+#
+         IF energy2 > energy1  
+            ediff = energy2 - energy1  
+            IF ediff < ecrit
+               exit # kiter
+            ENDIF
+         ENDIF
+#
+#        Reset eold --> enew
+#        -------------------
+#
+         energy1 = energy2  
+#
+#        Replace 'old' HF density by 'new' HF density 
+#        -------------------------------------------- 
+#
+         CALL HFDENS_REPLACE 
+         execute sip_barrier
+#
+#        Compute the HF density 
+#        ---------------------- 
+#
+         CALL HFDENS
+         execute sip_barrier
+#
+#        Delete one-particle arrays to be used in the next iteration. 
+#        ------------------------------------------------------------ 
+#
+         DELETE Fpq_a 
+         DELETE Fpq_b 
+         DELETE FTpq_a  
+         DELETE FTpq_b  
+         DELETE CBT_a 
+         DELETE CBT_b 
+#
+      ENDDO kiter 
+#
+      CREATE FTa 
+      CREATE FTb 
+      execute sip_barrier 
+      PARDO mu, nu 
+            GET Fpq_a(mu,nu) 
+            DO p 
+               Txp(mu,p) = Fpq_a(mu,nu)*ca(nu,p) 
+               DO p1 
+                  Tpp(p1,p) = Txp(mu,p)*ca(mu,p1) 
+                  PUT FTa(p1,p) += Tpp(p1,p) 
+               ENDDO p1  
+            ENDDO p 
+      ENDPARDO mu, nu  
+#     
+      PARDO mu, nu 
+            GET Fpq_b(mu,nu) 
+            DO q 
+               Txq(mu,q) = Fpq_b(mu,nu)*cb(nu,q) 
+               DO q1 
+                  Tqq(q1,q) = Txq(mu,q)*cb(mu,q1) 
+                  PUT FTb(q1,q) += Tqq(q1,q) 
+               ENDDO q1  
+            ENDDO q 
+      ENDPARDO mu, nu  
+      execute sip_barrier 
+#
+#     Put the final Fock arrays into predefined arrays 
+#     ------------------------------------------------ 
+#
+      DO p 
+      DO p1  
+         GET FTa(p,p1) 
+         Fock_a(p,p1) = FTa(p,p1) 
+      ENDDO p1  
+      ENDDO p 
+#
+      DO q 
+      DO q1  
+         GET FTb(q,q1) 
+         Fock_b(q,q1) = FTb(q,q1) 
+      ENDDO q1  
+      ENDDO q 
+#
+      scfeneg += energy2 
+      totenerg = scfeneg
+      execute sip_barrier
+#
+                           ENDSIAL SCF_UHF        
+#
+###############################################################################

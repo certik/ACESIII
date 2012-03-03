@@ -1,0 +1,116 @@
+C  Copyright (c) 2003-2010 University of Florida
+C
+C  This program is free software; you can redistribute it and/or modify
+C  it under the terms of the GNU General Public License as published by
+C  the Free Software Foundation; either version 2 of the License, or
+C  (at your option) any later version.
+
+C  This program is distributed in the hope that it will be useful,
+C  but WITHOUT ANY WARRANTY; without even the implied warranty of
+C  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+C  GNU General Public License for more details.
+
+C  The GNU General Public License is included in this distribution
+C  in the file COPYRIGHT.
+      SUBROUTINE PROJFCM(NATOM,NIRREP,IORDER,FCM,FCMSCR,
+     &                   SYOP,IPTR,NBFATM,ILCATM,SCR)
+C
+C THIS ROUTINE PROJECTS THE TOTALLY SYMMETRIC COMPONENT FROM A
+C "PETITE" CARTESIAN FORCE CONSTANT MATRIX USING THE SYMMETRY
+C OPERATIONS OF THE FULL POINT GROUP.
+C
+C
+CEND
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION FCM(3*NATOM,3*NATOM),SCR(1),FCMSCR(3*NATOM,3*NATOM)
+      DIMENSION SYOP(9*IORDER),IPTR(NATOM,IORDER),NBFATM(NATOM)
+      DIMENSION ILCATM(NATOM)
+      COMMON /MACHSP/ IINTLN,IFLTLN,IINTFP,IALONE,IBITWD
+      COMMON /FLAGS/  IFLAGS(100),IFLAGS2(500)
+      DATA ONE /1.0/
+      DATA ZILCH /0.0/
+      DATA ONEM /-1.0/
+C
+      ININE=9
+C
+      IF(IFLAGS(1).GE.1)THEN
+       WRITE(6,1000)
+      ENDIF
+      NSIZE=3*NATOM
+C
+C GET SOME INFORMATION FROM JOBARC
+C
+      CALL FILTER(FCM,9*NATOM*NATOM,1.0D-08)
+      CALL DGETREC(20,'JOBARC','FULLSYOP',9*IORDER,SYOP)
+      CALL IGETREC(20,'JOBARC','FULLPERM',NATOM*IORDER,IPTR)
+      CALL DGETREC(20,'JOBARC','ORIENTMT',ININE,SCR)
+      CALL TRNOPS(SYOP,SCR,IORDER)
+C
+C FILL BASIS VECTOR.  SKIP DUMMY ATOMS.
+C
+      DO 5 IATOM=1,NATOM
+       NBFATM(IATOM)=3
+       ILCATM(IATOM)=3*(IATOM-1)+1
+5     CONTINUE
+C
+      ZNORM=ONE/DFLOAT(IORDER)
+C
+C HALF-PROJECT CARTESIAN FCM
+C
+C LOOP OVER CARTESIAN DIRECTIONS
+C
+      IOFFS=18*NATOM*NATOM+1
+      CALL ZERO(FCMSCR,9*NATOM*NATOM)
+      DO 30 IOP=1,IORDER
+       CALL XDCOPY(9*NATOM*NATOM,FCM,1,SCR,1)
+       IOFFA=1
+       IOFFB=9*NATOM*NATOM+1
+       DO 20 IBAS=1,3*NATOM
+         CALL IMAGE(NATOM,3*NATOM,1,IOP,IPTR,NBFATM,ILCATM,
+     &             SCR(IOFFA),SCR(IOFFB),SCR(IOFFS),1,3*NATOM,
+     &             SYOP,0)
+         IOFFA=IOFFA+3*NATOM
+         IOFFB=IOFFB+3*NATOM
+20      CONTINUE 
+        CALL MTRAN2(SCR(9*NATOM*NATOM+1),3*NATOM)
+        IOFFA=9*NATOM*NATOM+1
+        IOFFB=1
+        DO 21 IBAS=1,3*NATOM
+         CALL IMAGE(NATOM,3*NATOM,1,IOP,IPTR,NBFATM,ILCATM,
+     &             SCR(IOFFA),SCR(IOFFB),SCR(IOFFS),1,3*NATOM,
+     &             SYOP,0)
+         IOFFA=IOFFA+3*NATOM
+         IOFFB=IOFFB+3*NATOM
+21      CONTINUE
+       CALL XDAXPY(9*NATOM*NATOM,ONE,SCR,1,FCMSCR,1)
+30    CONTINUE
+C
+      CALL XDSCAL(9*NATOM*NATOM,ZNORM,FCMSCR,1)
+      CALL VADD (SCR,FCM,FCMSCR,9*NATOM*NATOM,ONEM)
+      ILOC=ISAMAX(9*NATOM*NATOM,SCR,1)
+      DIFMAX=SCR(ILOC)
+      IF(IFLAGS(1).GE.1)WRITE(6,1001)DIFMAX
+      IF(DIFMAX.GT.1.D-4)THEN
+       WRITE(6,1002)
+      ENDIF
+      CALL XDCOPY(9*NATOM*NATOM,FCMSCR,1,FCM,1)
+C
+C WRITE SYMMETRIZED FCM BACK TO DISK
+C
+      OPEN(UNIT=21,FILE='FCM',FORM='FORMATTED',STATUS='UNKNOWN')
+      OPEN(UNIT=22,FILE='FCMFINAL',FORM='FORMATTED',STATUS='UNKNOWN')
+      WRITE(21,'(2I5)')NATOM,3*NATOM
+      WRITE(21,'((3F20.10))')(FCM(I,1),I=1,9*NATOM*NATOM)
+      WRITE(22,'(2I5)')NATOM,3*NATOM
+      WRITE(22,'((3F20.10))')(FCM(I,1),I=1,9*NATOM*NATOM)
+      CLOSE(UNIT=21,STATUS='KEEP')
+      CLOSE(UNIT=22,STATUS='KEEP')
+C
+      RETURN
+1000  FORMAT(T3,'@PROJFCM-I, Projecting force constant matrix onto ',
+     &          'totally symmetric subspace.')
+1001  FORMAT(T3,'Largest difference between matrix elements of ',
+     &          'symmetrized',/,T3,'and unsymmetrized FCM : ',F15.10,
+     &          '.')
+1002  FORMAT(T3,'@PROJFCM-W, The input FCM was not totally symmetric.')
+      END

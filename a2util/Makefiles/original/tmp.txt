@@ -1,0 +1,1 @@
+ libr libr2 librt3 ecp trp joda vcc aces2 anti bcktrn cphf dens dtran findif fsip hfdft intprc lambda nmr props squint symcor tdhf vcc5q vcc5t vcceh vdint vea vee vmol vmol2ja vprops vscf vtran

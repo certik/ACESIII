@@ -1,0 +1,89 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+      SIAL EXPAND_LINCC 
+#
+# ---------------------------------------------------------------------------
+#
+# Declare indeces
+# ---------------
+#
+      aoindex mu     = 1, norb
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      mobindex q = bbocc, ebvirt
+      mobindex q1= bbocc, ebvirt
+      mobindex q2= bbocc, ebvirt
+      mobindex q3= bbocc, ebvirt
+#
+# Declare integral arrays. 
+# ------------------------ 
+#
+      served T2old_aa(a,i,a1,i1)  
+      served T2old_ab(a,i,b,j)  
+      served T2old_bb(b,j,b1,j1)  
+#
+# Declare truncated Hartree-Fock coefficients. 
+# -------------------------------------------- 
+#
+      distributed t1a_old(a,i) 
+      distributed t1b_old(b,j) 
+#
+# ---------------------------------------------------------------------------
+#
+# Read transformed integrals. 
+# ---------------------------
+#
+      create t1a_old 
+      create t1b_old 
+      execute sip_barrier
+#
+      execute list_to_blocks t1a_old
+      execute list_to_blocks t1b_old
+      execute list_to_blocks T2old_aa
+      execute list_to_blocks T2old_ab
+      execute list_to_blocks T2old_bb
+#
+      execute dropmo_expand_basis  
+      execute server_barrier
+      execute sip_barrier
+# 
+      ENDSIAL EXPAND_LINCC 

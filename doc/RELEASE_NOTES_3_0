@@ -1,0 +1,34 @@
+Release Notes for ACES 3.0
+
+1. 32 new SIAL programs have been added.  These SIAL programs have either been rewritten or are completely new implementations of old ones.  The default programs selected by the ACESIII program are in most cases almost certainly the ones to use.  Therefore it is recommended to let the SIAL_PROGRAM parameters in the *SIP section of the ZMAT default.
+
+2. As of this release, ACESII and ACESIII are separate products.  It is no longer necessary to install ACESII in order to use ACESIII.  However, the JOBARC files are compatible.  Therefore a JOBARC created in an ACESIII run may be read into ACESII or its supporting modules, such as xa2proc.
+
+3. The geometry optimization code in this release of ACESIII has been changed to be compatible with the current release of ACESII.  Because of this, some of the parameters related to geometry optimization have changed their meaning.  
+  * With Cartesian coordinates in the input file:
+    Use geom_opt = RIC or CART.
+    RIC redundant internal coordinates: optimization uses
+    singular value decomposition to find good coordinates.
+    This works well for big systems.
+    CART Cartesian coordinates: optimization uses Cartesian
+    coordinates. This does not work very well for big
+    systems.
+    The old geom_opt = full is the same as RIC.
+  * With internal coordinates in the input file:
+    Use geom_opt = partial and put stars next to every
+    coordinate that needs to be optimized, to optimize all
+    coordinates put a star next to every coordinate.
+    The optimization uses internal coordinates throughout.
+    This is the most efficient for small molecules, but gets
+    stuck for bigger ones.
+  Other combinations DO NOT WORK.
+  The old code would accept geom_opt=full with internal
+  coordinates in the input file and do the same as
+  geom_opt=partial with stars next to all coordinates.
+  This no longer works, and in fact the program now generates an error message
+  if you code GEOM_OPT=PARTIAL with internal coordinates in the ZMAT.
+
+4. Due to changes in the geometry optimization code, the new version is able to work with up to 1000 atoms.  It also works with up to 10000 processors and 5000 basis functions.
+
+5. In most cases, it is best to simply let the program determine all the *SIP parameters.  It will pick the SIAL_PROGRAM parameters based on the following *ACES parameters: CALC, REF, GEOM_OPT, DROPMO, and VIB_FINDIF. It uses a 3:1 ratio of worker to server processes as its default for the COMPANY and IOCOMPANY parameters, and in most cases does a good job of determining all necessary segment sizes.  Unless you are an expert user, it's normally a good idea to omit the *SIP section from the ZMAT entirely.
+

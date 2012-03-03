@@ -1,0 +1,10 @@
+Release Notes for version 3.0.1:
+
+1. Replace C "exit" calls to errex calls.  This should fix a problem that could cause jobs to hang when certain errors occurred, instead of aborting cleanly.
+2. Change some routines in the aces2 and geopt directories to reduce memory requirements.  Due to some code in the new geometry optimization scheme, the bss section became too large, causing problems on AIX systems when trying to run with MAXMEM set to 1500.  The bss section has been reduced from 532 Mbytes to about 37 Mbytes on the IBMs. Due to these changes, IBM jobs can now safely run with MAXMEM set at least to 1800 Mbytes.
+3. Calls to mpi_abort have been changed to either call abort_job, or in some cases, a third argument was added to the call.
+4. Previously, the *SIP section of the ZMAT was required, even though it could be empty, with no parameters in it.  Now, the *SIP section need not be present if all the parameters are allowed to default.
+5. Some debug print statments that were inadvertently left in the last release were removed.
+6. An optimization problem was corrected.  In the routine getlambda.f, a matrix diagonalization was performed to generate some eigenvalues that were used to derive a parameter (lambda(n)) from which the step size for the next optimization step was calculated.  Previously, the area of memory used for this diagonalization was not re-initialized to 0 in each call.  This could result in erroneous step sizes being calculated.  Now, the memory is always reset, and the correct stepsize is calculated.
+7. The logic for determining which jobflow is executed by default was changed slightly so that users may not code both VIB_FINDIF=EXACT and geometry optimization parameters.  These parameters created an ambiguity in determining whether a gradient or hessian calculation should be performed.  Also, a restriction was put in so that a user cannot code DROPMO in a calculation that requires a Hessian.
+ 

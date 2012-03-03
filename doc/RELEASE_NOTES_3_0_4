@@ -1,0 +1,30 @@
+      Release Notes for ACESIII version 3.0.4
+
+1. Added GNU General Public License info to each source file.  Also added a COPYING file to the source repository.  Removed old copyright info from file sin erd and oed directories.
+
+2. Source code was revised so that it will be easier to support higher dimensions of arrays in the future.  To change the maximum dimension supported, simply edit the file maxdim.h in the include directory.
+
+3. Fixed bug resulting in creation of fort.15 on some systems.
+
+4. Fixed bug: A timer in an instruction just before a PARDO instruction (normally a barrier) could get incorrect results. 
+
+5. Fixed dryrun bug resulting in crash on emperor.
+
+6. Added code to prefetch data from the servers when a REQUEST instruction is executed.  This code is only active for Blue Gene systems at the moment, due to performance issues on other systems.
+
+7. We have incorporated a totally new load-balancing algorithm with this release, which works much better for a large range of jobs.
+
+8. Fixed a performance issue with PARDO loops: a subroutine used to convert from batch numbers to segments caused a huge amount of overhead in loops with many WHERE conditions on large jobs.
+
+9. Remove all places in SIAL codes in which load-balancing was turned off.  This should no longer be necessary.
+
+10. New SIAL codes were added to this release.  See Victor Lotrich for details.
+
+11. A new copyright notice was installed in all source files, as well as the file COPYRIGHT, containing the entire GPL license info.
+
+12. Fixed a bug in the server_takedown routine in which a crash occurred if the number of servers exceeded the number of workers.
+
+13. Several of the ERD and OED routines get runtime errors due to compiler optimization of some code that intentionally overwrites its own memory area.  Most compilers handle this code fine, but a few don't, such as the one on the IBM Blue Gene and the one on the HPC cluster at UF.  To get around this problem, it is now possible to use a flag, -DERDFIX in the FFLAGS variable in GNUmakefile.chssi.
+
+14. Fixed a bug resulting in segment violation on some jobs when SPHERICAL=OFF was coded.  The integral package was sometimes set up with an incorrect amount of estimated memory dedicated to it, which resulted in a later crash.
+

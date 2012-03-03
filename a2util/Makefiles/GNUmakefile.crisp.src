@@ -1,0 +1,170 @@
+
+ifeq (${MACHNAME},zornig)
+   ifeq (${CURR},lb)
+      OPTIMIZE=0
+   endif
+   ifeq (${CURR},vdint)
+      OPTIMIZE=0
+   endif
+endif
+
+#DEFINES_ACES += -DOPEN_JOBARC_AS_NEEDED -DOPEN_LISTS_AS_NEEDED
+
+whoami:=$(shell whoami)
+
+# This is specifically for compiling on crisp.
+ifeq (${whoami},aces)
+   FAST=1
+   OPTIMIZE=1
+   PROFILE=0
+   DEBUG=1
+   DEFINES_EXTRA += -D_STRINGENT_CHECK 
+   DIR_SRCINC = /home/aces/ACES/include
+   #INCDIRS = /home/aces/ACES/include /home/aces/ACES/acescore/include\
+   #          /home/aces/ACES/mpi/include ./include
+   DIR_INSTBIN =/home/aces/bin
+   DIR_INSTLIB =/home/aces/lib
+   DIR_INSTTGZ =../archive
+   DIR_SRCLIB := ${DIR_INSTLIB}
+   #ifeq (${PARALLEL},1)
+   #   DIR_SRCINC += ~aces/ACES/mpi/include
+   #else
+   #   DIR_SRCINC += ~aces/ACES/mpi/include
+   #endif
+   #LDFLAGS_NUMLIBS := -L/home/aces/GA/lib/LINUX -lma ${LDFLAGS_NUMLIBS}
+endif
+#
+# This is for Ajith's development/testing works on crisp. Note 
+# that on crisp, Ajith's testing work is done in /scr/WorkDir/Ajith
+#
+ifeq (${whoami},perera)
+   FAST=1
+   OPTIMIZE=1
+   PROFILE=0
+   DEBUG=1
+   DEFINES_EXTRA += -D_STRINGENT_CHECK # tries to trap invalid arguments
+   DIR_INSTBIN = ../../bin
+   DIR_INSTLIB = ../../lib
+   LDFLAGS_NUMLIBS = -L../../lib/ -llinpack -llb
+   DIR_INSTTGZ =../archive
+   DIR_SRCLIB := ${DIR_INSTLIB}
+   #LDFLAGS_NUMLIBS := -L/home/aces/GA/lib/LINUX -lma ${LDFLAGS_NUMLIBS}
+endif
+
+ifeq (${whoami},rjbprogs)
+   OPTIMIZE=1
+   FAST=1
+   DEBUG=0
+   #64BIT=1 # needs to be set on the command line for porting
+   ifeq (${MACHNAME},crunch)
+      LDFLAGS_NUMLIBS = -L/ufl/qtp/rjb/progs/arch/sun4/lib \
+                        -llinpack -xlic_lib=sunperf -llb
+      #LD = f90
+      #LDFLAGS_NUMLIBS := ${LDFLAGS_NUMLIBS} -lF77 -lmvec # IFF LD=f9x
+      DIR_INSTBIN = /ufl/qtp/rjb/progs/arch/sun4/bin
+      DIR_INSTLIB = /ufl/qtp/rjb/progs/arch/sun4/lib
+   endif
+   ifeq (${MACHNAME},quanta16)
+      #LDFLAGS_NUMLIBS  = -L/ufl/qtp/rjb/progs/arch/power3_64b_4G/lib \
+      #                   -llinpack -llapack -lblas -llb
+      #LDFLAGS_NUMLIBS += -L../lib -ltools -llinpack -llb
+      #DIR_INSTBIN = ../bin
+      #DIR_INSTLIB = ../lib
+      DIR_INSTBIN = /ufl/qtp/rjb/progs/arch/power3/bin
+      DIR_INSTLIB = /ufl/qtp/rjb/progs/arch/power3/lib
+   endif
+   DIR_SRCLIB := ${DIR_INSTLIB}
+endif
+
+ifeq (${whoami},yau)
+   FAST=1
+   OPTIMIZE=1
+   PROFILE=0
+   DEBUG=0
+
+   DIR_SRCLIB=
+   DIR_SRCINC=
+   #LDFLAGS_NUMLIBS = -ltools -llinpack -llb
+   ifeq (${MACHNAME},crunch)
+      REDIRECT := 1>> ${MAKE_OUTPUT} 2>> ${MAKE_ERROR}
+      FFLAGS_EXTRA  = #-autopar -stackvar -loopinfo
+      LDFLAGS_EXTRA = #-autopar -stackvar -loopinfo
+      FLAG_OPTIMIZE := -fast -xtarget=ultra2 -xarch=native \
+                             -xcache=16/32/1:1024/64/1
+      DIR_ATLASLIB := /ufl/qtp/rjb/ay/camp/ATLAS/lib/SunOS_SunUSX
+      LDFLAGS_NUMLIBS := -Bstatic -L/ufl/qtp/rjb/ay/sparc/lib -lstr \
+                         -L${DIR_ATLASLIB} -llapack -lf77blas -lcblas -latlas \
+                         -Bdynamic
+                         #-R/usr/local/lib -L/usr/local/lib \
+                         #-lmpichfarg -lmpich -lsocket -lnsl -laio
+      ifeq (${CURR},gemini)
+         LD = mpicc
+      else
+         LD = mpif77
+      endif
+      LDFLAGS_NUMLIBS = -L/camp/crunch_6/qtp/rjb/Aces2trials/Src/lib \
+                        -ltools -llinpack -llb
+      LD = f90
+      LDFLAGS_NUMLIBS := ${LDFLAGS_NUMLIBS} -lF77 -lmvec
+      #DIR_INSTBIN = /ufl/qtp/rjb/ay/camp/crunch_1/bin
+      #DIR_INSTLIB = /ufl/qtp/rjb/ay/camp/crunch_1/lib
+      #DIR_SRCLIB := ${DIR_INSTLIB}
+   endif
+   ifeq ($(shell arch),power3)
+    # simu/quanta
+      REDIRECT :=
+      DIR_SRCINC=/usr/lpp/ppe.poe/include
+      CC = mpcc_r -c
+      FC = xlf_r -F:mpxlf_r -c
+      FFLAGS_EXTRA  = #-autopar -stackvar -loopinfo
+      LDFLAGS_EXTRA = #-autopar -stackvar -loopinfo
+      FLAG_OPTIMIZE := #-O2 -qstrict -qmaxmem=-1 -Q -qfloat=hssngl \
+                       #-qtune=pwr3 -qarch=pwr3 -qcache=auto
+     # DIR_ATLASLIB := /ufl/qtp/rjb/ay/camp/ATLAS/lib/SunOS_SunUSX
+     # LDFLAGS_NUMLIBS := -L${DIR_ATLASLIB} -llapack -lf77blas -lcblas -latlas \
+                         #-R/usr/local/lib -L/usr/local/lib \
+                         #-lmpichfarg -lmpich -lsocket -lnsl -laio
+      ifeq (${CURR},gemini)
+         LD = mpcc_r
+      else
+         LD = xlf_r -F:mpxlf_r
+      endif
+      LDFLAGS_NUMLIBS := -L/ufl/qtp/rjb/ay/power3/lib -lstr \
+                         -L/usr/local/lib -llapackp3 -L/lib -lessl
+   endif
+   ifeq (${MACHNAME},crisp)
+      REDIRECT := 1>> ${MAKE_OUTPUT} 2>> ${MAKE_ERROR}
+      ifeq (${DEBUG},1)
+         DEFINES_EXTRA += #-D_ASSERT
+         DEFINES_EXTRA += -D_DEBUG_XCC
+#         DEFINES_EXTRA += -D_PRINT_AMPLITUDES
+#         DEFINES_EXTRA += -D_PRINT_EIGENVALUES
+#         DEFINES_EXTRA += -D_PRINT_INTERMEDIATES
+#         DEFINES_EXTRA += -D_TRACE_XCC
+      endif
+      #DIR_INSTBIN = /home/yau/bin
+      DIR_SRCINC  = /home/aces/ACES/include
+      DIR_SRCLIB  = /home/aces/lib
+      LIST_DEF_LIBS := diagtools:symtools:omm:imm:${LIST_DEF_LIBS}
+      #LDFLAGS_NUMLIBS := -L/home/aces/GA/lib/LINUX -lma ${LDFLAGS_NUMLIBS}
+      #LDFLAGS_NUMLIBS := -L/home/aces/lib -llinpack \
+      #                   -L/home/yau/Src/atlas/ATLAS/lib/FreeBSD_PII \
+      #                   -llapack -lf77blas -lcblas -latlas
+      LDFLAGS_NUMLIBS := -llinpack -leispack -llb
+   endif
+   ifeq (${CURR},tmp)
+      CURRBIN=a.out
+   endif
+endif
+
+###################################
+## AME and ASL specific settings ##
+###################################
+
+#gemini quick hack
+ifeq (${CURR},gemini)
+   ifeq (${MACHNAME},crisp)
+      LDFLAGS_NUMLIBS += -L/usr/lib -lcompat
+   endif
+endif
+

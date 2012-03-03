@@ -1,0 +1,17 @@
+Ar4 test of rhf ccsd energy in an aug-cc-pvtz basis  
+AR   0.0  0.0  0.0
+AR   0.0  0.0  4.0
+AR   0.0  4.0  0.0
+AR   0.0  4.0  4.0
+
+*ACES2(CALC=ccsd,BASIS=AUG-CC-PVTZ
+dropmo=1-20 
+spherical=on
+REF=RHF,UNITS=BOHR
+COORDINATES=CARTESIAN
+SCF_CONV=6
+SYMMETRY=NONE)
+
+*SIP
+MAXMEM=900
+TIMERS=YES

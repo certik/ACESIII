@@ -1,0 +1,153 @@
+C  Copyright (c) 2003-2010 University of Florida
+C
+C  This program is free software; you can redistribute it and/or modify
+C  it under the terms of the GNU General Public License as published by
+C  the Free Software Foundation; either version 2 of the License, or
+C  (at your option) any later version.
+
+C  This program is distributed in the hope that it will be useful,
+C  but WITHOUT ANY WARRANTY; without even the implied warranty of
+C  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+C  GNU General Public License for more details.
+
+C  The GNU General Public License is included in this distribution
+C  in the file COPYRIGHT.
+      CHARACTER*8 FUNCTION SITGRP(PTGRP,IORGRP,ORBPOP)
+      IMPLICIT INTEGER (A-Z)
+      LOGICAL ISH,ISD,ISV
+C
+C COMPUTES THE SITE GROUP FOR A PARTICULAR ORBIT, GIVEN THE
+C   FULL POINT GROUP AND THE ORBIT POPULATION
+C
+      CHARACTER*4 PTGRP,TMP,some_string_func
+      MULT=IORGRP/ORBPOP
+      SITGRP = '--      '
+C
+      ISH=.TRUE.
+      ISD=.TRUE.
+      ISV=.TRUE.
+      IH=INDEX(PTGRP,'h')
+      IV=INDEX(PTGRP,'v')
+      ID=INDEX(PTGRP,'d')
+      IF(IH.EQ.0)ISH=.FALSE.
+      IF(ID.EQ.0)ISD=.FALSE.
+      IF(IV.EQ.0)ISV=.FALSE.
+      IL=LINBLNK(PTGRP)
+C
+C CASE 1 - CN GROUPS
+C
+      IF(PTGRP(1:1).EQ.'C'.AND..NOT.ISV.AND..NOT.ISH)THEN
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP
+C
+C CASE 2 - DN GROUPS
+C
+      ELSEIF(PTGRP(1:1).EQ.'D'.AND..NOT.ISD.AND..NOT.ISH)THEN
+       ORDER=IORGRP/2
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.2)SITGRP(1:4)='C2  '
+       IF(MULT.EQ.ORDER)SITGRP(1:IL)='C'//PTGRP(2:IL)
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP
+C
+C CASE 3 - CNV GROUPS
+C
+      ELSEIF(PTGRP(1:1).EQ.'C'.AND.ISV)THEN
+       ORDER=IORGRP/2
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.2)SITGRP(1:4)='C s '
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP
+C
+C CASE 4 - CNH GROUPS
+C
+      ELSEIF(PTGRP(1:1).EQ.'C'.AND.ISH)THEN
+       ORDER=IORGRP/2
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.2)SITGRP(1:4)='C s '
+       IF(MULT.EQ.ORDER)SITGRP(1:IH-1)=PTGRP(1:IH-1)
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP 
+       IF(ORDER.EQ.2.AND.MULT.EQ.2)SITGRP(1:4)='XXXX'
+C
+C CASE 5 - DNH GROUPS
+C
+      ELSEIF(PTGRP(1:1).EQ.'D'.AND.ISH)THEN
+       ORDER=IORGRP/4
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.2)SITGRP(1:4)='C s '
+       IF(MULT.EQ.4)SITGRP(1:4)='C2v '
+       IF(MULT.EQ.2*ORDER)SITGRP(1:IL)='C'//PTGRP(2:IL-1)//'v'
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP
+C
+C CASE 6 - DND GROUPS
+C
+      ELSEIF(PTGRP(1:1).EQ.'D'.AND.ISD)THEN
+       ORDER=IORGRP/4
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.2)SITGRP(1:4)='XXX '
+       IF(MULT.EQ.2*ORDER)SITGRP(1:IL)='C'//PTGRP(2:IL-1)//'v'
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP
+C
+C CASE 7 - SN GROUPS
+C
+      ELSEIF(PTGRP(1:1).EQ.'S')THEN
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.IORGRP/2)THEN
+        TMP='CN  '
+        SITGRP(1:4)=some_string_func(TMP,IORGRP/2)
+       ENDIF
+       IF(MULT.EQ.IORGRP)SITGRP(1:4)=PTGRP
+C
+C CASE 8 - Cs AND Ci
+C
+      ELSEIF(PTGRP.EQ.'C s'.OR.PTGRP.EQ.'C i')THEN
+       IF(MULT.EQ.1)SITGRP(1:4)='C1  '
+       IF(MULT.EQ.2)SITGRP(1:4)=PTGRP
+C
+C CUBIC GROUPS
+C
+      ELSEIF(PTGRP.EQ.'T  ')THEN
+       IF(ORBPOP.EQ.12)SITGRP(1:4)='C1  '
+       IF(ORBPOP.EQ.6)SITGRP(1:4)='C2  '
+       IF(ORBPOP.EQ.4)SITGRP(1:4)='C3  '
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ELSEIF(PTGRP.EQ.'T d')THEN
+       IF(ORBPOP.EQ.24)SITGRP(1:4)='C1  '
+       IF(ORBPOP.EQ.12)SITGRP(1:4)='C s '
+       IF(ORBPOP.EQ.6)SITGRP(1:4)='C2v '
+       IF(ORBPOP.EQ.4)SITGRP(1:4)='C3v '
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ELSEIF(PTGRP.EQ.'T h')THEN
+       IF(ORBPOP.EQ.24)SITGRP(1:4)='C1  '
+       IF(ORBPOP.Eq.12)SITGRP(1:4)='C s '
+       IF(ORBPOP.EQ.8)SITGRP(1:4)='C3  '
+       IF(ORBPOP.EQ.6)SITGRP(1:4)='C2v '
+       IF(ORBPOP.EQ.IORGRP)SITGRP(1:4)=PTGRP
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ELSEIF(PTGRP.EQ.'O  ')THEN
+       IF(ORBPOP.EQ.24)SITGRP(1:4)='C1  '
+       IF(ORBPOP.Eq.12)SITGRP(1:4)='C2  '
+       IF(ORBPOP.EQ.8)SITGRP(1:4)='C3  '
+       IF(ORBPOP.EQ.6)SITGRP(1:4)='C4  '
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ELSEIF(PTGRP.EQ.'O h')THEN
+       IF(ORBPOP.EQ.48)SITGRP(1:4)='C1  '
+       IF(ORBPOP.EQ.24)SITGRP(1:4)='C s '
+       IF(ORBPOP.Eq.12)SITGRP(1:4)='C2v '
+       IF(ORBPOP.EQ.8)SITGRP(1:4)='C3v '
+       IF(ORBPOP.EQ.6)SITGRP(1:4)='C4v '
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ELSEIF(PTGRP.EQ.'I  ')THEN
+       IF(ORBPOP.EQ.60)SITGRP(1:4)='C1  '
+       IF(ORBPOP.EQ.30)SITGRP(1:4)='C2  '
+       IF(ORBPOP.Eq.20)SITGRP(1:4)='C3  '
+       IF(ORBPOP.EQ.12)SITGRP(1:4)='C5  '
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ELSEIF(PTGRP.EQ.'I h')THEN
+       IF(ORBPOP.EQ.120)SITGRP(1:4)='C1  '
+       IF(ORBPOP.EQ.60)SITGRP(1:4)='C s '
+       IF(ORBPOP.EQ.30)SITGRP(1:4)='C2v '
+       IF(ORBPOP.Eq.20)SITGRP(1:4)='C3v '
+       IF(ORBPOP.EQ.12)SITGRP(1:4)='C5v '
+       IF(ORBPOP.EQ.1)SITGRP(1:4)=PTGRP
+      ENDIF
+      RETURN
+      END

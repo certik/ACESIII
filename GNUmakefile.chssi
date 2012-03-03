@@ -1,0 +1,352 @@
+SIP_DIR=../sip
+INCLUDE_DIRS=-I../include  -I$(SIP_DIR) \
+        -I../aces2/include 
+LIB_DIRS=-L../lib
+SERIAL_CPP=CC
+ARFLAGS=-rv 
+
+uname := $(subst -, , $(shell uname -n))
+uname := $(word  1, ${uname})
+uname := $(strip ${uname})
+uname := $(subst ., , ${uname})
+uname := $(word  1, ${uname})
+uname := $(strip ${uname})
+MACHNAME := ${uname}
+
+pairs :=
+pairs += jvn-[ln][0-9]*:jvn
+pairs += l[0-9]*:mjm
+pairs += pingo[1-9]:pingo
+pairs += eslogin[0-9]*:einstein
+pairs += d[0-9][0-9]n[0-9][0-9]:davinci
+pairs += d[0-9][0-9]n[0-9]:davinci
+pairs += hpc11-[0-9]*:eagle eagle-[0-9]*:eagle falcon-[0-9]*:falcon
+pairs += hawk-[0-9]*:hawk
+pairs += k[1-9][0-9]*n[1-9][0-9]*e*:kraken
+pairs += b[1-9]*n[0-9]:babbage
+pairs += tow-l[0-9]:tow
+pairs += [a-d]login[1-2]*:tbird
+#pairs += login[1-9]:surveyor
+pairs += chugnet[1-9]:chugach
+pairs += login[1-9]:chugach # Will conflict with surveyor
+
+mapname := $(shell for pair in ${pairs}; \
+             do pat=`echo $$pair | sed 's/:.*//'`; \
+                name=`echo $$pair | sed 's/.*://'`; \
+                echo ${MACHNAME} | sed -n "/^ *$$pat *$$/{s/.*/$$name/;p;}"; \
+             done)
+ifdef mapname
+   MACHNAME := ${mapname}
+endif
+
+ifeq ($(MACHNAME),co)
+   MACHNAME=cobalt
+endif
+
+XT3=0
+ifeq ($(MACHNAME),sapphire10)
+   XT3=1
+endif
+
+ifeq ($(MACHNAME),jaguarpf)
+   XT3=1
+   LIB_DIRS=-L../lib -L/opt/pgi/7.2.5/linux86-64/7.2/lib
+endif
+
+ifeq ($(MACHNAME),kraken)
+   XT3=1
+   LIB_DIRS=-L../lib -L/opt/pgi/7.1.6/linux86-64/7.1/lib
+endif
+
+ifeq ($(MACHNAME),pingo)
+   XT3=1
+   LIB_DIRS=-L../lib -L/opt/pgi/9.0.4/linux86-64/9.0/lib
+endif
+
+ifeq ($(MACHNAME),einstein)
+   XT3=1
+   LIB_DIRS=-L../lib -L/opt/pgi/10.6.0/linux86-64/10.6/lib
+endif
+
+ifeq ($(MACHNAME),chugach)
+   MPICH_GNI_KDREG_LAZY := disabled
+   XT3=1
+   LIB_DIRS=-L../lib -L/opt/pgi/11.1.0/linux86-64/11.1/lib
+endif
+
+
+ifeq ($(MACHNAME), tg)   #  Teragrid login: tg-loginxx.hostname.xxxxxx
+#   Teragrid hostname requires further parsing.
+    uname := $(subst -, , $(shell uname -n))
+    uname := $(word  2, ${uname})
+    uname := $(subst ., , ${uname})
+    uname := $(word  2, ${uname})
+    uname := $(strip ${uname})
+    MACHNAME := ${uname}
+endif
+
+ifeq ($(MACHNAME), bigben)
+   XT3=1
+   LIB_DIRS=-L../lib -L/opt/pgi/7.2.2/linux86-64/7.2/lib 
+   SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lgeopt -lsymcor -lpgf90 -lpghpf_mpi -lmpichf90 -lpghpf -lpghpf2 -lpgftnrtl
+endif
+
+ifeq ($(MACHNAME),mg56)   # midnight
+   MACHNAME=midnight
+endif
+
+#  Cray XT3 definitions
+#
+ifeq ($(XT3),1)
+CPP=CC 
+CC=cc
+FC=ftn  
+CPPFLAGS= -Mcache_align -D_PORTGRP -DC_SUFFIX -DCB_SUFFIX -DXT3 -DMPI2 -DNO_MPI_IO
+CFLAGS= -fastsse -Mcache_align -O3 -D_PORTGRP -DC_SUFFIX -DCB_SUFFIX -DXT3 -DMPI2 -DNO_MPI_IO
+FFLAGS= -fastsse -Mcache_align -O3 -D_PORTGRP -DXT3 -D__fortran -D__fortran77 -DMPI2 -DNO_MPI_IO
+LFLAGS= 
+LIBS=-lsip -lerd -loed -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -ldup -lsip -lacml 
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lpgf90 -lpghpf_mpi -lmpichf90 -lpghpf -lpghpf2 -lpgftnrtl -lrt
+endif
+
+#
+#  Cray X1 definitions
+#
+ifeq ($(shell uname -m),crayx1e)
+CPP=CC
+CC=cc
+FC=ftn
+CPPFLAGS= -h ssp -DC_SUFFIX -DCB_UPPER 
+CFLAGS= -h ssp -DC_SUFFIX -DCB_UPPER 
+FFLAGS= -O3 -O ssp -sinteger32 
+INCLUDE_DIRS=-I/opt/ctl/mpt/mpt/include -I../include  -I$(SIP_DIR) \
+        -I../../include \
+        -I../../acescore/include \
+        -I../../tools/include
+LIBS=-lsip -lerd -loed -lsip_shared -lframelib -ljoda -lsymcor -lacescore -lacesutil -llibr -lecp -llinpack -ltools -lsci64 -llb
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -lacescore -ltools
+endif
+
+#
+# AIX definitions 
+#
+ifeq ($(shell uname -s),AIX)
+FC=mpxlf
+CC=mpcc
+CPP=mpCC
+SERIAL_CPP=xlC
+FFLAGS=-WF,-DAIX,-D__fortran,-D__fortran77 -O3 -qarch=auto -qtune=auto -qunroll=auto -q64
+LFLAGS=-bmaxdata:2147483648 
+CFLAGS=-DAIX -q64 
+CPPFLAGS = -DAIX -q64
+LIBS=-lsip -lerd -loed -lframelib -lsip -lsip_shared -laces2 -lgeopt -lsymcor -ldup -lessl 
+SIAL_COMPILER_LIBS=-lsial -lsip_shared  -laces2 -lxlf90 -lm
+SIAL_COMPILER_LFLAGS=-bmaxdata:2147483648
+ARFLAGS=-rv -X64
+endif
+
+ifeq ($(MACHNAME),surveyor)
+#FC=/bgsys/drivers/ppcfloor/comm/fast/bin/mpixlf77_r
+#CC=/bgsys/drivers/ppcfloor/comm/fast/bin/mpixlc_r
+#CPP=/bgsys/drivers/ppcfloor/comm/fast/bin/mpixlcxx_r
+#SERIAL_CPP=/bgsys/drivers/ppcfloor/comm/fast/bin/mpixlcxx_r
+FC=mpixlf77_r
+CC=mpixlc_r
+CPP=mpixlcxx_r
+SERIAL_CPP=mpixlcxx_r
+INCLUDE_DIRS=-I../include  -I$(SIP_DIR) -I../aces2/include -I/home/ponton/libNBC-1.0.1
+FFLAGS=-WF,-D__fortran,-D__fortran77,-DBLUEGENE,-DERDFIX -O3 -qarch=450d -qtune=450 \
+       -qunroll=yes -qprefetch 
+LFLAGS=
+CFLAGS=-DBLUEGENE  -O3 -qarch=450d -qtune=450 
+CPPFLAGS = -DBLUEGENE -O3 -qarch=450d -qtune=450  -qsmp
+LIB_DIRS=-L../lib -L/soft/apps/ESSL-4.4.1-0/lib -L/soft/apps/ibmcmp/xlf/bg/11.1/lib  \
+         -L/soft/apps/UPC/lib -L/home/ponton/libNBC-1.0.1/.libs
+LIBS=-lsip -lerd -loed -lframelib -lsip_shared -laces2 -lgeopt -lsymcor -ldup -laces2 \
+   -lsip  -lesslbg  -lxlf90_r -lxlsmp 
+#   -lsip -lesslbg  -lxlf90_r -lxlsmp -lhpm
+SIAL_COMPILER_LIBS=-lsial -lsip_shared  -laces2 -lxlopt -lxl -lxlf90_r -lxlfmath -lm -L/soft/apps/ibmcmp/xlsmp/bg/1.7/bglib/
+SIAL_COMPILER_LFLAGS=
+endif
+
+#
+#  Linux definitions
+#
+
+ifeq ($(shell uname -s),Linux)
+ALTIX_SYSTEM=0
+ifeq ($(MACHNAME),eagle)
+ALTIX_SYSTEM=1
+LIB_DIRS=-L../lib -L/opt/intel/fc/9.1.040/lib 
+endif
+
+ifeq ($(MACHNAME),hawk)
+ALTIX_SYSTEM=1
+LIB_DIRS=-L../lib -L/opt/intel/fc/9.1.036/lib 
+endif
+
+ifeq ($(MACHNAME),pople)
+ALTIX_SYSTEM=1
+LIB_DIRS=-L../lib -L/opt/intel/fc/10.1.008/lib
+endif
+
+ifeq ($(MACHNAME),cobalt)
+ALTIX_SYSTEM=1
+endif
+
+ifeq ($(MACHNAME),tow)
+ALTIX_SYSTEM=1
+endif
+
+ifeq ($(ALTIX_SYSTEM),1)
+FFLAGS=-D__fortran -D__fortran77 -DALTIX -DMPI2 -mcmodel=medium -Zp8 -zero -traceback -O3
+CFLAGS=-DC_SUFFIX -DCB_SUFFIX -DALTIX -mcmodel=medium -DMPI2 -O3
+CPPFLAGS=-DC_SUFFIX -DCB_SUFFIX -DALTIX  -DMPI2 -mcmodel=medium -O3
+FC=ifort
+CC=icc
+CPP=icpc
+SERIAL_CPP=icpc
+LFLAGS=
+ifeq ($(MACHNAME),tow)
+   INCLUDE_DIRS=-I../include  -I$(SIP_DIR) \
+        -I../aces2/include -I/opt/sgi/mpt/mpt-1.24/include
+   LIB_DIRS=-L../lib -L/opt/sgi/mpt/mpt-1.24/lib
+   LIBS=-lsip -lerd -loed -lsip_shared -lframelib -lmpi -laces2 -lgeopt -lsymcor \
+        -laces2 -ldup -lsip -L$(MKLPATH) -lmkl_intel_lp64 -lmkl_lapack \
+        -lmkl_sequential -lmkl_core
+else
+   LIBS=-lsip -lerd -loed -lsip_shared -lframelib -lmpi -laces2 -lgeopt -lsymcor -laces2 -ldup -lsip -lscs
+endif
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lifcore 
+endif
+
+ifeq ($(MACHNAME),midnight)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -DNO_MPI_IO -O2 -Mcache_align -Mnodefaultunit
+CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DNO_MPI_IO -O2 -Mcache_align
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DNO_MPI_IO -O2 -Mcache_align
+FC=mpif90
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=pgcpp
+LIB_DIRS=-L../lib -L/usr/local/pkg/pgi/pgi-7.2.2/linux86-64/7.2-2/lib \
+         -L/usr/local/pgi/pgi64/lib
+LIBS=-lsip -lsip_shared -lframelib -lerd -loed -laces2 -lgeopt -lsymcor -laces2 -ldup -lsip -lacml
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lpgf90 -lpgf902 -lpgf90rtl -lpgf90_rpm1 -lpgf902 -lpgftnrtl -lrt
+endif
+
+ifeq ($(MACHNAME),jvn)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -Zp8 -zero -O2 -no-cxxlib
+CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -cxxlib-icc
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -cxxlib-icc
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=icpc
+LFLAGS=-B static
+LIB_DIRS=-L../lib -L$(MKLPATH) 
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -lerd -loed -lmkl_lapack -lmkl_em64t -lguide
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lifcore
+endif
+
+ifeq ($(MACHNAME),tbird)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -DMPI2 -align rec8byte -zero -threads -traceback -O2 -i_dynamic
+CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DMPI2 -DINTEL -i_dynamic
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DMPI2 -i_dynamic
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=icpc
+LIB_DIRS = -L../lib -L$(IFORT_HOME)/lib
+INCLUDE_DIRS=-I$(MPI_INCLUDE) -I../include  -I$(SIP_DIR) \
+        -I../aces2/include
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -lerd -loed -lsip $(BLASLIB)
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lifcore 
+endif
+
+ifeq ($(MACHNAME),mjm)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -DMPI2 -Zp8 -zero -traceback -O2
+CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DMPI2
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DMPI2 
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=icpc
+LIB_DIRS=-L../lib -L$(MKLPATH)
+#LIB_DIRS=-L../lib -L/opt/compiler/intel/ict/3.2/mkl/10.1/lib/em64t
+INCLUDE_DIRS=-I$$MPIHOME/include -I../include  -I$(SIP_DIR) \
+        -I../aces2/include
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -lerd -loed -ldup -lsip -lmkl -lmkl_lapack  -lguide 
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lifcore
+endif
+
+ifeq ($(MACHNAME),submit)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -DERDFIX -Zp8 -zero -traceback -O2
+CFLAGS=-DMPIF2C -DC_SUFFIX  -DCB_SUFFIX
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX
+#CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX  -cxxlib-icc
+#CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -cxxlib-icc
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=icpc
+INCLUDE_DIRS=-I$$MPIHOME/include -I../include  -I$(SIP_DIR) \
+        -I../aces2/include
+LIB_DIRS=-L../lib -L/opt/intel/fce/10.1.015/lib  -L/opt/intel/mkl/10.0.2.018/lib/em64t/ -Bstatic -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Bdynamic
+#LIB_DIRS=-L ../lib -L/opt/intel/mkl/10.0.2.018/lib/em64t/
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2  -lifcore
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -lerd -loed -ldup -lsip -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lmkl_lapack 
+endif
+
+ifeq ($(MACHNAME),submit1)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -Zp8 -zero -traceback -O2
+CFLAGS=-DMPIF2C -DC_SUFFIX  -DCB_SUFFIX
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX
+#CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX  -cxxlib-icc
+#CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -cxxlib-icc
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=icpc
+INCLUDE_DIRS=-I$$MPIHOME/include -I../include  -I$(SIP_DIR) \
+        -I../aces2/include
+LIB_DIRS=-L../lib -L/opt/intel/fce/10.1.015/lib  -L/opt/intel/mkl/10.0.2.018/lib/em64t/ -Bstatic -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Bdynamic
+#LIB_DIRS=-L ../lib -L/opt/intel/mkl/10.0.2.018/lib/em64t/
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2  -lifcore
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -lerd -loed -ldup -lsip -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lmkl_lapack
+endif
+
+ifeq ($(MACHNAME),submit2)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -Zp8 -zero -traceback -O2
+CFLAGS=-DMPIF2C -DC_SUFFIX  -DCB_SUFFIX
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX
+#CFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX  -cxxlib-icc
+#CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -cxxlib-icc
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=icpc
+INCLUDE_DIRS=-I$$MPIHOME/include -I../include  -I$(SIP_DIR) \
+        -I../aces2/include
+LIB_DIRS=-L../lib -L/opt/intel/fce/10.1.015/lib  -L/opt/intel/mkl/10.0.2.018/lib/em64t/ -Bstatic -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Bdynamic
+#LIB_DIRS=-L ../lib -L/opt/intel/mkl/10.0.2.018/lib/em64t/
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2  -lifcore
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -lerd -loed -ldup -lsip -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lmkl_lapack
+endif
+
+endif
+
+
+ifeq ($(shell uname -s),Darwin)
+FFLAGS=-D__fortran -D__fortran77 -DMPIF2C -DMPI2 -O2 -malign-double -ffast-math -mtune=native -mfpmath=sse -msse3 -Wall
+CFLAGS=-DMPIF2C -DMPI2 -DC_SUFFIX -DCB_SUFFIX -DMPI2 -DINTEL -O2
+CPPFLAGS=-DMPIF2C -DC_SUFFIX -DCB_SUFFIX -DMPI2 -O2 -Wall
+FC=mpif77
+CC=mpicc
+CPP=mpicxx
+SERIAL_CPP=g++
+LIB_DIRS=-L../lib
+INCLUDE_DIRS=-I../include -I$(SIP_DIR) -I../aces2/include
+LIBS=-lsip -lsip_shared -lframelib -laces2 -lgeopt -lsymcor -laces2 -lerd -loed -lsip -framework accelerate
+SIAL_COMPILER_LIBS=-lsial -lsip_shared -laces2 -lgfortranbegin -lgfortran 
+endif
+

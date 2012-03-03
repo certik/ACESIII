@@ -1,0 +1,144 @@
+C  Copyright (c) 2003-2010 University of Florida
+C
+C  This program is free software; you can redistribute it and/or modify
+C  it under the terms of the GNU General Public License as published by
+C  the Free Software Foundation; either version 2 of the License, or
+C  (at your option) any later version.
+
+C  This program is distributed in the hope that it will be useful,
+C  but WITHOUT ANY WARRANTY; without even the implied warranty of
+C  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+C  GNU General Public License for more details.
+
+C  The GNU General Public License is included in this distribution
+C  in the file COPYRIGHT.
+      SUBROUTINE PROJDPD(NATOM,NIRREP,IORDER,ATMASS,DPD,DPDSCR,
+     &                   SYOP,IPTR,NBFATM,ILCATM,SCR)
+C
+C THIS ROUTINE PROJECTS THE TOTALLY SYMMETRIC COMPONENT FROM A
+C "PETITE" CARTESIAN FORCE CONSTANT MATRIX USING THE SYMMETRY
+C OPERATIONS OF THE FULL POINT GROUP.
+C
+C
+CEND
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL YESNO
+      DIMENSION DPD(3*NATOM,3),SCR(1),DPDSCR(3*NATOM,3)
+      DIMENSION SYOP(9*IORDER),IPTR(NATOM,IORDER),NBFATM(NATOM)
+      DIMENSION ILCATM(NATOM),ATMASS(NATOM)
+      COMMON /MACHSP/ IINTLN,IFLTLN,IINTFP,IALONE,IBITWD
+      COMMON /FLAGS/  IFLAGS(100),IFLAGS2(500)
+      DATA ONE /1.0/
+      DATA ZILCH /0.0/
+      DATA ONEM /-1.0/
+C
+      INQUIRE(FILE='DIPDER',EXIST=YESNO)
+      IF(.NOT.YESNO)RETURN
+C
+      IF(IFLAGS(1).GE.1)THEN
+       WRITE(6,1000)
+      ENDIF
+      ININE=9
+C
+      OPEN(UNIT=51,FILE='DIPDER',FORM='FORMATTED',STATUS='OLD')
+      REWIND(51)
+      CALL ZERO(DPD,3*NATOM)
+      DO 10 IXYZ=1,3
+       IOFF=1
+       READ(51,*)
+       DO 11 IATOM=1,NATOM
+        IF(ATMASS(IATOM).NE.ZILCH)THEN
+         READ(51,'(4F20.10)')ZJUNK,(DPD(J,IXYZ),J=IOFF,IOFF+2)
+        ENDIF
+        IOFF=IOFF+3
+11     CONTINUE
+10    CONTINUE
+      CLOSE(UNIT=51,STATUS='KEEP')
+C
+C GET SOME INFORMATION FROM JOBARC
+C
+      call filter(dpd,9*natom,1.0d-8)
+      CALL DGETREC(20,'JOBARC','FULLSYOP',9*IORDER,SYOP)
+      CALL IGETREC(20,'JOBARC','FULLPERM',NATOM*IORDER,IPTR)
+      CALL DGETREC(20,'JOBARC','ORIENTMT',ININE,SCR)
+      CALL TRNOPS(SYOP,SCR,IORDER)
+C
+C FILL BASIS VECTOR.  SKIP DUMMY ATOMS.
+C
+      DO 5 IATOM=1,NATOM
+       NBFATM(IATOM)=3
+       ILCATM(IATOM)=3*(IATOM-1)+1
+5     CONTINUE
+C
+      ZNORM=ONE/DFLOAT(IORDER)
+C
+C HALF-PROJECT CARTESIAN DPD
+C
+C LOOP OVER CARTESIAN DIRECTIONS
+C
+      IOFFS=18*NATOM+1
+      CALL ZERO(DPDSCR,9*NATOM)
+      DO 30 IOP=1,IORDER
+       ITMP=IPTR(IOP,1)
+       CALL XDCOPY(9*NATOM,DPD,1,SCR,1)
+       IOFFA=1
+       IOFFB=9*NATOM+1
+       DO 20 IBAS=1,3
+         CALL IMAGE(NATOM,3*NATOM,1,IOP,IPTR,NBFATM,ILCATM,
+     &             SCR(IOFFA),SCR(IOFFB),SCR(IOFFS),1,3*NATOM,
+     &             SYOP,0)
+         IOFFA=IOFFA+3*NATOM
+         IOFFB=IOFFB+3*NATOM
+20      CONTINUE 
+        CALL TRANSP(SCR(9*NATOM+1),SCR(18*NATOM+1),3,3*NATOM)
+        CALL XDCOPY(9*NATOM,SCR(18*NATOM+1),1,SCR(9*NATOM+1),1)
+        IOFFA=9*NATOM+1
+        IOFFB=1
+        IPTR(IOP,1)=1
+        DO 21 IBAS=1,3*NATOM
+         CALL IMAGE(1,3,1,IOP,IPTR,NBFATM,ILCATM,
+     &             SCR(IOFFA),SCR(IOFFB),SCR(IOFFS),1,3,
+     &             SYOP,0)
+         IOFFA=IOFFA+3
+         IOFFB=IOFFB+3
+21      CONTINUE
+
+        IPTR(IOP,1)=ITMP
+       CALL XDAXPY(9*NATOM,ONE,SCR,1,DPDSCR,1)
+30    CONTINUE
+C
+C
+      CALL XDSCAL(9*NATOM,ZNORM,DPDSCR,1)
+      CALL TRANSP(DPDSCR,SCR,3*NATOM,3)
+      CALL XDAXPY(9*NATOM,ONEM,SCR,1,DPD,1)
+      ILOC=ISAMAX(9*NATOM,DPD,1)
+      DIFMAX=DPD(ILOC,1)
+      IF(IFLAGS(1).GE.1)WRITE(6,1001)DIFMAX
+      IF(DIFMAX.GT.1.D-4)THEN
+       WRITE(6,1002)
+      ENDIF
+      CALL TRANSP(DPDSCR,DPD,3*NATOM,3)
+C
+      OPEN(UNIT=51,FILE='DIPDER',FORM='FORMATTED',STATUS='OLD')
+      REWIND(51)
+      ZJUNK=0.0D0
+      DO 12 IXYZ=1,3
+       IOFF=1
+       WRITE(51,'(I5)')IXYZ
+       DO 13 IATOM=1,NATOM
+        IF(ATMASS(IATOM).NE.ZILCH)THEN
+         WRITE(51,'(4F20.10)')ZJUNK,(DPD(J,IXYZ),J=IOFF,IOFF+2)
+        ENDIF
+        IOFF=IOFF+3
+13     CONTINUE
+12    CONTINUE
+      CLOSE(UNIT=51,STATUS='KEEP')
+C
+      RETURN
+1000  FORMAT(T3,'@PROJDPD-I, Projecting dipole derivatives onto ',
+     &          'totally symmetric subspace.')
+1001  FORMAT(T3,'Largest difference between matrix elements of ',
+     &          'symmetrized',/,T3,'and unsymmetrized DPD : ',F15.10,
+     &          '.')
+1002  FORMAT(T3,'@PROJDPD-W, The input DPD was not totally symmetric.')
+      END

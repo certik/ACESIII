@@ -1,0 +1,36 @@
+
+C FLUSHES BUFFERS AND WRITES OUT COMMON BLOCK INFORMATION
+C FOR THE NEXT PROGRAM. SHOULD NEVER BE CALLED EXPLICITLY,
+C AND IS A DEPENDENT OF CRAPSO.
+
+      SUBROUTINE TERMIO2
+      IMPLICIT INTEGER (A-Z)
+      LOGICAL YESNO
+#include "lists.com"
+#include "sympop.com"
+
+c ----------------------------------------------------------------------
+
+      if (.not.bIOUp) return
+
+c   o DUMP CACHES
+      call aces_cache_flush
+
+c   o DUMP INFORMATION TO JOBARC
+      CALL PUTREC(20,'JOBARC','MOIOVEC', 5000,MOIO)
+      CALL PUTREC(20,'JOBARC','MOIOWRD', 5000,MOIOWD)
+      CALL PUTREC(20,'JOBARC','MOIOSIZ', 5000,MOIOSZ)
+      CALL PUTREC(20,'JOBARC','MOIODIS', 5000,MOIODS)
+      CALL PUTREC(20,'JOBARC','MOIOFIL', 5000,MOIOFL)
+      CALL PUTREC(20,'JOBARC','ISYMTYP', 1000,ISYTYP)
+      CALL PUTREC(20,'JOBARC','TOTRECMO',5,pRec)
+      CALL PUTREC(20,'JOBARC','TOTWRDMO',5,iIntOff)
+
+      DO I = 50, 54
+         INQUIRE(UNIT=I,opened=YESNO)
+         IF (YESNO) CLOSE(I,STATUS='KEEP')
+      END DO
+
+      RETURN
+      END
+

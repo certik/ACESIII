@@ -1,0 +1,167 @@
+
+NOTES ON OPERATING PROCEDURES by Ajith Perera 06/20001
+
+I was asked many occasions how symcor works, especially
+whether it is doing it's supposed job most effeciently.
+One of the questions that is frequently asked is whether
+symcor is actually taking advantage of the symmetry. For
+example, in a C2V molecule such as H2O, are we duplicating
+the Force Constant matrix calculations for symmetry
+equivalent Hydrogens. Another question that was raised
+recently has to deal with the mode of point selction;
+single sided or double sided differentiation. In order to
+answer these questions,
+one has to inner working of the symcor member
+executable (ME).
+
+The function of symcor is to set up a table of geometry
+points which will be used to generate energies which
+will eventually be used to calculate numerical gradients
+or Hessians. The symcor ME is used during finite
+difference frequency calculations with analytical gradients
+and numerical Hessians,
+finite difference frequency calculations with numerical
+gradients and Hessians and geometry optimizations with numerical
+gradients. The symcor ME is not needed for
+analytical gradient geometry optimizations. We will address
+each mode of operation separately. Let's look at
+some of the preliminaries;
+
+ The first step is to make symmetry assignments
+ to molecular vibrations (See Group Theory Cotton).
+ The basis vectors that are used in here are
+ (x,y,z) coordinates of each atoms. The actual
+ subroutine that handle this operation is vibinf.f
+ This is word by word computer implementation of
+vibrational analysis descirbed in Cotton Pg. 309-315.
+ Next step is to symmetry adapted vibrational coordiantes.
+ This is done in symadq.f. It is somewhat difficult algorithm
+ to understand. Once again the basis vectors are (x,y,z)
+ coordinates of each nuclei. We take basis vectors for
+ atom (eg. x coordinate on atom) and apply symmetry operations
+ of the group and multiply by the character of irrep and
+ sum over all the operations. It should be clear to people
+ for some basis vectros this sum can be zero. That means
+ that particular motion doest not constitue a vibration,
+ rotation or translation. For eg. H2O, C2V (molecule in
+ YZ plane) the x coordinates on H atoms does not contribute
+ any of the motions due to symmetry. Only reason I am
+ going to such details here is to answer the question
+ whether we are doing unnecessary duplicate
+ energy or energy gradient calculations.
+ The answer is NO!!!! All the displacements are symmetry
+ adapted. After appropriate normalizations, we will
+ end up with a set of symmerty adapted Cartesian displacements
+ (respect to an arbitrary origin). Now one has to transform
+ them to the center-of-mass and principle axis (diagonalize
+ the moment of inertia matrix). Here it is achived in traprj.f
+ and rotprj.f. In my opinion rotational and translational
+ projections are unfortunate names: they tend to imply that this
+ is a some esoteric operation (it took me a while to figure
+ out what the hell is going on those two routines).
+
+ At this point we are ready to generate points for various
+ options for numerical derivatives; Note that we always
+ run a energy calculation at the reference geometry (E_0).
+
+ NUMERICAL (both first and second derv.) FREQUANCY CALCULATIONS:
+
+
+  The relevent routines are setpts.f and doener.f. At this point
+  we know how many vibrations in each symmetry block. Assume that
+  we have N vib. modes in a given symmetry block (q_1...q_n).
+  The derivatives that we are trying to calculate are DE/Dq_iDq_j
+  for all i and j.
+  To get a numerical Hessian for a given mode, we need at least
+  3 dispalced points. The reference (E_0), a positive
+  displacement and a negative displacement. If particular
+  vibration happens to have a plane or center of inversion,
+  negative displacement is
+  identical except for a oposite sign. In other words
+  no explicit energy calculation is not required.
+
+  Maximum # of points = N*(N+1), (or N*(N+1)/2 for A1 modes)
+                      + Reference
+
+ NUMERICAL DERIVATIVE GEOMETRTY OPTIMIZATION CALCULATIONS.
+
+  The most of the above discussion apply. However, the total
+  displacement has to preserve the symmetry of the molecule.
+  That means we only do consider totaly symmetric irreps.
+  Also, we only need the derivatives DE/Dq_iDq_j (i=j).
+
+ Maximum # of points = 2*N + Reference
+
+ ANALITICAL DERIVATIVE FREQUANCY CALCULATIONS.
+
+
+  The relevent routines are setpts.f and dograd.f. At this point
+  we know how many vibrations in each symmetry block. Assume that
+  you have N modes in a symmetry block (q_1...q_n)
+  To calculate Hessian, we need a gradient at a two displaced points.
+  What we trying to calculate is DG/Dq_i for all i. For vibrations
+  that have plane or center od inversion, we only need positive dispalcements
+  since the negative displacement is identical to positive
+  one but with an opposite sign.
+
+ Maximum # of Points = 2*N or (N for A1 modes).
+
+ SYMCOR IS NOT NEEDED for ANALYTICAL GRADIENT GEOMETRY OPTIMIZATIONS
+
+ In light of this investigations we can make the
+ following conclusions.
+
+  1. There is no repeat of energy calculations for symmetry
+     redundent centers. The program take full advantage of
+     Abelian symmetry.
+
+  2. The numerical derivatives are calculated in double
+     sided fashion. However, for totally symmetric
+     irreps single or double sided makes no difference
+     since we actualy do not do the energy calculation
+     for the negative dispalcement (It is identical
+     to the positive displaced value). In the case
+     of numerical gradients and Hessians, the routine
+     of interest is ener2fcm.f and for the case
+     of anlytical gradients and numrical Hessian
+     it is grad2fcm.f
+
+  Logic in ener2fcm:
+
+     For totally symmetric irreps:
+
+     Digonal of the Force constant matrix,
+                             DE/Dq_iDq_i = 2*(E_pi-E_0)/STPSZ**2
+
+     where E_pi is the positive dispalced energy of ith mode and
+
+STPSZ is the stepsize.
+
+     Off diagonal elements of the FC matrix
+                             DE/Dq_iDq_j = (2*(E_pipj-E_0) -
+                                               E_pi - E_0) -
+                                               E_pj - E_0))/2*STPSZ**2
+
+
+     E_pipj is the positive dispalced energy of the ith mode
+     while jth mode is held constant or vice versa.
+
+     For other irreps:
+
+     Digonal of the Force constant matrix,
+                             DE/Dq_iDq_i = (E_pi+E_mi-2*E_0)/STPSZ**2
+
+     where E_mi is the negative dispalced energy of ith mode and
+     STPSZ is the stepsize.
+
+     Off diagonal elements of the FC matrix
+                             DE/Dq_iDq_j = (E_pipj + E_mimj - 2*E_0) -
+                                               E_Pi +E_mi - 2*E_0) -
+                                               E_Pj +E_mj - 2*E_0))
+                                             /2*STPSZ**2
+
+     E_mimj is the negative dispalced energy of the ith mode
+     while jth mode is held constant or vice versa.
+
+  Logic in grad2fcm is straightforward.
+

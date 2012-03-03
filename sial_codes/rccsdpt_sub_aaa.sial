@@ -1,0 +1,2838 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+                                    SIAL CCSDtqUHF
+#
+# The intermediates used in the CCSDtq calculation are computed. The following
+# list follows the numbering in RMP, V. 79, p. 312. A brief description of how
+# they are used is in the following table.
+#
+# -------------------------------------------------
+# Intermediate   Permanent  Active   Contributes  |
+# -------------------------------------------------
+#      1           yes       no       s, d, t     |
+#      2           yes       no       s, d, t, q  |
+#      3           yes       no          d, t, q  |
+#      3a          yes       no       s           |
+#
+#      4           yes       P           d        |
+#      5           yes       P           d        |
+#      6           yes       yes            t, q  |
+#      6a          no        no          d        |  
+#                                                 |
+#      7           yes       no          d, t, q  |  
+#      8           yes       no          d, t, q  |  
+#      9           yes       yes            t, q  |  
+#      9a          no        no          d        |  
+#                                                 |
+#     10           yes       yes               q  |  
+#     10a          yes       yes               t  |  
+#     10b          yes       no                d  |  
+#                                                 |
+#     11           ?         yes               q  |  
+#     12           ?         yes               q  |  
+#     13           ?         yes               q  |  
+#     14           ?         yes               q  |  
+# ------------------------------------------------- 
+#
+# ------------------------------------------------------------------------ 
+#                                                                        |
+#                                    DECLARE INDECES                     |  
+#                                                                        |
+# ------------------------------------------------------------------------ 
+#
+      index kiter    = 1, 16 # cc_iter
+#
+      aoindex mu     = 1, norb
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      moaindex j = baocc, eaocc
+      moaindex j1= baocc, eaocc
+      moaindex j2= baocc, eaocc
+      moaindex j3= baocc, eaocc
+#
+      moaindex b = bavirt, eavirt
+      moaindex b1= bavirt, eavirt
+      moaindex b2= bavirt, eavirt
+      moaindex b3= bavirt, eavirt
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      moaindex q = baocc, eavirt
+      moaindex q1= baocc, eavirt
+      moaindex q2= baocc, eavirt
+      moaindex q3= baocc, eavirt
+#
+# Declare subindeces 
+# ------------------ 
+#
+      subindex ii  of i 
+      subindex ii1 of i1  
+      subindex ii2 of i2  
+      subindex ii3 of i3  
+#
+      subindex aa  of a 
+      subindex aa1 of a1  
+      subindex aa2 of a2  
+      subindex aa3 of a3  
+#
+      subindex jj  of j 
+      subindex jj1 of j1  
+      subindex jj2 of j2  
+      subindex jj3 of j3  
+#
+      subindex bb  of b 
+      subindex bb1 of b1  
+      subindex bb2 of b2  
+      subindex bb3 of b3  
+#
+      temp T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) 
+      temp T2aiaiai(aa,ii,aa1,ii1,aa2,ii2) 
+      temp T3aiaiai(aa,ii,aa1,ii1,aa2,ii2) 
+      temp TSaiai(aa,ii,aa3,ii1)
+      temp TSaipi(aa,ii,p,ii1)
+      temp TSaiai_1(aa,ii,aa1,ii3)              
+      temp TSaaai(aa1,aa3,aa2,ii2)
+      temp TSapai(aa1,p,aa2,ii2)
+      temp TSaiii(aa2,ii2,ii3,ii1) 
+      temp TSaiap(aa,ii,aa1,i3)
+#
+      temp TSapbj(aa1,p3,bb2,jj2)   
+      temp TSbqai(bb2,q3,aa1,ii)     
+      temp TSaiqj(aa,ii1,q3,jj2)     
+      temp TSpibj(p3,ii1,bb2,jj2)     
+      temp TSaibq(aa1,ii,bb2,q3)         
+      temp Tssss(aa,ii,aa1,ii1) 
+      temp Tssxx(aa,ii,bb1,jj1) 
+#
+      temp tss(aa,ii)
+      temp txx(bb,jj)
+      distributed Sai(aa,ii)
+      distributed Sbj(bb,jj)
+#
+      temp T1aiaibj(aa,ii,aa1,ii1,bb2,jj2) 
+      temp T2aiaibj(aa,ii,aa1,ii1,bb2,jj2) 
+      temp T3aiaibj(aa,ii,aa1,ii1,bb2,jj2) 
+#
+      local LVS122aaai(aa1,a3,aa2,ii2) 
+      local LVS102aaai(aa1,a3,aa,ii2) 
+      local LVS022aaai(aa,a3,aa2,ii2) 
+      local LVS120aaai(aa1,a3,aa2,ii) 
+      local LVS020aaai(aa,a3,aa2,ii) 
+      local LVS100aaai(aa1,a3,aa,ii) 
+      local LVS121aaai(aa1,a3,aa2,ii1) 
+      local LVS021aaai(aa,a3,aa2,ii1) 
+      local LVS101aaai(aa1,a3,aa,ii1) 
+#
+      local LT001aa(aa,ii,a3,ii1) 
+      local LT201aa(aa2,ii,a3,ii1) 
+      local LT101aa(aa1,ii,a3,ii1) 
+      local LT021aa(aa,ii2,a3,ii1) 
+      local LT002aa(aa,ii,a3,ii2) 
+      local LT121aa(aa1,ii2,a3,ii1) 
+      local LT102aa(aa1,ii,a3,ii2) 
+      local LT221aa(aa2,ii2,a3,ii1) 
+      local LT202aa(aa2,ii,a3,ii2) 
+#
+      local LV221aiii(aa2,ii2,i3,ii1) 
+      local LV121aiii(aa1,ii2,i3,ii1) 
+      local LV021aiii(aa,ii2,i3,ii1) 
+      local LV220aiii(aa2,ii2,i3,ii) 
+      local LV120aiii(aa1,ii2,i3,ii) 
+      local LV020aiii(aa,ii2,i3,ii) 
+      local LV001aiii(aa,ii,i3,ii1) 
+      local LV101aiii(aa1,ii,i3,ii1) 
+      local LV201aiii(aa2,ii,i3,ii1) 
+#
+      local XT001aa(aa,ii,aa1,i3) 
+      local XT201aa(aa2,ii,aa1,i3) 
+      local XT002aa(aa,ii,aa2,i3) 
+      local XT011aa(aa,ii1,aa1,i3) 
+      local XT021aa(aa,ii2,aa1,i3) 
+      local XT211aa(aa2,ii1,aa1,i3) 
+      local XT221aa(aa2,ii2,aa1,i3) 
+      local XT012aa(aa,ii1,aa2,i3) 
+      local XT022aa(aa,ii2,aa2,i3) 
+#
+# ------------------------------------------------------------------------ 
+#                                                                        |
+#                           Declare arrays                               |  
+#                                                                        |
+# ------------------------------------------------------------------------ 
+#
+#     SERVED ARRAYS 
+#     ------------- 
+#
+      served T2aaC(a,i,a1,i1)  
+      served T2abC(a,i,b,j) 
+      served T2bbC(b,j,b1,j1) 
+      distributed t1aC(a,i) 
+#
+      served Vxxxi(mu,nu,lambda,i) 
+      served Vxxxj(mu,nu,lambda,j) 
+      served Vxxii(mu,nu,i,i1) 
+      served Vxxai(mu,nu,a,i) 
+      served Vxxjj(mu,nu,j,j1) 
+      served Vxxij(mu,nu,i,j1) 
+      served Vxxbj(mu,nu,b,j) 
+      served Vxixi(mu,i,nu,i1) 
+      served Vxjxj(mu,j,nu,j1) 
+      served Vxixj(mu,i,nu,j) 
+      served Vixxi(i,mu,nu,i1) 
+      served Vixxj(i,mu,nu,j1) 
+      served Vjxxj(j,mu,nu,j1) 
+      served Vxipi(mu,i,p,i1) 
+      served Vxjqj(mu,j,q,j1) 
+      served Vxiqj(mu,i,q,j) 
+      served Vxaii(mu,a,i,i1) 
+      served Vixai(i,mu,a,i1) 
+      served Vxbjj(mu,b,j,j1) 
+      served Vjxbj(j,mu,b,j1) 
+      served Vxbii(mu,b,i,i1) 
+      served Vxaai(mu,a1,a,i) 
+      served Vxbbj(mu,b1,b,j) 
+      served Vxbai(mu,b,a,i) 
+      served Vxajj(mu,a,j,j1) 
+      served Vxabj(mu,a,b,j) 
+      served Vixbj(i,mu,b,j) 
+#
+      served Vxxxa(mu,nu,lambda,a) 
+      served Vxxxb(mu,nu,lambda,b) 
+      served Vxaxa(mu,a1,lambda,a) 
+      served Vxaxb(mu,a1,lambda,b) 
+      served Vxbxb(mu,b1,lambda,b) 
+      served Vxaaa(mu,a1,a2,a) 
+      served Vxabb(mu,a1,b2,b) 
+      served Vxbbb(mu,b1,b2,b) 
+#
+      served VSpipi(p,i,p1,i1)  
+      served VSqjqj(q,j,q1,j1) 
+      served Vpiqj(p,i,q,j)  
+      served VSaaai(a1,a,a2,i)  
+      served VSbbbj(b1,b,b2,j) 
+      served Vaabj(a1,a,b,j)  
+      served Vbbai(b1,b,a,i)  
+      served Viaai(i,a,a1,i1)  
+      served Vaaii(a,a1,i,i1)  
+      served Vbbii(b,b1,i,i1)  
+      served Vaajj(a,a1,j,j1) 
+      served Vjbbj(j,b,b1,j1)  
+      served Vbbjj(b,b1,j,j1)  
+      served Viabj(i,a,b,j)  
+      served Vjbii(j,b,i,i1) # ???? 
+#
+#     TEMP ARRAYS 
+#     ----------- 
+#
+      temp aoint(mu,nu,lambda,sigma) 
+      temp T1xxxi(mu,nu,lambda,i) 
+      temp T1xxxj(mu,nu,lambda,j) 
+      temp Txxii(mu,nu,i,i1) 
+      temp T1xxii(mu,nu,i,i1) 
+      temp Txxai(mu,nu,a,i) 
+      temp T1xxai(mu,nu,a,i) 
+      temp Txxjj(mu,nu,j,j1) 
+      temp T1xxjj(mu,nu,j,j1) 
+      temp Txxbj(mu,nu,b,j) 
+      temp T1xxbj(mu,nu,b,j) 
+      temp Txxij(mu,nu,i,j1) 
+      temp T1xxij(mu,nu,i,j1) 
+      temp Txixi(mu,i,nu,i1) 
+      temp T1xixi(mu,i,nu,i1) 
+      temp Txjxj(mu,j,nu,j1) 
+      temp T1xjxj(mu,j,nu,j1) 
+      temp Txixj(mu,i,nu,j) 
+      temp T1xixj(mu,i,nu,j) 
+      temp Tixxi(i,mu,nu,i1) 
+      temp T1ixxi(i,mu,nu,i1) 
+      temp Tixxj(i,mu,nu,j1) 
+      temp T1ixxj(i,mu,nu,j1) 
+      temp Tjxxj(j,mu,nu,j1) 
+      temp T1jxxj(j,mu,nu,j1) 
+      temp T1xipi(mu,i,p,i1) 
+      temp Txipi(mu,i,p,i1) 
+      temp Txaii(mu,a,i,i1) 
+      temp T1xaii(mu,a,i,i1) 
+      temp Tixai(i,mu,a,i1) 
+      temp T1ixai(i,mu,a,i1) 
+      temp Txbjj(mu,b,j,j1) 
+      temp T1xbjj(mu,b,j,j1) 
+      temp Tjxbj(j,mu,b,j1) 
+      temp T1jxbj(j,mu,b,j1) 
+      temp Txbii(mu,b,i,i1) 
+      temp T1xbii(mu,b,i,i1) 
+      temp Txaai(mu,a1,a,i) 
+      temp T1xaai(mu,a1,a,i) 
+      temp Txbbj(mu,b1,b,j) 
+      temp T1xbbj(mu,b1,b,j) 
+      temp Txbai(mu,b,a,i) 
+      temp T1xbai(mu,b,a,i) 
+      temp Txjqj(mu,j,q,j1) 
+      temp T1xjqj(mu,j,q,j1) 
+      temp Txajj(mu,a,j,j1)
+      temp T1xajj(mu,a,j,j1)
+      temp Txabj(mu,a,b,j) 
+      temp T1xabj(mu,a,b,j) 
+      temp Txiqj(mu,i,q,j) 
+      temp T1xiqj(mu,i,q,j) 
+      temp Tixbj(i,mu,b,j) 
+      temp T1ixbj(i,mu,b,j) 
+      temp Tpipi(p,i,p1,i1) 
+      temp T1pipi(p,i,p1,i1) 
+      temp Tpiqj(p,i,q1,j1) 
+      temp T1piqj(p,i,q1,j1) 
+      temp Tqjqj(q,j,q1,j1) 
+      temp T1qjqj(q,j,q1,j1) 
+      temp Tbbjj(b1,b,j,j1) 
+      temp T1bbjj(b1,b,j,j1) 
+      temp Tjbbj(j,b1,b,j1) 
+      temp T1jbbj(j,b1,b,j1) 
+      temp Tbbii(b1,b,i,i1) 
+      temp T1bbii(b1,b,i,i1) 
+      temp Tjbii(j,b,i,i1) 
+      temp T1jbii(j,b,i,i1) 
+      temp Tbbai(b1,b,a,i) 
+      temp T1bbai(b1,b,a,i) 
+      temp Taajj(a1,a,j,j1) 
+      temp T1aajj(a1,a,j,j1) 
+      temp Tiabj(i,a,b,j) 
+      temp T1iabj(i,a,b,j) 
+      temp Taabj(a1,a,b,j) 
+      temp T1aabj(a1,a,b,j) 
+#
+      temp tpp(p,p1) 
+      temp t1pp(p,p1) 
+      temp tqq(q,q1) 
+      temp t1qq(q,q1) 
+      temp tpppp(p,p1,p2,p3) 
+      temp t1pppp(p,p1,p2,p3) 
+      temp tqqqq(q,q1,q2,q3) 
+      temp t1qqqq(q,q1,q2,q3) 
+      temp tppqq(p,p1,q,q1) 
+      temp t1ppqq(p,p1,q,q1) 
+      temp tpqqp(p,q,q1,p1) 
+      temp t1pqqp(p,q,q1,p1) 
+      temp tqppq(q,p,p1,q1) 
+      temp t1qppq(q,p,p1,q1) 
+      temp tqqpp(q,q1,p,p1) 
+      temp t1qqpp(q,q1,p,p1) 
+      temp tpqpq(p,q,p1,q1) 
+#
+      temp taiai(a,i,a1,i1) 
+      temp t1aiai(a,i,a1,i1) 
+      temp t2aiai(a,i,a1,i1) 
+      temp t3aiai(a,i,a1,i1) 
+      temp tbjbj(b,j,b1,j1) 
+      temp t1bjbj(b,j,b1,j1) 
+      temp t2bjbj(b,j,b1,j1) 
+      temp t3bjbj(b,j,b1,j1) 
+      temp taibj(a,i,b,j) 
+#     
+      local Txxxi(mu,nu,lambda,i)
+      local Txxxj(mu,nu,lambda,j)
+      local L1xxxi(mu,nu,lambda,i)
+      local L1xxxj(mu,nu,lambda,j)
+      local L2xxxi(mu,lambda,nu,i)
+      local L2xxxj(mu,lambda,nu,j)
+      local L3xxxi(lambda,mu,nu,i)
+      local L3xxxj(lambda,mu,nu,j)
+      local Lxixi(mu,i,nu,i1)
+      local Lxxii(mu,nu,i,i1) 
+      local Lixxi(i,mu,nu,i1) 
+      local Lxjxj(mu,j,nu,j1) 
+      local Lxxjj(mu,nu,j,j1) 
+      local Ljxxj(j,mu,nu,j1)
+      local Lxxai(mu,nu,a,i) 
+      local Lxxbj(mu,nu,b,j) 
+      local Lxixj(mu,i,nu,j) 
+      local Lixxj(i,mu,nu,j) 
+      local Lxipi(mu,i,p,i1)
+      local Lxjqj(mu,j,q,j1) 
+      local Lxiqj(mu,i,q,j1) 
+      local Lxaii(mu,a,i,i1) 
+      local Lixai(i,mu,a,i1) 
+      local Lxbjj(mu,b,j,j1)
+      local Ljxbj(j,mu,b,j1) 
+      local L1xaai(mu,a,a1,i)
+      local L1xbbj(mu,b,b1,j)
+      local Lxbii(mu,b,i,i1)
+      local Lxbai(mu,b,a,i) 
+      local Lxajj(mu,a,j,j1) 
+      local Lixbj(i,mu,b,j)
+      local Lxabj(mu,a,b,j)
+#
+#     SCALARS 
+#     ------- 
+#
+      scalar ncount 
+      scalar ncount1
+      scalar ecrit 
+      scalar etemp 
+      scalar esum   
+      scalar esum1  
+      scalar esuma   
+      scalar ecorraa 
+      scalar esumb   
+      scalar ecorrbb 
+      scalar esumab   
+      scalar ecorrab 
+      scalar ecorrT 
+      scalar esum_aaa
+      scalar esum_aab
+      scalar esum_S
+      scalar esuma_S
+      scalar esumb_S
+      scalar fact 
+      scalar efact 
+      scalar pcount  
+      scalar fcount  
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+#    Perform the first two stages of the transformation in two N5 steps. 
+#
+     PROC TRAN_TRAN2 
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, nu, lambda
+#
+          allocate Txxxi(mu,nu,lambda,*)
+#
+          DO sigma
+#
+             compute_integrals aoint(mu,nu,lambda,sigma)
+#
+             DO i   
+#
+                 T1xxxi(mu,nu,lambda,i)  = aoint(mu,nu,lambda,sigma)*ca(sigma,i)
+                 Txxxi(mu,nu,lambda,i)  += T1xxxi(mu,nu,lambda,i)  
+#
+             ENDDO i   
+#
+          ENDDO sigma
+
+          DO i
+             T1xxxi(mu,nu,lambda,i)         = Txxxi(mu,nu,lambda,i)
+             PREPARE Vxxxi(mu,nu,lambda,i)  = T1xxxi(mu,nu,lambda,i)
+          ENDDO i
+
+          deallocate Txxxi(mu,nu,lambda,*)
+#
+     ENDPARDO mu, nu, lambda 
+     execute server_barrier
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, nu, i
+#
+           allocate L1xxxi(mu,nu,*,i)
+#
+           DO lambda
+#
+              REQUEST                  Vxxxi(mu,nu,lambda,i) i
+              L1xxxi(mu,nu,lambda,i) = Vxxxi(mu,nu,lambda,i)
+#
+           ENDDO lambda
+#
+           DO a
+#
+              Txxai(mu,nu,a,i) = 0.0
+#
+              DO lambda
+#
+                 T1xxai(mu,nu,a,i) = L1xxxi(mu,nu,lambda,i)*ca(lambda,a)
+                 Txxai(mu,nu,a,i) += T1xxai(mu,nu,a,i)
+#
+              ENDDO lambda
+#
+              PREPARE Vxxai(mu,nu,a,i) = Txxai(mu,nu,a,i)
+#
+           ENDDO a
+           deallocate L1xxxi(mu,nu,*,i)
+           allocate L2xxxi(mu,*,nu,i)
+
+           DO lambda
+              REQUEST Vxxxi(mu,lambda,nu,i) i
+              L2xxxi(mu,lambda,nu,i) = Vxxxi(mu,lambda,nu,i)
+           ENDDO lambda
+
+           DO i1
+              Txixi(mu,i1,nu,i) = 0.0
+
+              DO lambda
+                 T1xixi(mu,i1,nu,i) = L2xxxi(mu,lambda,nu,i)*ca(lambda,i1)
+                 Txixi(mu,i1,nu,i) += T1xixi(mu,i1,nu,i)
+              ENDDO lambda
+
+              PREPARE Vxixi(mu,i1,nu,i) = Txixi(mu,i1,nu,i)
+           ENDDO i1
+
+           deallocate L2xxxi(mu,*,nu,i)
+#
+     ENDPARDO mu, nu, i
+#
+     execute server_barrier 
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_TRAN2 
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+#    Perform the third N5 stage of the transformation.  
+#
+     PROC TRAN_TRAN3 
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, i, i1
+#
+           allocate Lxixi(mu,i,*,i1) 
+#
+           DO nu 
+#
+              REQUEST Vxixi(mu,i,nu,i1) i1 
+              Lxixi(mu,i,nu,i1) = Vxixi(mu,i,nu,i1) 
+#
+           ENDDO nu 
+#
+           DO p 
+#
+              Txipi(mu,i,p,i1) = 0.0  
+#
+              DO nu  
+#
+                 T1xipi(mu,i,p,i1) = Lxixi(mu,i,nu,i1)*ca(nu,p)
+                 Txipi(mu,i,p,i1) += T1xipi(mu,i,p,i1)  
+#
+              ENDDO nu  
+#
+              PREPARE Vxipi(mu,i,p,i1) = Txipi(mu,i,p,i1)
+#
+           ENDDO p 
+#
+           deallocate Lxixi(mu,i,*,i1) 
+#
+     ENDPARDO mu, i, i1
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, a, i
+#
+           allocate Lxxai(mu,*,a,i) 
+#
+           DO nu 
+#
+              REQUEST Vxxai(mu,nu,a,i) i 
+              Lxxai(mu,nu,a,i) = Vxxai(mu,nu,a,i) 
+#
+           ENDDO nu 
+#
+           DO a1 
+#
+              Txaai(mu,a1,a,i) = 0.0  
+#
+              DO nu  
+#
+                 T1xaai(mu,a1,a,i) = Lxxai(mu,nu,a,i)*ca(nu,a1)
+                 Txaai(mu,a1,a,i) += T1xaai(mu,a1,a,i)  
+#
+              ENDDO nu  
+#
+              PREPARE Vxaai(mu,a1,a,i) = Txaai(mu,a1,a,i)
+#
+           ENDDO a1 
+#
+           deallocate Lxxai(mu,*,a,i) 
+#
+     ENDPARDO mu, a, i
+#
+#    ------------------------------------------------------------------------
+#
+     execute server_barrier
+#
+     ENDPROC TRAN_TRAN3 
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_TRAN4 
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO p, i, i1
+#
+           allocate Lxipi(*,i,p,i1) 
+#
+           DO mu 
+#
+              REQUEST Vxipi(mu,i,p,i1) i1 
+              REQUEST Vxipi(mu,i1,p,i) i 
+              Lxipi(mu,i,p,i1)  = Vxipi(mu,i,p,i1) 
+              Txipi(mu,i,p,i1)  = Vxipi(mu,i1,p,i) 
+              Lxipi(mu,i,p,i1) -= Txipi(mu,i,p,i1) 
+#
+           ENDDO mu  
+#
+           DO p1 
+#
+              Tpipi(p1,i,p,i1) = 0.0  
+#
+              DO mu  
+#
+                 T1pipi(p1,i,p,i1) = Lxipi(mu,i,p,i1)*ca(mu,p1)
+                 Tpipi(p1,i,p,i1) += T1pipi(p1,i,p,i1)  
+#
+              ENDDO mu  
+#
+              PREPARE VSpipi(p1,i,p,i1) = Tpipi(p1,i,p,i1) 
+#
+           ENDDO p1 
+#
+           deallocate Lxipi(*,i,p,i1) 
+#
+     ENDPARDO p, i, i1
+#
+     PARDO a, a1, i
+#
+           allocate L1xaai(*,a,a1,i) 
+#
+           DO mu 
+#
+              REQUEST              Vxaai(mu,a,a1,i) i 
+              L1xaai(mu,a,a1,i)  = Vxaai(mu,a,a1,i)
+#
+           ENDDO mu 
+#
+           DO a2  
+#
+              Tpppp(a2,a,a1,i) = 0.0 
+#
+              DO mu 
+#
+                 T1pppp(a2,a,a1,i) = L1xaai(mu,a,a1,i)*ca(mu,a2)
+                 Tpppp(a2,a,a1,i) += T1pppp(a2,a,a1,i)  
+#
+              ENDDO mu 
+#
+              T1pppp(a1,a,a2,i)           = Tpppp(a2,a,a1,i) 
+              T1pppp(a1,a,a2,i)          *= -1.0  
+              PREPARE VSaaai(a2,a,a1,i)  += Tpppp(a2,a,a1,i)
+              PREPARE VSaaai(a1,a,a2,i)  += T1pppp(a1,a,a2,i)
+#
+           ENDDO a2  
+#
+           deallocate L1xaai(*,a,a1,i) 
+#
+     ENDPARDO a, a1, i
+# 
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_TRAN4 
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_UHF 
+# 
+#        CALL COMP_INTEGRALS # --> compute integrals and put into served array 
+         CALL TRAN_TRAN2     # --> performs the first two stages of the 
+                             #     two-electron integral transformation.  
+         CALL TRAN_TRAN3     # --> performs the third stage   
+                             #     two-electron integral transformation.  
+         CALL TRAN_TRAN4     # --> performs the fourth stage of the  
+                             #     two-electron integral transformation.  
+#
+     ENDPROC TRAN_UHF 
+#
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_1 
+#     ---------- 
+        #REQUEST                  VSpipi(a1,j1,a2,k1) a1 
+         tssss(aa1,ii1,aa2,ii2) = VSpipi(aa1,ii1,aa2,ii2) 
+         tss(aa,ii)             = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa1,ii1,aa2,ii2)
+      ENDPROC Sai_1 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_2 
+#     ---------- 
+        #REQUEST                 VSpipi(a1,i1,a2,k1) a1 
+         tssss(aa1,ii,aa2,ii2) = VSpipi(aa1,ii,aa2,ii2) 
+         tss(aa,ii1)           = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa1,ii,aa2,ii2)
+         tss(aa,ii1)          *= -1.0  
+      ENDPROC Sai_2 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_3 
+#     ---------- 
+        #REQUEST                 VSpipi(a1,j1,a2,i1) a1 
+         tssss(aa1,ii1,aa2,ii) = VSpipi(aa1,ii1,aa2,ii) 
+         tss(aa,ii2)           = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa1,ii1,aa2,ii)  
+         tss(aa,ii2)          *= -1.0  
+      ENDPROC Sai_3 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_4 
+#     ---------- 
+        #REQUEST                  VSpipi(a,j1,a2,k1) a 
+         tssss(aa,ii1,aa2,ii2)  = VSpipi(aa,ii1,aa2,ii2) 
+         tss(aa1,ii)            = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa,ii1,aa2,ii2)  
+         tss(aa1,ii)           *= -1.0  
+      ENDPROC Sai_4 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_5 
+#     ---------- 
+        #REQUEST                 VSpipi(a1,j1,a,k1) a 
+         tssss(aa1,ii1,aa,ii2) = VSpipi(aa1,ii1,aa,ii2) 
+         tss(aa2,ii)           = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa1,ii1,aa,ii2)  
+         tss(aa2,ii)          *= -1.0  
+      ENDPROC Sai_5 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_6 
+#     ---------- 
+        #REQUEST                VSpipi(a,i1,a2,k1) a 
+         tssss(aa,ii,aa2,ii2) = VSpipi(aa,ii,aa2,ii2) 
+         tss(aa1,ii1)         = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa,ii,aa2,ii2)  
+      ENDPROC Sai_6 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_7 
+#     ---------- 
+        #REQUEST                VSpipi(a,j1,a2,i1) a 
+         tssss(aa,ii1,aa2,ii) = VSpipi(aa,ii1,aa2,ii) 
+         tss(aa1,ii2)         = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa,ii1,aa2,ii)  
+      ENDPROC Sai_7 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_8 
+#     ---------- 
+        #REQUEST                VSpipi(a1,i1,a,k1) a 
+         tssss(aa1,ii,aa,ii2) = VSpipi(aa1,ii,aa,ii2) 
+         tss(aa2,ii1)         = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa1,ii,aa,ii2)   
+      ENDPROC Sai_8 
+#     ------------- 
+#  ---------------------------------------------------------------------------------- 
+      PROC Sai_9 
+#     ---------- 
+       #REQUEST                VSpipi(a,i1,a1,j1) a 
+        tssss(aa,ii,aa1,ii1) = VSpipi(aa,ii,aa1,ii1) 
+        tss(aa2,ii2)         = T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)*tssss(aa,ii,aa1,ii1)  
+      ENDPROC Sai_9 
+#     ------------- 
+#
+# ------------------------------------------------------------------------------ 
+#
+# ------------------------------------------------------------------------------ 
+#
+    PROC PSai_1  
+#   -----------  
+#
+         REQUEST VSpipi(a1,i1,a2,i2) a1
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+        if ii < ii1  
+        if ii1 < ii2  
+        if aa < aa1 
+        if aa1 < aa2 
+           CALL               Sai_1 
+           tss(aa,ii)      *= 4.0 
+           PUT Sai(aa,ii)  += tss(aa,ii)  
+        endif 
+        endif 
+        endif 
+        endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 2 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 4.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 3 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 4 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 4.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 5 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 6 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 7 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 4.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 8 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 9 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 10 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 11 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 12 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 13 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 14 OK 
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           tss(aa,ii)      *= 2.0 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 15 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 16 OK 
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_1 
+                           PUT Sai(aa,ii)  += tss(aa,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_1  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+    PROC PSai_2  
+#   -----------  
+#
+               REQUEST VSpipi(a1,i,a2,i2) a1 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 4.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 3 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 4.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 4 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 4.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 5 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 2.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 9 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 4.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 10 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 2.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 11 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 2.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 13 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_2 
+                                tss(aa,ii1)      *= 2.0  
+                                PUT Sai(aa,ii1)  += tss(aa,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_2  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_3  
+#   -----------  
+#
+                REQUEST VSpipi(a1,i1,a2,i) a1 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_3 
+                                tss(aa,ii2)      *= 4.0  
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 2 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_3 
+                                tss(aa,ii2)      *= 2.0  
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 4 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_3 
+                                tss(aa,ii2)      *= 4.0  
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 5 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_3 
+                                tss(aa,ii2)      *= 2.0  
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 7 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_3 
+                                tss(aa,ii2)      *= 2.0  
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 8 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_3 
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 11 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_3 
+                                tss(aa,ii2)      *= 2.0  
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 14 OK 
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_3 
+                                PUT Sai(aa,ii2)  += tss(aa,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_3  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_4  
+#   -----------  
+#
+               REQUEST VSpipi(a,i1,a2,i2) a 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 4.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 2 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 4.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 3 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 2.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 5 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 4.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 6 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 2.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 8 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 4.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 10 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 2.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 15 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_4 
+                           tss(aa1,ii)      *= 2.0  
+                           PUT Sai(aa1,ii)  += tss(aa1,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_4  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_5  
+#   -----------  
+#
+               REQUEST VSpipi(a1,i1,a,i2) a 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_5 
+                           tss(aa2,ii)      *= 4.0  
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 2 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_5 
+                           tss(aa2,ii)      *= 4.0  
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 3 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_5 
+                           tss(aa2,ii)      *= 2.0  
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 4 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_5 
+                           tss(aa2,ii)      *= 2.0  
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 6 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_5 
+                           tss(aa2,ii)      *= 2.0  
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 7 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_5 
+                           tss(aa2,ii)      *= 2.0  
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 9 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_5 
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 12 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_5 
+                           PUT Sai(aa2,ii)  += tss(aa2,ii)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_5  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_6  
+#   -----------  
+#
+                  REQUEST VSpipi(a,i,a2,i2) a 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_6 
+                           tss(aa1,ii1)      *= 4.0 
+                           PUT Sai(aa1,ii1)  += tss(aa1,ii1)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 3 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_6 
+                           tss(aa1,ii1)      *= 4.0 
+                           PUT Sai(aa1,ii1)  += tss(aa1,ii1)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 5 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_6 
+                           tss(aa1,ii1)      *= 4.0 
+                           PUT Sai(aa1,ii1)  += tss(aa1,ii1)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 10 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_6 
+                           tss(aa1,ii1)      *= 4.0 
+                           PUT Sai(aa1,ii1)  += tss(aa1,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_6  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_7  
+#   -----------  
+#
+                  REQUEST VSpipi(a,i1,a2,i) a 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_7 
+                           tss(aa1,ii2)      *= 4.0 
+                           PUT Sai(aa1,ii2)  += tss(aa1,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 2 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_7 
+                           tss(aa1,ii2)      *= 2.0 
+                           PUT Sai(aa1,ii2)  += tss(aa1,ii2)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_7 
+                           tss(aa1,ii2)      *= 4.0 
+                           PUT Sai(aa1,ii2)  += tss(aa1,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 8 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 == aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_7 
+                           tss(aa1,ii2)      *= 2.0 
+                           PUT Sai(aa1,ii2)  += tss(aa1,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_7  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_8  
+#   -----------  
+#
+                  REQUEST VSpipi(a1,i,a,i2) a 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_8 
+                           tss(aa2,ii1)      *= 4.0 
+                           PUT Sai(aa2,ii1)  += tss(aa2,ii1)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 3 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_8 
+                           tss(aa2,ii1)      *= 4.0 
+                           PUT Sai(aa2,ii1)  += tss(aa2,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 4 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+
+                           CALL Sai_8 
+                           tss(aa2,ii1)      *= 2.0 
+                           PUT Sai(aa2,ii1)  += tss(aa2,ii1)  
+
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 9 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 == ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_8 
+                           tss(aa2,ii1)      *= 2.0 
+                           PUT Sai(aa2,ii1)  += tss(aa2,ii1)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_8  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+    PROC PSai_9  
+#   -----------  
+#
+                  REQUEST VSpipi(a,i,a1,i1) a 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 1 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_9 
+                           tss(aa2,ii2)      *= 4.0 
+                           PUT Sai(aa2,ii2)  += tss(aa2,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#  Perm 2 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa < aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_9 
+                           tss(aa2,ii2)      *= 2.0 
+                           PUT Sai(aa2,ii2)  += tss(aa2,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 4 
+#  ---------------------------------------------------------------------------------- 
+                       if ii < ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_9 
+                           tss(aa2,ii2)      *= 2.0 
+                           PUT Sai(aa2,ii2)  += tss(aa2,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#  Perm 7 OK  
+#  ---------------------------------------------------------------------------------- 
+                       if ii == ii1  
+                       if ii1 < ii2  
+                       if aa == aa1 
+                       if aa1 < aa2 
+#  ---------------------------------------------------------------------------------- 
+                           CALL Sai_9 
+                           PUT Sai(aa2,ii2)  += tss(aa2,ii2)  
+#  ---------------------------------------------------------------------------------- 
+                       endif 
+                       endif 
+                       endif 
+                       endif 
+#  ---------------------------------------------------------------------------------- 
+#
+    ENDPROC PSai_9  
+#   -------------- 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+# ------------------------------------------------------------------------------ 
+#
+      PROC COMP_E5S   
+#     ------------- 
+#
+# ------------------------------------------------------------------------------ 
+#
+# ------------------------------------------------------------------------------------------------------- 
+#
+#   Compute the sai so that the singles contribution to the energy can be computed  
+#   ------------------------------------------------------------------------------  
+#
+    CALL PSai_1 
+    CALL PSai_2 
+    CALL PSai_3 
+    CALL PSai_4 
+    CALL PSai_5 
+    CALL PSai_6 
+    CALL PSai_7 
+    CALL PSai_8 
+    CALL PSai_9 
+#
+# ------------------------------------------------------------------------------ 
+#
+      ENDPROC COMP_E5S   
+#     ------------------ 
+#
+# ------------------------------------------------------------------------------ 
+#                       
+# ------------------------------------------------------------------------ 
+#
+      PROC COMP_PT  
+#     ------------ 
+#
+# Compute perturbative triples (T) 
+# -------------------------------- 
+#
+#   aab spin combination 
+#   -------------------- 
+#
+      esum1= 0.0 
+      esum_aaa = 0.0 
+#
+#   aaa spin combination 
+#   -------------------- 
+#
+      ncount1 = 0.0 
+      PARDO i, i1, i2, a, a1, a2 
+            WHERE i  <= i1 
+            WHERE i1 <= i2 
+            WHERE a  <= a1 
+            WHERE a1 <= a2 
+#
+            DO aa  in a # LOOP AA  
+#
+# ----------------------------------------------------------------------- 
+# Allocate and fill in local amplitude block 
+# ----------------------------------------------------------------------- 
+#
+               DO ii2 in i2 
+               DO ii1 in i1 
+                  allocate                      LV021aiii(aa,ii2,*,ii1) 
+                  DO i3 
+                     REQUEST                    VSpipi(a,i2,i3,i1) a
+                     LV021aiii(aa,ii2,i3,ii1) = VSpipi(aa,ii2,i3,ii1) 
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+               ENDDO ii2 in i2 
+#
+               DO ii2 in i2 
+               DO ii in i 
+                  allocate                     LV020aiii(aa,ii2,*,ii) 
+                  DO i3 
+                     REQUEST                   VSpipi(a,i2,i3,i) a
+                     LV020aiii(aa,ii2,i3,ii) = VSpipi(aa,ii2,i3,ii) 
+                  ENDDO i3 
+               ENDDO ii in i 
+               ENDDO ii2 in i2 
+#
+               DO ii in i 
+               DO ii1 in i1 
+                  allocate                     LV001aiii(aa,ii,*,ii1) 
+                  DO i3 
+                     REQUEST                   VSpipi(a,i,i3,i1) a
+                     LV001aiii(aa,ii,i3,ii1) = VSpipi(aa,ii,i3,ii1) 
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+               ENDDO ii in i 
+
+            DO aa1 in a1 # LOOP AA1  
+#
+# ----------------------------------------------------------------------- 
+# Allocate and fill in local amplitude block 
+# ----------------------------------------------------------------------- 
+
+               DO ii in i 
+                  allocate                   XT001aa(aa,ii,aa1,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a,i,a1,i3) a 
+                     XT001aa(aa,ii,aa1,i3) = T2aaC(aa,ii,aa1,i3) 
+                  ENDDO i3 
+               ENDDO ii in i 
+#
+               DO ii2 in i2 
+               DO ii1 in i1 
+                  allocate                       LV121aiii(aa1,ii2,*,ii1) 
+                  DO i3 
+                     REQUEST                     VSpipi(a1,i2,i3,i1) a1
+                     LV121aiii(aa1,ii2,i3,ii1) = VSpipi(aa1,ii2,i3,ii1) 
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+               ENDDO ii2 in i2 
+#
+               DO ii2 in i2 
+               DO ii in i 
+                  allocate                      LV120aiii(aa1,ii2,*,ii) 
+                  DO i3 
+                     REQUEST                    VSpipi(a1,i2,i3,i) i
+                     LV120aiii(aa1,ii2,i3,ii) = VSpipi(aa1,ii2,i3,ii) 
+                  ENDDO i3 
+               ENDDO ii in i 
+               ENDDO ii2 in i2 
+#
+               DO ii in i 
+               DO ii1 in i1 
+                  allocate                      LV101aiii(aa1,ii,*,ii1) 
+                  DO i3 
+                     REQUEST                    VSpipi(a1,i,i3,i1) i
+                     LV101aiii(aa1,ii,i3,ii1) = VSpipi(aa1,ii,i3,ii1) 
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+               ENDDO ii in i 
+
+               DO ii in i 
+                  allocate LVS100aaai(aa1,*,aa,ii) 
+                  DO a3 
+                     REQUEST                    VSaaai(a1,a3,a,i) a 
+                     LVS100aaai(aa1,a3,aa,ii) = VSaaai(aa1,a3,aa,ii)   
+                  ENDDO a3 
+               ENDDO ii in i 
+
+               DO ii1 in i1 
+                  allocate LVS101aaai(aa1,*,aa,ii1) 
+                  DO a3 
+                     REQUEST                     VSaaai(a1,a3,a,i1) a 
+                     LVS101aaai(aa1,a3,aa,ii1) = VSaaai(aa1,a3,aa,ii1)   
+                  ENDDO a3 
+               ENDDO ii1 in i1 
+#
+               DO ii1 in i1 
+                  allocate                   XT011aa(aa,ii1,aa1,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a,i1,a1,i3) a  
+                     XT011aa(aa,ii1,aa1,i3) = T2aaC(aa,ii1,aa1,i3)  
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+#
+               DO ii2 in i2 
+                  allocate                   XT021aa(aa,ii2,aa1,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a,i2,a1,i3) a  
+                     XT021aa(aa,ii2,aa1,i3) = T2aaC(aa,ii2,aa1,i3)  
+                  ENDDO i3 
+               ENDDO ii2 in i2 
+
+               DO ii2 in i2 
+                  allocate LVS102aaai(aa1,*,aa,ii2) 
+                  DO a3 
+                     REQUEST                      VSaaai(a1,a3,a,i2) a1 
+                     LVS102aaai(aa1,a3,aa,ii2)  = VSaaai(aa1,a3,aa,ii2) 
+                  ENDDO a3 
+               ENDDO ii2 in i2 
+
+            DO aa2 in a2 # LOOP AA2  
+#
+# ----------------------------------------------------------------------- 
+# Allocate and fill in local integral block 
+# ----------------------------------------------------------------------- 
+#
+               DO ii2 in i2 
+               DO ii1 in i1 
+                  allocate                       LV221aiii(aa2,ii2,*,ii1) 
+                  DO i3 
+                     REQUEST                     VSpipi(a2,i2,i3,i1) a2
+                     LV221aiii(aa2,ii2,i3,ii1) = VSpipi(aa2,ii2,i3,ii1) 
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+               ENDDO ii2 in i2 
+#
+               DO ii2 in i2 
+               DO ii in i 
+                  allocate                      LV220aiii(aa2,ii2,*,ii) 
+                  DO i3 
+                     REQUEST                    VSpipi(a2,i2,i3,i) a2
+                     LV220aiii(aa2,ii2,i3,ii) = VSpipi(aa2,ii2,i3,ii) 
+                  ENDDO i3 
+               ENDDO ii in i 
+               ENDDO ii2 in i2 
+#
+               DO ii in i 
+               DO ii1 in i1 
+                  allocate                      LV201aiii(aa2,ii,*,ii1) 
+                  DO i3 
+                     REQUEST                    VSpipi(a2,i,i3,i1) i
+                     LV201aiii(aa2,ii,i3,ii1) = VSpipi(aa2,ii,i3,ii1) 
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+               ENDDO ii in i 
+# ----------------------------------------------------------------------- 
+# Allocate and fill in local amplitude block 
+# ----------------------------------------------------------------------- 
+                      
+# ----------------------------------------------------------------------- 
+# Allocate and fill in local integral blocks 
+# ----------------------------------------------------------------------- 
+
+               DO ii in i 
+                  allocate LVS120aaai(aa1,*,aa2,ii) 
+                  DO a3 
+                     REQUEST                     VSaaai(a1,a3,a2,i) a1 
+                     LVS120aaai(aa1,a3,aa2,ii) = VSaaai(aa1,a3,aa2,ii)   
+                  ENDDO a3 
+               ENDDO ii in i 
+
+               DO ii in i 
+                  allocate LVS020aaai(aa,*,aa2,ii) 
+                  DO a3 
+                     REQUEST                    VSaaai(a,a3,a2,i) a 
+                     LVS020aaai(aa,a3,aa2,ii) = VSaaai(aa,a3,aa2,ii)   
+                  ENDDO a3 
+               ENDDO ii in i 
+
+               DO ii1 in i1 
+                  allocate LVS121aaai(aa1,*,aa2,ii1) 
+                  DO a3 
+                     REQUEST                      VSaaai(a1,a3,a2,i1) a2 
+                     LVS121aaai(aa1,a3,aa2,ii1) = VSaaai(aa1,a3,aa2,ii1)   
+                  ENDDO a3 
+               ENDDO ii1 in i1 
+
+               DO ii1 in i1 
+                  allocate LVS021aaai(aa,*,aa2,ii1) 
+                  DO a3 
+                     REQUEST                     VSaaai(a,a3,a2,i1) a2 
+                     LVS021aaai(aa,a3,aa2,ii1) = VSaaai(aa,a3,aa2,ii1)   
+                  ENDDO a3 
+               ENDDO ii1 in i1 
+#
+               DO ii in i 
+                  allocate                   XT201aa(aa2,ii,aa1,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a2,i,a1,i3) a2  
+                     XT201aa(aa2,ii,aa1,i3) = T2aaC(aa2,ii,aa1,i3)  
+                  ENDDO i3 
+               ENDDO ii in i 
+#
+               DO ii in i 
+                  allocate                   XT002aa(aa,ii,aa2,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a,i,a2,i3) a2  
+                     XT002aa(aa,ii,aa2,i3) = T2aaC(aa,ii,aa2,i3)  
+                  ENDDO i3 
+               ENDDO ii in i 
+#
+               DO ii1 in i1 
+                  allocate                   XT211aa(aa2,ii1,aa1,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a2,i1,a1,i3) a1  
+                     XT211aa(aa2,ii1,aa1,i3) = T2aaC(aa2,ii1,aa1,i3)  
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+#
+               DO ii2 in i2 
+                  allocate                   XT221aa(aa2,ii2,aa1,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a2,i2,a1,i3) a1  
+                     XT221aa(aa2,ii2,aa1,i3) = T2aaC(aa2,ii2,aa1,i3)  
+                  ENDDO i3 
+               ENDDO ii2 in i2 
+#
+               DO ii1 in i1 
+                  allocate                   XT012aa(aa,ii1,aa2,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a,i1,a2,i3) a  
+                     XT012aa(aa,ii1,aa2,i3) = T2aaC(aa,ii1,aa2,i3)  
+                  ENDDO i3 
+               ENDDO ii1 in i1 
+#
+               DO ii2 in i2 
+                  allocate                   XT022aa(aa,ii2,aa2,*) 
+                  DO i3 
+                     REQUEST                 T2aaC(a,i2,a2,i3) a  
+                     XT022aa(aa,ii2,aa2,i3) = T2aaC(aa,ii2,aa2,i3)  
+                  ENDDO i3 
+               ENDDO ii2 in i2 
+#
+               DO ii2 in i2 
+                  allocate LVS122aaai(aa1,*,aa2,ii2) 
+                  DO a3 
+                     REQUEST                      VSaaai(a1,a3,a2,i2) a1 
+                     LVS122aaai(aa1,a3,aa2,ii2) = VSaaai(aa1,a3,aa2,ii2) 
+                  ENDDO a3 
+               ENDDO ii2 in i2 
+
+               DO ii2 in i2 
+                  allocate LVS022aaai(aa,*,aa2,ii2) 
+                  DO a3 
+                     REQUEST                     VSaaai(a,a3,a2,i2) a 
+                     LVS022aaai(aa,a3,aa2,ii2) = VSaaai(aa,a3,aa2,ii2) 
+                  ENDDO a3 
+               ENDDO ii2 in i2 
+#
+#           ------------ 
+            DO ii2 in i2 
+#           ------------ 
+
+               DO ii1 in i1 
+                  allocate LT221aa(aa2,ii2,*,ii1) 
+                  DO a3 
+		     REQUEST                 T2aaC(a2,i2,a3,i1) a2 
+                     LT221aa(aa2,ii2,a3,ii1) = T2aaC(aa2,ii2,a3,ii1) 
+                  ENDDO a3 
+               ENDDO ii1 in i1 
+
+               DO ii in i 
+                  allocate LT202aa(aa2,ii,*,ii2) 
+                  DO a3 
+		     REQUEST                 T2aaC(a2,i,a3,i2) a2 
+                     LT202aa(aa2,ii,a3,ii2) = T2aaC(aa2,ii,a3,ii2) 
+                  ENDDO a3 
+               ENDDO ii in i 
+
+               DO ii in i 
+                  allocate LT102aa(aa1,ii,*,ii2) 
+                  DO a3 
+		     REQUEST                 T2aaC(a1,i,a3,i2) a1 
+                     LT102aa(aa1,ii,a3,ii2) = T2aaC(aa1,ii,a3,ii2) 
+                  ENDDO a3 
+               ENDDO ii in i 
+
+               DO ii in i 
+                  allocate LT002aa(aa,ii,*,ii2) 
+                  DO a3 
+		     REQUEST                 T2aaC(a,i,a3,i2) a 
+                     LT002aa(aa,ii,a3,ii2) = T2aaC(aa,ii,a3,ii2) 
+                  ENDDO a3 
+               ENDDO ii in i 
+
+               DO ii1 in i1 
+                  allocate LT021aa(aa,ii2,*,ii1) 
+                  DO a3 
+		     REQUEST                 T2aaC(a,i2,a3,i1) a 
+                     LT021aa(aa,ii2,a3,ii1) = T2aaC(aa,ii2,a3,ii1) 
+                  ENDDO a3 
+               ENDDO ii1 in i1 
+
+               DO ii1 in i1 
+                  allocate LT121aa(aa1,ii2,*,ii1) 
+                  DO a3 
+		     REQUEST                 T2aaC(a1,i2,a3,i1) a1 
+                     LT121aa(aa1,ii2,a3,ii1) = T2aaC(aa1,ii2,a3,ii1) 
+                  ENDDO a3 
+               ENDDO ii1 in i1 
+
+#           ------------ 
+            DO ii in i 
+#           ------------ 
+
+#           ------------ 
+            DO ii1 in i1 
+#           ------------ 
+#
+              IF aa <= aa1 
+              IF aa1 <= aa2 
+              IF ii <= ii1 
+              IF ii1 <= ii2 
+               ncount1 = ncount1 + 1 
+               execute print_scalar ncount1 
+
+               allocate LT001aa(aa,ii,*,ii1) 
+               DO a3 
+                  REQUEST                 T2aaC(a,i,a3,i1) a 
+                  LT001aa(aa,ii,a3,ii1) = T2aaC(aa,ii,a3,ii1) 
+               ENDDO a3 
+
+               allocate LT101aa(aa1,ii,*,ii1) 
+               DO a3 
+                  REQUEST                 T2aaC(a1,i,a3,i1) a1 
+                  LT101aa(aa1,ii,a3,ii1) = T2aaC(aa1,ii,a3,ii1) 
+               ENDDO a3 
+
+               allocate LT201aa(aa2,ii,*,ii1) 
+               DO a3 
+                  REQUEST                  T2aaC(a2,i,a3,i1) a2 
+                  LT201aa(aa2,ii,a3,ii1) = T2aaC(aa2,ii,a3,ii1) 
+               ENDDO a3 
+#
+               T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) = 0.0 
+#
+#           Initial permutation 
+#           ------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LT001aa(aa,ii,a3,ii1)*LVS122aaai(aa1,a3,aa2,ii2)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           a -> a2 permutation 
+#           ------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LVS102aaai(aa1,a3,aa,ii2)*LT201aa(aa2,ii,a3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           a -> a1 permutation 
+#           ------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LVS022aaai(aa,a3,aa2,ii2)*LT101aa(aa1,ii,a3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           i2 -> i permutation 
+#           ------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LT021aa(aa,ii2,a3,ii1)*LVS120aaai(aa1,a3,aa2,ii)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           i2 -> i1 permutation 
+#           ------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LT002aa(aa,ii,a3,ii2)*LVS121aaai(aa1,a3,aa2,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           a -> a1, i2 -> i permutation 
+#           ---------------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LVS020aaai(aa,a3,aa2,ii)*LT121aa(aa1,ii2,a3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           a -> a1, i2 -> i1 permutation 
+#           ----------------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LVS021aaai(aa,a3,aa2,ii1)*LT102aa(aa1,ii,a3,ii2)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           a -> a2, i2 -> i permutation
+#           ---------------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LVS100aaai(aa1,a3,aa,ii)*LT221aa(aa2,ii2,a3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           a -> a2, i2 -> i1 permutation
+#           ----------------------------- 
+#
+               DO a3  
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LVS101aaai(aa1,a3,aa,ii1)*LT202aa(aa2,ii,a3,ii2)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               ENDDO a3  
+#
+#           Initial permutation
+#           -------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = XT001aa(aa,ii,aa1,i3)*LV221aiii(aa2,ii2,i3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           a2 -> a permutation
+#           -------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LV021aiii(aa,ii2,i3,ii1)*XT201aa(aa2,ii,aa1,i3)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#
+#           a2 -> a1 permutation
+#           --------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = XT002aa(aa,ii,aa2,i3)*LV121aiii(aa1,ii2,i3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           i -> i1 permutation
+#           -------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = XT011aa(aa,ii1,aa1,i3)*LV220aiii(aa2,ii2,i3,ii)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           i -> i2 permutation
+#           -------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = XT021aa(aa,ii2,aa1,i3)*LV201aiii(aa2,ii,i3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) += T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           a2 -> a, i -> i1 permutation
+#           ----------------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LV020aiii(aa,ii2,i3,ii)*XT211aa(aa2,ii1,aa1,i3)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           a2 -> a, i -> i2 permutation
+#           ----------------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = LV001aiii(aa,ii,i3,ii1)*XT221aa(aa2,ii2,aa1,i3)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           a2 -> a1, i -> i1 permutation
+#           -----------------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = XT012aa(aa,ii1,aa2,i3)*LV120aiii(aa1,ii2,i3,ii)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+#           a2 -> a1, i -> i2 permutation
+#           -----------------------------
+#
+               DO i3
+                  T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = XT022aa(aa,ii2,aa2,i3)*LV101aiii(aa1,ii,i3,ii1)
+                  T1aiaiai(aa,ii,aa1,ii1,aa2,ii2) -= T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)
+               ENDDO i3
+#
+# Set the numerical factor
+# ------------------------
+#
+               pcount = 0.0
+               fcount = 0.0
+               if ii < ii1  
+                  pcount = pcount + 1
+               endif
+               if ii1 < ii2  
+                  pcount = pcount + 1
+               endif
+               if aa < aa1
+                  fcount = fcount + 1
+               endif
+               if aa1 < aa2
+                  fcount = fcount + 1
+               endif
+               if pcount == 0.0
+                  if fcount == 0.0
+                     efact = 1.0
+                     fact = 1.0
+                  endif
+               endif
+               if pcount == 0.0
+                  if fcount == 1.0
+                     efact = 3.0
+                     fact = 3.0
+                  endif
+               endif
+               if pcount == 1.0
+                  if fcount == 0.0
+                  efact = 3.0
+                  fact = 3.0
+               endif
+               endif
+               if pcount == 1.0
+                  if fcount == 1.0
+                     efact = 9.0
+                     fact = 3.0
+                  endif
+               endif
+               if pcount == 2.0
+                  if fcount == 0.0
+                     efact = 6.0
+                     fact = 6.0
+                  endif
+               endif
+               if pcount == 0.0
+                  if fcount == 2.0
+                  efact = 6.0
+                  fact = 6.0
+               endif
+               endif
+               if pcount == 2.0
+                  if fcount == 1.0
+                     efact = 18.0
+                     fact = 12.0
+                  endif
+               endif
+               if pcount == 1.0
+                  if fcount == 2.0
+                     efact = 18.0
+                     fact = 12.0
+                  endif
+               endif
+               if pcount == 2.0
+                  if fcount == 2.0
+                     efact = 36.0
+                     fact = 18.0
+                  endif
+               endif
+#
+               T3aiaiai(aa,ii,aa1,ii1,aa2,ii2)  = T1aiaiai(aa,ii,aa1,ii1,aa2,ii2)         
+               execute energy_denominator         T3aiaiai 
+               etemp = T1aiaiai(aa,ii,aa1,ii1,aa2,ii2)*T3aiaiai(aa,ii,aa1,ii1,aa2,ii2) 
+               efact = efact/36.0 
+               etemp*= efact  
+               esum1 += etemp             
+# 
+#  Compute singles 
+#  --------------- 
+               #####VFLCALL COMP_E5S
+               tssss(aa1,ii1,aa2,ii2) = 0.0 
+               tss(aa,ii)             = 0.0 
+               tssss(aa1,ii,aa2,ii2)  = 0.0 
+               tss(aa,ii1)            = 0.0 
+               tssss(aa1,ii1,aa2,ii)  = 0.0 
+               tss(aa,ii2)            = 0.0 
+               tssss(aa,ii1,aa2,ii2)  = 0.0 
+               tss(aa1,ii)            = 0.0 
+               tssss(aa1,ii1,aa,ii2)  = 0.0 
+               tss(aa2,ii)            = 0.0 
+               tssss(aa,ii,aa2,ii2)   = 0.0 
+               tss(aa1,ii1)           = 0.0 
+               tssss(aa,ii1,aa2,ii)   = 0.0 
+               tss(aa1,ii2)           = 0.0 
+               tssss(aa1,ii,aa,ii2)   = 0.0 
+               tss(aa2,ii1)           = 0.0 
+               tssss(aa,ii,aa1,ii1)   = 0.0 
+               tss(aa2,ii2)           = 0.0 
+#
+               deallocate LT001aa(aa,ii,*,ii1) 
+               deallocate LT101aa(aa1,ii,*,ii1) 
+               deallocate LT201aa(aa2,ii,*,ii1) 
+              ENDIF # ii1 <= ii2 
+              ENDIF # ii <= ii1 
+              ENDIF # aa1 <= aa2 
+              ENDIF # aa <= aa1 
+            ENDDO ii1 in i1 
+            ENDDO ii in i 
+               deallocate LT002aa(aa,ii,*,ii2) 
+               deallocate LT021aa(aa,ii2,*,ii1) 
+               deallocate LT102aa(aa1,ii,*,ii2) 
+               deallocate LT221aa(aa2,ii2,*,ii1) 
+               deallocate LT202aa(aa2,ii,*,ii2) 
+               deallocate LT121aa(aa1,ii2,*,ii1) 
+            ENDDO ii2 in i2 
+               deallocate LVS022aaai(aa,*,aa2,ii2) 
+	       deallocate LVS122aaai(aa1,*,aa2,ii2) 
+               deallocate LVS120aaai(aa1,*,aa2,ii) 
+               deallocate LVS020aaai(aa,*,aa2,ii) 
+
+               deallocate LVS121aaai(aa1,*,aa2,ii1) 
+               deallocate LVS021aaai(aa,*,aa2,ii1) 
+ 
+               deallocate LV221aiii(aa2,ii2,*,ii1) 
+               deallocate LV220aiii(aa2,ii2,*,ii) 
+               deallocate LV201aiii(aa2,ii,*,ii1) 
+
+               deallocate XT201aa(aa2,ii,aa1,*) 
+               deallocate XT002aa(aa,ii,aa2,*) 
+               deallocate XT211aa(aa2,ii1,aa1,*) 
+               deallocate XT221aa(aa2,ii2,aa1,*) 
+               deallocate XT012aa(aa,ii1,aa2,*) 
+               deallocate XT022aa(aa,ii2,aa2,*) 
+
+            ENDDO aa2 in a2 
+               deallocate LVS102aaai(aa1,*,aa,ii2) 
+               deallocate LV121aiii(aa1,ii2,*,ii1) 
+               deallocate LV120aiii(aa1,ii2,*,ii) 
+               deallocate LV101aiii(aa1,ii,*,ii1) 
+               deallocate LVS100aaai(aa1,*,aa,ii) 
+               deallocate XT011aa(aa,ii1,aa1,*) 
+               deallocate XT021aa(aa,ii2,aa1,*) 
+               deallocate LVS101aaai(aa1,*,aa,ii1) 
+               deallocate XT001aa(aa,ii,aa1,*) 
+            ENDDO aa1 in a1 
+               deallocate LV021aiii(aa,ii2,*,ii1) 
+               deallocate LV020aiii(aa,ii2,*,ii) 
+               deallocate LV001aiii(aa,ii,*,ii1) 
+            ENDDO aa  in a 
+#
+      ENDPARDO i, i1, i2, a, a1, a2 
+#
+      esuma = 0.0  
+      esuma_S = 0.0  
+      esum_S = 0.0  
+#
+      execute sip_barrier 
+      collective esum_aaa += esum1  
+      execute print_scalar esum_aaa 
+#
+# Compute the single contribution
+# -------------------------------
+#        
+      PARDO a, i1 
+         GET t1aC(a,i1) 
+         DO aa in a 
+         DO ii1 in i1 
+            GET           Sai(aa,ii1) 
+            tss(aa,ii1) = t1aC(aa,ii1) 
+            etemp       = tss(aa,ii1)*Sai(aa,ii1)
+            esuma      += etemp  
+         ENDDO ii1 in i1 
+         ENDDO aa in a 
+      ENDPARDO a, i1 
+#        
+      execute sip_barrier
+      collective esuma_S += esuma 
+      esum_S  = esuma_S  
+      execute sip_barrier
+#        
+      esuma_S = esuma_S/4.0
+      esum_S = esum_S/4.0
+      execute sip_barrier
+      execute print_scalar esuma_S   
+      execute print_scalar esum_S   
+#
+      esum_aaa += esum_S   
+      esum_aaa *= 2.0 
+      execute print_scalar esum_aaa   
+      totenerg += esum_aaa 
+#
+      ENDPROC COMP_PT  
+#     --------------- 
+#
+# ------------------------------------------------------------------------ 
+#
+#
+# ------------------------------------------------------------------------ 
+#                                                                        |
+#                             MAIN PROGRAM                               |  
+#                                                                        |
+# ------------------------------------------------------------------------ 
+#
+      ecrit = cc_conv 
+#
+      create t1aC 
+#
+#   Read BLOCKDATA file.
+#
+      execute sip_barrier
+      execute list_to_blocks                t1aC
+      execute list_to_blocks                T2aaC
+      execute list_to_blocks                T2abC
+      execute read_list_to_blocks
+      execute server_barrier
+#
+      execute server_barrier
+#
+# Perform PARTIAL 2-el integral transformation(No VVVV integrals) 
+# --------------------------------------------------------------- 
+#
+      CALL TRAN_UHF 
+#
+# Compute perturbative triples (T) 
+# -------------------------------- 
+#
+      create Sai 
+      create Sbj 
+      execute sip_barrier 
+      execute server_barrier 
+      CALL COMP_PT  
+#
+# ------------------------------------------------------------------------ 
+#
+#
+                                   ENDSIAL CCSDtqUHF 
+#
+#  ---------------------------------------------------------------------------------- 
+#
+#

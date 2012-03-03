@@ -1,0 +1,21 @@
+      SUBROUTINE ONED2TWOD (PUTIN,OUTPUT,NUMROWS,NUMCOLS)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C Takes a 1D array into a 2D matrix.
+C       1      2      3      4      5
+C Ex: (1,1)->(2,1)->(3,1)->(1,2)->(2,2)->etc.
+C
+      DIMENSION OUTPUT(NUMROWS,NUMCOLS)
+      DIMENSION PUTIN(NUMROWS*NUMCOLS)
+C     
+      DO 10 I=1,NUMCOLS
+         DO 20 II=(NUMROWS-1),0,-1
+            OUTPUT(NUMROWS-II,I)=PUTIN(I*NUMROWS-II)
+C     WRITE(*,*) "OUTPUT(",(NUMROWS-II),",",I,")=PUTIN(",
+C     & (I*NUMROWS-II),")=",PUTIN(I*NUMROWS-II)
+ 20      CONTINUE
+ 10   CONTINUE
+C     
+      RETURN
+      END SUBROUTINE ONED2TWOD
+      

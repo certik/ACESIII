@@ -1,0 +1,189 @@
+C  Copyright (c) 2003-2010 University of Florida
+C
+C  This program is free software; you can redistribute it and/or modify
+C  it under the terms of the GNU General Public License as published by
+C  the Free Software Foundation; either version 2 of the License, or
+C  (at your option) any later version.
+
+C  This program is distributed in the hope that it will be useful,
+C  but WITHOUT ANY WARRANTY; without even the implied warranty of
+C  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+C  GNU General Public License for more details.
+
+C  The GNU General Public License is included in this distribution
+C  in the file COPYRIGHT.
+
+C THIS ROUTINE CALCULATES THE TRANSFORMATION MATRIX WHICH MAPS
+C THE SET OF COORDINATES Q1 INTO THOSE GIVEN BY Q2
+C         Q2 = W Q1
+C IT IS ASSUMED THAT THEY ARE RELATED BY A SIMPLE ROTATION
+C (I.E. W HAS A DETERMINANT OF ONE)
+
+C THE SCRATCH VECTOR (SCR) MUST HAVE A LENGTH OF 18+2*MAX(3*NATOM,9)
+
+      SUBROUTINE Q2QPRIME(Q1,Q2,ATMASS,SCR,W,NATOM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+
+      DIMENSION Q1(3,NATOM),Q2(3,NATOM),ATMASS(NATOM),W(3,3)
+      DIMENSION SCR(*)
+
+      DIMENSION W1(3,3),W2(3,3)
+
+      DATA TOL   /1.D-8/
+      DATA ZILCH /0.0/
+      DATA ONE   /1.0/
+      DATA ONEM  /-1.0/
+      DATA THRESH /1.D-12/
+
+c debug
+c      write(6,*)' on entry : q1 and q2 are '
+c      write(6,'((3f20.10))')(q1(i,1),i=1,3*natom)
+c      write(6,*)
+c      write(6,'((3f20.10))')(q2(i,1),i=1,3*natom)
+c      write(6,*)' on exit : q1 and q2 are '
+
+      PI=DACOSX(ONEM,THRESH)
+      CALL ZERO(W,9)
+
+C PICK A REFERENCE ATOM WHICH IS NOT AT THE ORIGIN AND IS NOT A DUMMY ATOM
+
+      IREFATM=-1
+      DO IATOM=1,NATOM
+         X=DNRM2(3,Q1(1,IATOM),1)*ATMASS(IATOM)
+         IF(X.GT.TOL)IREFATM=IATOM
+      END DO
+
+C IF NO REFERENCE ATOM IS FOUND, THEN THIS MUST BE AN ATOM OR
+C SOMETHING ELSE STRANGE.  W IS THE IDENTITY FOR SUCH A CASE.
+
+      IF (IREFATM.EQ.-1) THEN
+         W(1,1)=ONE
+         W(2,2)=ONE
+         W(3,3)=ONE
+         RETURN
+      END IF
+
+C 1. NORMALIZE VECTORS IN BOTH Q1 AND Q2 [ORIGINAL NORMS SHOULD
+C    BE IDENTICAL BUT CALCULATE ANYWAY].  NORMALIZED VECTORS
+C    STORED IN SCR(1..3) AND SCR(4..6), RESPECTIVELY.
+
+      CALL XDCOPY(3,Q1(1,IREFATM),1,SCR(1),1)
+      CALL XDCOPY(3,Q2(1,IREFATM),1,SCR(4),1)
+      X1=DNRM2(3,SCR(1),1)
+      X2=DNRM2(3,SCR(4),1)
+      Z1=ONE/X1
+      Z2=ONE/X2
+      CALL XDSCAL(3,Z1,SCR(1),1)
+      CALL XDSCAL(3,Z2,SCR(4),1)
+
+C 2. CALCULATE POLAR AND AZIMUTHAL ANGLES
+
+      TPOL1=DACOSX(SCR(3),THRESH)
+      TPOL2=DACOSX(SCR(6),THRESH)
+
+C IF POLAR ANGLE IS ZERO, THEN THE AZIMUTHAL ANGLE IS ZERO.
+C OTHERWISE, CALCULATE IT.
+
+      IF (TPOL1.LT.TOL.OR.ABS(PI-TPOL1).LT.TOL) THEN
+         TAZIM1=ZILCH
+      ELSE
+         XYNORM1=DNRM2(2,SCR(1),1)
+         FACT=ONE/XYNORM1
+         CALL XDSCAL(2,FACT,SCR,2)
+         TAZIM1=DACOSX(SCR(1),THRESH)
+         TAZIM1=SIGN(TAZIM1,SCR(2))
+      END IF
+      IF (TPOL2.LT.TOL.OR.ABS(PI-TPOL2).LT.TOL) THEN
+         TAZIM2=ZILCH
+      ELSE
+         XYNORM2=DNRM2(2,SCR(4),1)
+         FACT=ONE/XYNORM2
+         CALL XDSCAL(2,FACT,SCR(4),2)
+         TAZIM2=DACOSX(SCR(4),THRESH)
+         TAZIM2=SIGN(TAZIM2,SCR(5))
+      END IF
+
+C COMPUTE MATRICES TO ROTATE ATOMS TO Z AXIS.  FIRST ROTATE ABOUT Z
+C BY THE AZIMUTHAL ANGLE TO BRING ATOMS PROJECTION ALONG X, AND THEN
+C ABOUT Y BY THE POLAR ANGLE (RIGHT-HANDED COORDINATE SYSTEM).
+C COMPOSITE MATRICES STORED IN W1 AND W2
+
+      CALL ROTM(3,TAZIM1,0,SCR(7))
+      CALL ROTM(2,TPOL1 ,0,SCR(16))
+      CALL XGEMM('N','N',3,3,3,ONE,SCR(16),3,SCR(7),3,ZILCH,W1,3)
+
+      CALL ROTM(3,TAZIM2,0,SCR(7))
+      CALL ROTM(2,TPOL2 ,0,SCR(16))
+      CALL XGEMM('N','N',3,3,3,ONE,SCR(16),3,SCR(7),3,ZILCH,W2,3)
+
+C NOW TRANSFORM COORDINATES. HOLD IN SCRATCH VECTOR.
+
+      I1=1
+      I2=I1+MAX(9,3*NATOM)
+      I000=I2+MAX(9,3*NATOM)
+      I010=I000+9
+      CALL XGEMM('N','N',3,NATOM,3,ONE,W1,3,Q1,3,ZILCH,SCR(I1),3)
+      CALL XGEMM('N','N',3,NATOM,3,ONE,W2,3,Q2,3,ZILCH,SCR(I2),3)
+
+C NOW FIND ANOTHER ATOM WHICH IS NOT ALONG THE NEW Z AXIS
+
+      IOFF=0
+      IREFATM=-1
+      XMAX=ZILCH
+      DO IATOM=1,NATOM
+         X=DNRM2(2,SCR(I1+IOFF),1)*ATMASS(IATOM)
+         IF (X.GT.XMAX) THEN
+            IREFATM=IATOM
+            XMAX=X
+         END IF
+         IOFF=IOFF+3
+      END DO
+
+C IF NO ATOMS FOUND, THE MOLECULE IS LINEAR AND WE SKIP THE NEXT PART
+
+      IF (IREFATM.NE.-1) THEN
+
+C FIND MATRIX WHICH ROTATES PROJECTION OF VECTOR ALONG AXIS
+
+         IOFF1=I1+3*(IREFATM-1)
+         IOFF2=I2+3*(IREFATM-1)
+         X1=DNRM2(2,SCR(IOFF1),1)
+         X2=DNRM2(2,SCR(IOFF2),1)
+         FACT1=ONE/X1
+         FACT2=ONE/X2
+         CALL XDSCAL(2,FACT1,SCR(IOFF1),1)
+         CALL XDSCAL(2,FACT2,SCR(IOFF2),1)
+         THETA1=DACOSX(SCR(IOFF1),THRESH)
+         THETA2=DACOSX(SCR(IOFF2),THRESH)
+         THETA1=SIGN(THETA1,SCR(IOFF1+1))
+         THETA2=SIGN(THETA2,SCR(IOFF2+1))
+         CALL ROTM(3,THETA1,0,SCR(I000))
+         CALL ROTM(3,THETA2,0,SCR(I010))
+
+C CALCULATE COMPLETE W1 AND W2 TRANSFORMATION MATRICES
+
+         CALL XGEMM('N','N',3,3,3,ONE,SCR(I000),3,W1,3,ZILCH,SCR(I1),3)
+         CALL XGEMM('N','N',3,3,3,ONE,SCR(I010),3,W2,3,ZILCH,SCR(I2),3)
+         CALL XDCOPY(9,SCR(I1),1,W1,1)
+         CALL XDCOPY(9,SCR(I2),1,W2,1)
+
+      END IF
+
+C NOW WE KNOW THAT THE COORDINATES DEFINED BY
+C              Q1' = W1 Q1
+C                  AND
+C              Q2' = W2 Q2
+C                                    +                   +
+C ARE EQUIVALENT.  THEREFORE, Q2 = W2  W1 Q1, HENCE W = W2  W1
+
+      CALL XGEMM('T','N',3,3,3,ONE,W2,3,W1,3,ZILCH,W,3)
+
+C CHECK THAT THE TRANSFORMATION WORKS
+c      call xgemm('N','N',3,natom,3,one,w,3,q1,3,zilch,scr,3)
+c      write(6,'((3f20.10))')(scr(i),i=1,3*natom)
+c      write(6,*)
+c      write(6,'((3f20.10))')(q2(i,1),i=1,3*natom)
+
+      RETURN
+      END
+

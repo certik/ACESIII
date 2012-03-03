@@ -1,0 +1,32 @@
+      SUBROUTINE DIS(IIPT,ATMCRD,NATOM,PTCRD,NPTS,APDR,APDX,
+     $     APDY,APDZ)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION ATMCRD(3*NATOM),PTCRD((NPTS+1)*3)
+      DIMENSION APDR(NATOM),APDX(NATOM),APDY(NATOM),
+     $     APDZ(NATOM)
+C
+C Fill out the APDR,APDX,APDY,and APDZ vectors.
+      DO 20 I=1,NATOM
+         APDX(I)=PTCRD((3*IIPT-2))-ATMCRD((3*I-2))
+         APDY(I)=PTCRD((3*IIPT-1))-ATMCRD((3*I-1))
+         APDZ(I)=PTCRD((3*IIPT))-ATMCRD((3*I))
+         APDR(I)=DSQRT((APDX(I))**2+(APDY(I))**2+(APDZ(I))**2)
+C IF (IIPT.EQ.1) THEN
+C WRITE(*,*) "X(",I,")=",ATMCRD((3*I-2))
+C WRITE(*,*) "Y(",I,")=",ATMCRD((3*I-1))
+C WRITE(*,*) "Z(",I,")=",ATMCRD((3*I))
+C WRITE(*,*) "PX(",IIPT,")=",PTCRD(IIPT*3-2)
+C WRITE(*,*) "PY(",IIPT,")=",PTCRD(IIPT*3-1)
+C WRITE(*,*) "PZ(",IIPT,")=",PTCRD(IIPT*3)
+C WRITE(*,*) "RX(",IIPT,",",I,")= n, APDX(I)
+C WRITE(*,*) "RY(",IIPT,",",I,")=",APDY(I)
+C WRITE(*,*) "RZ(",IIPT,",",I,")=",APDZ(I)
+C WRITE(*,*) "RR(",IIPT,",",I,")=n ,APDR(I)
+C END IF
+ 20   CONTINUE
+C
+      Return
+      END SUBROUTINE DIS
+

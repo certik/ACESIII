@@ -1,0 +1,19 @@
+Ar4 test of uhf scf gradient aug-cc-pvtz basis 
+AR   0.0  0.0  0.0
+AR   0.0  0.0  4.0
+AR   0.0  4.0  0.0
+AR   0.0  4.0  4.0
+
+*ACES2(CALC=SCF,BASIS=AUG-CC-PVTZ
+geom_opt=ric,opt_maxcyc=1
+spherical=on
+CHARGE=1,MULT=2
+REF=UHF,UNITS=BOHR
+COORDINATES=CARTESIAN
+SCF_CONV=6
+SYMMETRY=NONE)
+
+*SIP
+MAXMEM=900
+TIMERS=YES
+

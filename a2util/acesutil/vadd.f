@@ -1,0 +1,12 @@
+
+C FORMS A=B+FACTOR*C FOR THE FIRST LEN ELEMENTS OF VECTORS A, B, AND C.
+
+      SUBROUTINE VADD(A,B,C,LEN,FACTOR)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION A(LEN),B(LEN),C(LEN)
+      if (len.lt.1) return
+      DO I = 1, LEN
+         A(I) = B(I) + ( FACTOR * C(I) )
+      END DO
+      RETURN
+      END

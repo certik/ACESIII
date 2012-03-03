@@ -1,0 +1,1925 @@
+# Generic Makefile for AcesII
+#
+# Copyright (c) 1995,1996 Sullivan Beck. All rights reserved.
+# This program is free software; you can redistribute it and/or modify it
+# under the same terms as GNU make with 1 provision: This program was written
+# expressly for use with the AcesII programs.  People who have legally
+# received a copy of the AcesII programs may use and modify this program with
+# no restriction (provided this Copyright remains intact) and they can
+# distribute this program (with or without modification) freely to other
+# people who own legal copies of AcesII.  All other distribution and
+# modifications fall under the terms of GNU make.
+#
+# Written by:  Sullivan Beck (beck@qtp.ufl.edu)
+
+#########################################################################
+# TO USE THIS MAKEFILE
+#########################################################################
+#
+# This is a generic Makefile which can be used to compile any AcesII
+# executable or library with almost no effort.  It uses GNU make rather
+# then standard make.  STANDARD MAKE WILL NOT WORK!!!
+#
+# Copy this Makefile into a directory containing the source code to an
+# executable or library.  There can be multiple source code files (and may
+# be a mixture of both C and Fortran) but it cannot work with more then one
+# main program (which should be fortran) in a single directory.
+#
+# The only time you will need to modify the Makefile is when you port
+# it to a new computer (see TO PORT TO A NEW COMPUTER).
+#
+# In addition, you may create the file named Makefile.src in the directory.
+# This contains lines which override defaults set in the Makefile.
+#
+# The Makefile.src file may change frequently.  It has options on how
+# to actually compile a library or executable this time, and this may
+# change from one time to the next.  See the section MAKEFILE.SRC
+# OPTIONS for more information.
+#
+# If you run into problems, look in the TROUBLESHOOTING section.
+#
+# If you have any questions, contact me at beck@qtp.ufl.edu.  Please
+# make sure you have the newest version of the Makefile before reporting
+# a problem.  See the HISTORY section at the bottom of the file to
+# determine what version you are using.
+
+#########################################################################
+# TO PORT TO A NEW COMPUTER:
+#########################################################################
+#
+# To make this Makefile work on a new computer, modify the DETERMINE
+# MACHINE and MACHINE DEPENDENT DEFINITIONS section.  Instructions
+# are given in each section.
+#
+# Between these two sections are a series of sections defining default
+# shell commands to compile/link/etc., default locations for Aces2
+# libraries and binaries, and other defaults that need to be set.
+#
+# The variables defined in each section are well documented.  They can
+# be overriden in the MACHINE DEPENDENT DEFINITIONS section, but you
+# should be familiar with what they do before overriding them.  In other
+# words, read the sections where defaults are set, but they should not
+# need to be modified in any way.
+
+#########################################################################
+# MAKEFILE.SRC OPTIONS
+#########################################################################
+#
+# The Makefile.src file sets options which are used in customizing the
+# building of a single binary or libary.  The following are some common
+# entries.
+#
+#   CURR = joda
+#      The name of the directory you are working in should be the name of an
+#      Aces2 module.  For example, if you are compiling joda, the directory
+#      should be named joda.  If the directory is named something else, simply
+#      add the above line.  Then, the directory name is unimportant.
+#
+#   OPT = YES
+#   OPT = NO
+#   PROF = YES
+#   PROF = NO
+#      These control whether optized executables are built (by default,
+#      debug versions are built) and whether they should be profile
+#      versions (off by default).
+#
+#   TESTLIBDIR = /my/libs/path
+#      This defines a directory where test versions of some or all of the
+#      libraries reside.  These libraries will be linked against instead of
+#      those installed in the standard location.  Also, if you install
+#      the current library, it will be installed in this directory rather
+#      than the standard directory.
+#
+#   MODULES = newbin:joda:libr:libr2
+#      This is a list of modules to link against.  By default, an executable
+#      is linked only against liblibr.a.  The above line says that the module
+#      named newbin should be linked against libjoda.a, liblibr.a, and
+#      liblibr2.a.
+#
+#   COPYLIB = NO
+#      By default, the old version of the current library is copied to the
+#      current directory and the new object files replace the old ones.
+#      This line forces the library NOT to be copied.  If you are working
+#      with the entire source of a module, this is a safe (and probably
+#      desirable) option since it removes any possible interferance between
+#      the old version of the module and your test version.
+#
+#   EXTRA_CCFLAGS   = -v
+#   EXTRA_FCFLAGS   = -v
+#   EXTRA_LDFLAGS   = -v
+#   EXTRA_DEFINES   = -DXXX
+#   EXTRA_INCLUDES  = -I../include /home/mydir/myincludes
+#   EXTRA_LIBS      = -L../lib -L/home/mydir/mylibs -lmylib -lmylib2
+#      These contain extra flags (or defines) for the c compiler, the fortran
+#      compiler, or the linker.  These should be needed very rarely.  Notice
+#      that all includes start with a -I flag, all defines start with a -D
+#      flags, and that libs need a -L or -l flag.
+#
+#   BIN_PREFIX      = x
+#   BIN_SUFFIX      = .sun4
+#      You can also control the prefix and suffix attached to the name of each
+#      binary using the lines.  The above lines would build an executable
+#      named xjoda.sun4
+#
+#   FAST = YES
+#      If this is set, the .d files are not made or updated, and all
+#      dependencies in the .d files will be ignored.  This greatly speeds
+#      up compilation, but it means that dependencies on include files
+#      are not handled correctly so a source file will not be recompiled
+#      when one of its include files is modified.  My suggestion for using
+#      this is to define an alias "fast = gmake -DFAST".
+#
+# In addition, any of the variables in the SHELL DEFAULTS, ACES2 VARIABLES,
+# and MACHINE DEPENDENT DEFINITIONS sections below can usually be included
+# in the Makefile.src file if necessary, but as a rule, you probably won't
+# ever have to do this.
+#
+# The Makefile.src file is completely optional.  Provided the current
+# directory name is correct, no test version of the libraries are desired,
+# and a debug version is desired, the Makefile.src file need not exist.
+#
+# This Makefile is set up to link against the libraries created for each
+# executable.  That means, that in order to create a new binary in which
+# you only need to modify one or two of the subroutines, ONLY those
+# subroutines which you actually modify need to be in the current
+# directory.  All others are already included in one of the standard
+# libraries corresponding to the module you are building.  It is not even
+# necessary that the main routine be present.  It can be in the library as
+# well.
+
+#########################################################################
+# TROUBLESHOOTING
+#########################################################################
+#
+# The following problems are common ones you may run into:
+#
+# -----------------------------------------------------------------------
+# Problem:
+#   Typing make gives a bunch of errors about lines in the Makefile.
+#   Typical errors are:
+#       Makefile, line XXX: Unexpected end of line seen
+#       Makefile, line XXX: Dependancy line needs colon
+# Solution:
+#   You must use gmake rather than normal make.
+#
+# -----------------------------------------------------------------------
+# Problem:
+#   You get errors about the compiler/linker complaining about illegal
+#   options.
+# Solution:
+#   The options you defined in the machine dependent parts of the Makefile
+#   (see TO PORT TO A NEW COMPUTER above) are not correct.  Read the man
+#   page and correct them.
+#
+# -----------------------------------------------------------------------
+# Problem:
+#   When linking a binary, you get lots of unresolved symbols or undefined
+#   subroutines.
+# Solution:
+#   Some options are probably set incorrectly in the Makefile or Makefile.src
+#   defining where libraries are stored and which to link against.  Try
+#   typing "make -n".  This prints out the commands that are executed without
+#   actually doing them.  Make sure the appropriate libaries are being
+#   linked against.  If they aren't, check the Makefile.
+#
+#   Typing "make -n debug" may help a lot.  It will print out the values of
+#   almost every variable defined in the Makefile.  Once you are familiar
+#   with what the variables in the SHELL DEFAULTS and ACES2 VARIABLES sections
+#   are for, this output should help you track down the problem.
+#
+# -----------------------------------------------------------------------
+# Problem:
+#   When linking against a library which has some C routines in it, it
+#   complains that it can't find them (though it finds all of the fortran
+#   routines).
+# Solution:
+#   C routines are named differently than fortran routines.  When they
+#   are compiled, an underscore is added to their name on some machines.
+#   So, if you have a file XXX.c, different architectures will treat the
+#   compiled routine as named either XXX or XXX_ depending on the machine
+#   (other more obscure names are also possible but not common).
+#
+#   If it complains that it can't find XXX_, you need to add the following
+#   line to the Makefile in the MACHINE DEPENDANT DEFINITIONS section:
+#      C_SUFFIX  = -DC_SUFFIX
+#   This handles the suffix correctly.  Alternately, if you have included
+#   this line, try removing it.  That may fix the problem.
+#
+# -----------------------------------------------------------------------
+# Problem:
+#   When linking it seems to be linking against an old version of a
+#   library routine.
+# Problem:
+#   When debugging, it can't find the source for a routine.
+# Solution:
+#   This occurs frequently when you move a piece of source code from
+#   one module to another.  For example, you might have a piece of code
+#   in a binary module that you realize is general and could be included
+#   in a library for use by other modules, so you move it there.  The
+#   problem is that the library for the binary module still has a copy
+#   of the object file in it and this is the copy that will be linked
+#   against, NOT the copy in the library.  When moving a piece of source
+#   code from one module to another, you should remove the libraries (.a
+#   files) to be safe.
+
+#########################################################################
+# DETERMINE MACHINE
+#########################################################################
+#
+# There are four pieces of information which define a machine: it's name,
+# it's location, it's architecture, and it's operating system.
+#
+# Each computer has it's own name (like crunch, voom, flash, etc.).  This
+# information is needed to determine what type of machine you are on.
+#
+# The location is something like the name of the institute or department
+# where the machine is located or who set up the machine.  The location is
+# important in locating the path to the Aces2 binaries, libraries, and
+# executables.  The path will vary widely from one machine to the next, but
+# at a specific location, they should remain constant.  If they don't, you
+# will actually need to define two or more locations to distinguish between
+# the two different computers.  For example, all of the Sun executables at
+# QTP live in /ufl/qtp/rjb/progs/bin/sparc.  If they were in
+# /ufl/qtp/rjb/progs/bin/sparc on some machines and
+# /home/qtp/rjb/progs/bin/sparc on other machines, you would have to
+# designate the two types of machines as QTP1 and QTP2 (or something
+# similar).
+#
+# The architecture is what type of computer it is.  This is important
+# because you use different commands and options to compile on different
+# machines.  Compiling on a Sun is totally different from an IBM or Cray.
+#
+# The operating system might be important in some cases (though up to now,
+# the operating system variable is ignored completely).  In the event that
+# the form of a compiler command changes from one version of the operating
+# system to the next, you will have to distinguish between two versions of
+# the operating system.
+#
+# Define a variable of the format LOC_ARCH_OS = NAME1 NAME2 ...
+# To determine the name of a computer, type
+#    uname -n
+# To determine the architecture, type
+#    uname -m
+# To determine the operating system, type
+#    uname -s
+#    uname -r
+# Alternately, typing
+#    uname -a
+# will give all of the information on one line and it should be fairly
+# easy to interpret.  Sometimes, not all information is given so you have
+# to figure it out some other way.
+#
+# For example, on voom uname -a returns:
+#   AIX voom 1 4 000102736600
+# The machine is located at QTP.  It is an IBM RS6000 computer (uname did
+# not tell us this unfortunately, so we had to determine that ourselves).
+# It is running AIX 4.1.  So, we create a variable:
+#   QTP_RS6000_AIX4 = voom
+# When we learn that whirl, zap, and several others are identical, we add
+# them to this definition
+#   QTP_RS6000_AIX4  = whirl zap voom flash hum brisk swift
+#
+# Next, add a section to the makefile similar to:
+#    ifeq (${MACH},)
+#    MACH = $(filter ${QTP_RS6000_AIX4},${MACHNAME})
+#    ifneq (${MACH},)
+#      MACH  = rs6000
+#      OPSYS = aix3
+#      LOC   = qtp
+#    endif
+#    endif
+# for the new computer.  This defines 3 variables MACH, OPSYS, and LOC
+# which will be used in determining default values for all of the
+# variables and commands used in compiling an Aces module.
+#
+# Once this is done, proceed to the MACHINE DEPENDENT DEFINITIONS section.
+
+# Determine what machine you are running on.
+
+MACHNAME   := $(shell uname -n)
+
+# Every time this is put on a new machine, the following section must
+# be modified and the new machine added.  A "%" means to match anything
+# else, so "visi%" matches "visi1", "visi2", etc.
+
+QTP_SUN_SOL2      = crunch 
+QTP_RS6000_AIX4   = whirl zap voom flash hum brisk swift kwik
+QTP_X86_SOL       = iwhite% iblue% ired% icream%  solx
+WES_CRAY_UNICOS9  = pk larry
+NAVO_CRAY_UNICOS9 = vlsc
+OSCA_CRAY_UNICOS9 = OSCA
+NDU_ALPHA_OSF1    = medial
+TAMU_SGI_IRIX64   = terminator
+RUTGERS_HPUX10    = r2d2 hpcgauss miles
+
+ifeq (${MACH},)
+MACH = $(filter ${QTP_RS6000_AIX4},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = rs6000
+  OPSYS = aix3
+  LOC   = qtp
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${QTP_SUN_SOL2},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = sun
+  OPSYS = sol2
+  LOC   = qtp
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${QTP_X86_SOL},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = x86
+  OPSYS = sol
+  LOC   = qtp
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${WES_CRAY_UNICOS9},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = cray
+  OPSYS = unicos9
+  LOC   = wes
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${OSCA_CRAY_UNICOS9},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = cray
+  OPSYS = unicos9
+  LOC   = osca
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${NAVO_CRAY_UNICOS9},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = cray
+  OPSYS = unicos9
+  LOC   = navo
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${NDU_ALPHA_OSF1},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = alpha
+  OPSYS = osf1
+  LOC   = ndu
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${TAMU_SGI_IRIX64},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = sgi
+  OPSYS = irix64
+  LOC   = tamu
+endif
+endif
+
+ifeq (${MACH},)
+MACH = $(filter ${RUTGERS_HPUX10},${MACHNAME})
+ifneq (${MACH},)
+  MACH  = hp9000
+  OPSYS = hpux10
+  LOC   = rutgers
+endif
+endif
+
+# If the machine isn't known, we're going to do nothing.
+ifneq (${MACH},)
+
+#########################################################################
+# SHELL DEFAULTS
+# These provide a reasonable guess for each of the shell commands used
+# in the makefile.
+#########################################################################
+
+SHELL      = /bin/sh
+TOUCH      = touch
+ECHO       = echo
+RM         = rm -f
+MV         = mv -f
+CP         = cp -p
+INSTALL    = cp
+STRIP      = strip
+AR         = ar
+# replace modules in library
+AR_R_FLAGS = r
+# extract modules from a library
+AR_X_FLAGS = x
+RANLIB     = ranlib
+RLFLAGS    =
+CPP        = cpp
+# sometimes you have to add a special prefix to CPP arguments (especially
+# if you have to use a compiler as the CPP)
+CPPSUFFIX  =
+
+CC         = cc -c
+CCFLAGS    =
+FC         = f77 -c
+FCFLAGS    =
+LD         = f77
+CPPFLAGS   =
+LDFLAGS    =
+DEBUG      = -g
+OPTIMIZE   = -O
+PROFILE    = -pg
+
+# Routines written in c sometimes have an underscore appended to their
+# names.  In this case, add the following define to the machine dependent
+# section.
+#C_SUFFIX  = -DC_SUFFIX
+C_SUFFIX   =
+
+#########################################################################
+# ACES2 VARIABLES
+# This section describes all Aces2 related variables used in the makefile
+# providing a reasonable guess when appropriate
+#########################################################################
+
+# Aces3 module descriptions
+#
+# ALL_ACES_BINS   : the name of all Aces2 binary modules
+# ALL_ACES_LIBS   : the name of all Aces2 library modules
+# ALL_LINK_LIBS   : a list of libraries to link against for each module
+#                   (this refers to both libraries AND include files so
+#                   a library module MAY be defined here to give it access
+#                   to other include files)
+# DEF_LINK_LIBS   : a default list of libraries to link against for a new
+#                   module
+# ALL_MAIN_OBJ    : the name of the main object file (minus the .o) for each of
+#                   the binary modules (it may be omitted if the main object is
+#                   the same name as the module itself)
+
+ALL_ACES_BINS = aces2 \
+                anti \
+                bcktrn \
+                cphf \
+                ccsdtq \
+                dens \
+                densqtp \
+                dtran \
+                findif \
+                fsip \
+                hfdft \
+                intgrt \
+                intprc \
+                joda \
+                lambda \
+                mrcc \
+                nmr \
+                props \
+                squint \
+                symcor \
+                tdhf \
+                vcc \
+                vcc5q \
+                vcc5t \
+                vcceh \
+                vdint \
+                vea \
+                vee \
+                vmol \
+                vmol2ja \
+                vprops \
+                vscf \
+                vtran
+
+ALL_ACES_LIBS = aces3 \
+                blas \
+                ecp \
+                lapack \
+                libr \
+                libr2 \
+		librt3 \
+                mbtools \
+                mbtest \
+                mbdirect \
+                trp
+
+# The first element in each list is usually the name of the binary module.
+# All others are libraries it should be linked against.  Include files for
+# the libraries are also used when compiling.  If the first element is
+# a library, no linking is done, but the include files from the alternate
+# libraries are accessed.
+ALL_LINK_LIBS = ccsdtq:vcc:libr:libr2:trp:librt3 \
+                dens:libr2:libr \
+                densqtp:libr2:libr \
+                findif:joda:ecp:libr \
+                intgrt:aces3 \
+                joda:ecp:libr \
+                lambda:librt3:libr2:libr \
+                mbdirect:mbtools \
+                mbtest:mbtools \
+                mbtools:aces3 \
+                mrcc:mbgrad:mbtools:mbdirect:eomprocs:libra3 \
+                nmr:libr2:libr \
+                squint:libr2:libr \
+                vcc:trp:librt3:libr2:libr \
+                vcc5q:librt3:vcc:libr2:libr \
+                vcc5t:librt3:libr2:libr \
+                vcceh:libr2:libr \
+                vscf:libr:aces3 \
+                vdint:ecp:libr \
+                vea:libr2:libr \
+                vee:libr2:libr \
+                vmol:ecp:libr
+DEF_LINK_LIBS = libr
+
+ALL_MAIN_OBJ = cphf:vcphf \
+               dens:vdens \
+               densqtp:vdens \
+               dtran:dtran2 \
+               fsip:fs \
+               intprc:intproc \
+               joda:geopt \
+               lambda:vlamcc \
+               nmr:nmrm2 \
+               props:prop \
+               squint:nsquint \
+               vcc5q:t4 \
+               vcc5t:nonit3 \
+               vea:eaeom \
+               vmol:molecu \
+               vmol2ja:v2ja \
+               vprops:props
+
+
+#########################################################################
+#
+# Aces3 installation
+
+# BINDIR         : the directory where the standard Aces3 binaries are
+#                  installed
+# TESTBINDIR     : a directory where test versions of the Aces3 binaries
+#                  are installed
+# INSTBINDIR     : the directory where the current executable will be
+#                  installed (if the install target is used) - it is set to:
+#                     TESTBINDIR : if TESTBINDIR is defined
+#                     BINDIR     : if the user can write there
+#                     ./         : otherwise
+
+BINDIR     = .
+TESTBINDIR =
+INSTBINDIR =
+
+# LIBDIR         : this will be set to the standard directory where the
+#                  appropriate types of libraries (debug, optimized, etc.)
+#                  are installed (one of the four directories described next)
+#                  ***NOTE*** if LIBDIR is ever set to dot (.), the build
+#                  may crash
+# LIBDIR_O       : the directory containimg optimized libraries
+# LIBDIR_D       : the directory containimg debug libraries
+# LIBDIR_OP      : the directory containimg optimized profiled libraries
+# LIBDIR_DP      : the directory containimg debug profiled libraries
+# TESTLIBDIR     : a directory where test versions of the Aces3 libraries
+#                  are installed
+#                  ***NOTE*** if TESTLIBDIR is ever set to dot (.), the build
+#                  may crash
+# INSTLIBDIR     : the directory where the current library will be installed
+#                  (if appropriate) - it is set to:
+#                     TESTLIBDIR : if TESTLIBDIR is defined
+#                     LIBDIR     : if the user can write there
+#                     ./         : otherwise
+
+LIBDIR     =
+TESTLIBDIR =
+INSTLIBDIR =
+LIBDIR_O   =
+LIBDIR_D   =
+LIBDIR_OP  =
+LIBDIR_DP  =
+
+# INCDIR         : the directory where the standard include files are installed
+# TESTINCDIR     : a directory where test versions of the include files are
+# INSTINCDIR     : the directory where the current include files will be
+#                  installed (if appropriate) - it is set to:
+#                     TESTINCDIR : if TESTINCDIR is defined
+#                     INCDIR     : if the user can write there
+#                     ./include  : otherwise
+
+INCDIR     = include/.
+TESTINCDIR =
+INSTINCDIR =
+
+#########################################################################
+
+# Numerical libraries
+#
+# BLASDIR        : the location (with -L) of the blas library
+# BLASLIB        : the blas library
+# LAPACKDIR      : the location of the lapack library
+# LAPACKLIB      : the lapack library
+# NUMLIBS        : a list of all numerical libraries used to build Aces2
+
+BLASDIR    =
+BLASLIB    = -lblas
+LAPACKDIR  = -L/usr/local/lib
+LAPACKLIB  = -llapack
+NUMLIBS    = ${LAPACKDIR} ${LAPACKLIB} ${BLASDIR} ${BLASLIB}
+
+#########################################################################
+
+# Current module
+#
+# CURR        : the name of the current module
+# CURRBIN     : the name of the current binary to build (if appropriate)
+# CURRLIB     : the name of the current library to build
+#
+# OLDINSTLIB  : the full name and path of the library where it is currently
+#               installed
+# NEWINSTLIB  : the full name and path of the library where it will be
+#               installed (these two may be different - for example if it
+#               is currently in LIBDIR but TESTLIBDIR is defined, these
+#               will be different)
+# OLDINSTBIN  : similar to OLDINSTLIB
+# NEWINSTBIN  : similar to NEWINSTLIB
+# INCFILES    : a list of all include files to install
+# INCIGNORE   : a list of files (or patterns) that may be in the include
+#               directory but which should be ignored
+#
+# By default, CURR will be set to the name of the current directory (which
+# should be the name of one of the modules listed in ALL_ACES_BINS or
+# ALL_ACES_LIBS).  If CURR is not in ALL_ACES_BINS or ALL_ACES_LIBS, it will
+# be assumed to be a new binary module.
+
+CURR            =
+CURRBIN         =
+CURRLIB         =
+OLDINSTLIB      =
+NEWINSTLIB      =
+OLDINSTBIN      =
+NEWINSTBIN      =
+INCFILES        =
+INCIGNORE       = core CVS %~
+
+# MAIN_OBJ_FILE   : the name of the main object file for the current module
+# MAIN_OBJ_EXISTS : will be defined if the file containing the main program of
+#                   a binary module exists currently or if it will exist after
+#                   building the source files (otherwise, it is in the library)
+# MAIN_OBJ_LINK   : the name of the object file in the link command (but
+#                   not compile command) for when the object is extracted
+#                   from a library and no source is present
+
+MAIN_OBJ_FILE   =
+MAIN_OBJ_EXISTS =
+MAIN_OBJ_LINK   =
+
+#########################################################################
+
+# Variables used in compiling/linking the current module
+#
+# MODULES    : a list of modules linked against
+# INCLUDES   : a list of all default includes which will include any of the
+#              following that exist:
+#                -I./include  -I${TESTINCDIR}  -I${INCDIR}
+# TARGLIBS   : a list of all existing libraries (excluding the current module)
+#              with the full path to each (useful as a dependancy in a build)
+# BINLIBS    : a list of all existing libraries (only important for binaries)
+# LINKLIBS   : the same libraries in a form to pass to the linker
+
+MODULES    =
+INCLUDES   =
+BINLIBS    =
+LINKLIBS   =
+
+#########################################################################
+
+# Misc. installation variables
+#
+# BIN_PREFIX : the prefix to attach to all binaries
+# BIN_SUFFIX : the suffix to attach to all binaries
+# DEPDIR     : the directory where makefile's with dependancies are stored
+# FLAGFILE   : a scratch file used as a flag during Make
+
+BIN_PREFIX = x
+BIN_SUFFIX =
+DEPDIR     = Makefile.d
+FLAGFILE   = Makefile.flag
+
+#########################################################################
+# MACHINE DEPENDENT DEFINITIONS
+# This section overrides any default values defined in the SHELL DEFAULTS
+# and ACES2 DEFAULTS sections above.  For any new machine added, this
+# section will have to be modified most likely.
+#
+# Read the documentation in the SHELL DEFAULTS and ACES2 DEFAULTS sections
+# to know what each variable does.  In order to modify them, you're going
+# to have to read some man pages.  Start with the fortran compiler.
+#########################################################################
+
+#########################################################################
+# RS/6000
+
+ifeq ($(MACH),rs6000)
+AR_R_FLAGS = -r -c -v
+FC         = xlf -c
+LD         = xlf
+FCFLAGS    = -qtune=auto -qarch=auto -qcache=auto
+OPTIMIZE   = -O3 -qmaxmem=-1 -Q -qfloat=hssngl 
+DEFINES    = -DM_RS6000
+FAST       = 1
+CPP        = ${FC} -d
+CPPPREFIX  = -WF,
+BINDIR    = /ufl/qtp/rjb/progs/bin/power
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/power
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/power
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/power
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/power
+BLASDIR   = -L/usr/local/lib
+LAPACKDIR = -L/usr/local/lib
+NUMLIBS   = ${BLASDIR} ${LAPACKDIR} ${LAPACKLIB} ${BLASLIB}
+
+ifeq ($(QTPMAKE),power)
+LD	  = xlf
+FCFLAGS   = -qtune=pwr -qarch=pwr
+BINDIR    = /ufl/qtp/rjb/progs/bin/power
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/power
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/power
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/power
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/power
+endif
+ifeq ($(QTPMAKE),power2)
+LD        = xlf 
+FCFLAGS   = -qtune=pwr2 -qarch=pwr2
+BINDIR    = /ufl/qtp/rjb/progs/bin/power2
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/power2
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/power2
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/power2
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/power2
+endif
+ifeq ($(QTPMAKE),kwik)
+LD        = xlf -bmaxdata:1000000000
+FCFLAGS   = -qtune=pwr2 -qarch=pwr2
+BINDIR    = /ufl/qtp/rjb/progs/bin/kwik
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/kwik
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/kwik
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/kwik
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/kwik
+endif
+ifeq ($(QTPMAKE),power3)
+LD        = xlf
+FCFLAGS   = -qtune=pwr3 -qarch=pwr3
+BINDIR    = /ufl/qtp/rjb/progs/bin/power3
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/power3
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/power3
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/power3
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/power3
+endif
+#
+# KJW 4-25-00 Be careful here. Although you can compile 64-bit objects on power and power2
+# platforms you need to log into a power3 machine to link them.
+#
+ifeq ($(QTPMAKE),power3_64)
+RANLIB    = ranlib -X64
+AR_R_FLAGS= -r -c -v -X64
+FC        = xlf -c -q64
+LD        = xlf -b64
+FCFLAGS   = -qtune=pwr3 -qarch=pwr3
+BINDIR    = /ufl/qtp/rjb/progs/bin/power3_64
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/power3_64
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/power3_64
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/power3_64
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/power3_64
+endif
+ifeq ($(QTPMAKE),power3huge)
+LD        = xlf -bmaxdata:2000000000
+FCFLAGS   = -qtune=pwr3 -qarch=pwr3
+BINDIR    = /ufl/qtp/rjb/progs/bin/power3
+INCDIR    = /ufl/qtp/rjb/progs/Src/include/
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/power3
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/power3
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/power3
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/power3
+endif
+
+endif
+
+#########################################################################
+# SUN
+
+ifeq ($(MACH),sun)
+FCFLAGS    = -dalign -fns -xtarget=ultra2 -xcache=16/32/1:1024/64/1
+AR_R_FLAGS = rcv
+LD         = f77 
+CPP        = /usr/ccs/lib/cpp
+DEFINES    = -DM_SPARC
+OPTIMIZE  = -fast -fsimple=2 -O5
+C_SUFFIX   = -DC_SUFFIX
+
+ifeq ($(QTPMAKE),sparc)
+BINDIR    = /ufl/qtp/rjb/progs/bin/sparc
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/sparc
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/sparc
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/sparc
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/sparc
+INCDIR    = /ufl/qtp/rjb/progs/Src/include
+endif
+ifeq ($(QTPMAKE),sparcd)
+BINDIR    = /ufl/qtp/rjb/progs/bin/sparcd
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/sparcd
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/sparcd
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/sparcd
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/sparcd
+INCDIR    = /ufl/qtp/rjb/progs/Src/include
+endif
+
+endif
+
+#########################################################################
+# X86
+
+ifeq ($(MACH),x86)
+ranlib     = ranlib
+FC         = pgf77 -c
+FCFLAGS    =
+AR_R_FLAGS = rcv
+LD         = pgf77
+CPP        = /usr/ccs/lib/cpp
+DEFINES    = -DM_SPARC
+OPTIMIZE  = -fast -O2
+C_SUFFIX   = -DC_SUFFIX
+
+ifeq ($(LOC),qtp)
+BINDIR    = /ufl/qtp/rjb/progs/bin/x86
+LIBDIR_O  = /ufl/qtp/rjb/progs/lib/x86
+LIBDIR_D  = /ufl/qtp/rjb/progs/lib/x86
+LIBDIR_OP = /ufl/qtp/rjb/progs/lib/x86
+LIBDIR_DP = /ufl/qtp/rjb/progs/lib/x86
+INCDIR    = /ufl/qtp/rjb/progs/Src/include
+endif
+
+endif
+
+#########################################################################
+# CRAY
+
+ifeq ($(MACH),cray)
+AR_R_FLAGS = rcv
+# Use with cpp
+#FC         = cf77 -c -Wp"-F"
+# Use with gpp
+FC         = cf77 -c
+FCFLAGS    = -dp
+LD         = cf77
+OPTIMIZE   = -O scalar2 -O vector2
+RANLIB     = echo
+NUMLIBS    =
+DEFINES    = -DM_CRAY
+FAST       = 1
+#CPP        = /opt/ctl/bin/cpp -N -C
+CPP        = /usr/lib/gpp -F -P
+
+ifeq ($(LOC),wes)
+BINDIR    = /u/gwaltney/aces2/bin
+LIBDIR_O  = /u/gwaltney/aces2/lib
+LIBDIR_D  = /u/gwaltney/aces2/lib
+LIBDIR_OP = /u/gwaltney/aces2/lib
+LIBDIR_DP = /u/gwaltney/aces2/lib
+endif
+
+ifeq ($(LOC),osca)
+BINDIR    = /d/osu938/craps/bin
+LIBDIR_O  = /d/osu938/craps
+LIBDIR_D  = /d/osu938/craps
+LIBDIR_OP = /d/osu938/craps
+LIBDIR_DP = /d/osu938/craps
+endif
+
+ifeq ($(LOC),navo)
+BINDIR    = /u/c/gwaltney/aces2/bin
+LIBDIR_O  = /u/c/gwaltney/aces2/lib
+LIBDIR_D  = /u/c/gwaltney/aces2/lib
+LIBDIR_OP = /u/c/gwaltney/aces2/lib
+LIBDIR_DP = /u/c/gwaltney/aces2/lib
+endif
+
+endif
+
+#########################################################################
+# DEC ALPHA
+
+ifeq ($(MACH),alpha)
+AR_R_FLAGS = rcv
+DEFINES    = -DM_ALPHA
+OPTIMIZE   = -fast -05 -fpe1 -tune host
+FAST       = 1
+
+ifeq ($(LOC),ndu)
+BINDIR    = ../../bin_opt
+LIBDIR_O  = ../../lib_opt
+LIBDIR_D  = ../../lib_opt
+LIBDIR_OP = ../../lib_opt
+LIBDIR_DP = ../../lib_opt
+BLASDIR   = ../../lib_opt
+endif
+
+endif
+#########################################################################
+# SGI R10000
+
+ifeq ($(MACH),sgi)
+AR_R_FLAGS = rcv
+DEFINES    = -DM_IRIX64
+OPTIMIZE   = -O3
+FAST       = 1
+RANLIB     = echo
+
+ifeq ($(LOC),tamu)
+BINDIR    =/home/qtp/Aces2/bin_new
+LIBDIR_O  =/home/qtp/Aces2/lib_new
+LIBDIR_D  =/home/qtp/Aces2/lib_new
+LIBDIR_OP =/home/qtp/Aces2/lib_new
+LIBDIR_DP =/home/qtp/Aces2/lib_new
+endif
+
+endif
+
+#########################################################################
+# HP 9000/735
+
+# +apollo flag is needed for AND and OR bit masking compatability
+ifeq ($(MACH),hp9000)
+AR_R_FLAGS = rcv
+FC         = fort77 -c +apollo -K
+LD         = fort77
+DEFINES    = -DM_HP
+OPTIMIZE   = +O2
+FAST       = 1
+
+ifeq ($(LOC),rutgers)
+BINDIR    = /hp1/users/perera/Aces2/bin
+LIBDIR_O  = /hp1/users/perera/Aces2/lib
+LIBDIR_D  = /hp1/users/perera/Aces2/lib
+LIBDIR_OP = /hp1/users/perera/Aces2/lib
+LIBDIR_DP = /hp1/users/perera/Aces2/lib
+BLASDIR   = /hp1/users/perera/Aces2/lib
+endif
+
+endif
+
+#########################################################################
+#########################################################################
+# FROM HERE DOWN YOU SHOULD NEVER HAVE TO MODIFY
+#########################################################################
+#########################################################################
+
+#########################################################################
+# Extra functions
+#########################################################################
+
+# $(dir_exists) return $(dir) if it exists, null otherwise
+# $(dirs_exist) returns a list of directories from $(dirs) which exist
+# $(dir_writable) return $(dir) if it is writable
+#
+dir_exists = $(shell if test -d $(dir) ;then echo $(dir); fi)
+dirs_exist = $(foreach dir,$(dirs),$(dir_exists))
+dir_writable = \
+  $(shell if test -w $(dir) && test -d $(dir) ;then echo $(dir) ;fi)
+
+# $(file_exists) return $(dir)/$(file) if it exists, null otherwise
+file_exists = \
+  $(shell if test -f $(dir)/$(file) ; then echo $(dir)/$(file); fi)
+
+# $(find_files) searches the directories $(dirs) for each one that contains
+# $(file) and returns the full path.
+find_files = $(foreach dir,$(dirs),$(file_exists))
+
+# $(find_first_file) searches for each file in $(files) in each of the
+# directories $(dirs), and returns the full path to the first one found.
+# Any file not found in any of the directories is omitted.
+find_first_file = $(foreach file,$(files),$(word 1,$(find_files)))
+
+#########################################################################
+# Miscellaneous stuff.
+#########################################################################
+
+# Extra stuff to remove in a clean command.
+JUNK       = *~ core
+
+# If OPT = YES, optimization will be done.  Otherwise, a debug version will
+# be made.  If PROF = YES, a profile code will be made.
+OPT        = NO
+PROF       = NO
+
+# Flags to pass to recursive make:
+#   --no-print-directory to make it not print the directory
+#   -n                   if make -n
+MKFLAGS    := $(filter n,${MAKEFLAGS})
+ifneq (${MKFLAGS},)
+  MKFLAGS  := -n
+endif
+MKFLAGS    := ${MKFLAGS} --no-print-directory
+MKFLAGS    := $(strip ${MKFLAGS})
+
+# Get rid of any flag file from a previous run.
+tmp        := $(shell ${RM} ${FLAGFILE})
+
+#########################################################################
+# At this point, read in the user's Makefile.src if it exists.  Up to now,
+# none of the variables set for most compiler flags are fixed and they can
+# be overridden in Makefile.src.  If the Makefile.src doesn't exist, the
+# name of the module will be the name of the current directory.
+#########################################################################
+
+# Read in Makefile.src if it exists
+
+makefile_exists = $(shell if [ -r Makefile.src ]; then echo YES; fi)
+
+ifeq (${makefile_exists},YES)
+  include Makefile.src
+endif
+
+#########################################################################
+# Source and object files in current module
+#########################################################################
+
+F_F  := $(wildcard *.F)             # all .F files
+F_o  := $(patsubst %.F,%.o,${F_F})  # corresponding .o files
+F_f  := $(patsubst %.F,%.f,${F_F})  # corresponding .f files
+F_d  := $(patsubst %.F,%.d,${F_F})  # corresponding .d files
+F    := $(patsubst %.F,%,${F_F})    # all .F files (without .F extension)
+
+f    := $(wildcard *.f)             # all .f files
+f_f  := $(filter-out ${F_f},${f})   # all .f files NOT from a .F file
+f_o  := $(patsubst %.f,%.o,${f_f})  # corresponding .o files
+f    := $(patsubst %.f,%,${f_f})    # all .f files (without .f extension)
+
+c_c  := $(wildcard *.c)             # all .c files
+c_o  := $(patsubst %.c,%.o,${c_c})  # corresponding .o files
+c_d  := $(patsubst %.c,%.d,${c_c})  # corresponding .d files
+c    := $(patsubst %.c,%,${c_c})    # all .o files (without .o extension)
+
+OBJ  := ${F_o} ${f_o} ${c_o}        # all .o files
+OBJ  := $(strip ${OBJ})
+
+#########################################################################
+# Optimization, profiling, and stripping
+#########################################################################
+
+# This is needed to determine which sets of libraries to use on machines
+# which have both debug and optimized (and maybe profile) libraries
+# available.
+
+DOSTRIP := ${ECHO}
+
+ifeq (${OPT},YES)
+  ifeq (${PROF},YES)
+    OPTFLAGS := ${OPTIMIZE} ${PROFILE}
+    LIBDIR   := ${LIBDIR_OP}
+  else
+    OPTFLAGS := ${OPTIMIZE}
+    LIBDIR   := ${LIBDIR_O}
+    DOSTRIP  := ${STRIP}
+  endif
+else
+  ifeq (${PROF},YES)
+    OPTFLAGS := ${DEBUG} ${PROFILE}
+    LIBDIR   := ${LIBDIR_DP}
+  else
+    OPTFLAGS := ${DEBUG}
+    LIBDIR   := ${LIBDIR_D}
+  endif
+endif
+
+OPTFLAGS := $(strip ${OPTFLAGS})
+LIBDIR   := $(strip ${LIBDIR})
+
+#########################################################################
+# Current module
+#########################################################################
+
+# $(upcase) return $(str) uppercased
+lc = abcdefghijklmnopqrstuvwxyz
+uc = ABCDEFGHIJKLMNOPQRSTUVWXYZ
+upcase = $(shell echo $(str) | sed -e "y/${lc}/${uc}/")
+
+# CURR defaults to current directory
+ifndef CURR
+  pwd  := $(shell pwd)
+  CURR := $(notdir ${pwd})
+endif
+
+# If the current module is a library, set CURRLIB to be the name of
+# the library to build
+ifndef CURRLIB
+  lib := $(filter ${CURR},${ALL_ACES_LIBS})
+  lib := $(strip ${lib})
+  ifdef lib
+    CURRLIB := lib${CURR}.a
+    CURRBIN :=
+  endif
+endif
+
+# If the module is a binary (not a library), set CURRBIN to be the
+# name of the binary to build.  Create the library as well.
+ifndef CURRBIN
+ifndef CURRLIB
+  CURRBIN := ${BIN_PREFIX}${CURR}${BIN_SUFFIX}
+  CURRLIB := lib${CURR}.a
+endif
+endif
+
+CURR    := $(strip ${CURR})
+CURRLIB := $(strip ${CURRLIB})
+CURRBIN := $(strip ${CURRBIN})
+
+#########################################################################
+# Main object file
+#########################################################################
+
+ifdef CURRBIN
+  prog          := $(filter ${CURR}:%,${ALL_MAIN_OBJ})    # joda:geopt
+  prog          := $(strip ${prog})
+  ifndef prog
+    prog        := ${CURR}:${CURR}                        # newbin:newbin
+  endif
+  prog          := $(subst :, ,${prog})                   # joda geopt
+  MAIN_OBJ_FILE := $(word 2,${prog})                      # geopt
+  MAIN_OBJ_FILE := $(strip ${MAIN_OBJ_FILE})
+  MAIN_OBJ_FILE := ${MAIN_OBJ_FILE}.o
+
+# Check to see if the main object file currently exists
+  dir           := .
+  file          := ${MAIN_OBJ_FILE}
+  MAIN_OBJ_EXISTS := $(file_exists)
+  MAIN_OBJ_EXISTS := $(strip ${MAIN_OBJ_EXISTS})
+# If not, check to see whether it WILL exist
+  ifeq (${MAIN_OBJ_EXIST},)
+    MAIN_OBJ_EXISTS := $(filter ${MAIN_OBJ_FILE},${OBJ})
+    MAIN_OBJ_EXISTS := $(strip ${MAIN_OBJ_EXISTS})
+  endif
+endif
+
+# If the main module doesn't exist in the current directory, we'll
+# have to get it out of the library (some machines don't accept the
+# main module being in a library.  Also, add the main module to the
+# list of objects.
+ifdef  CURRBIN
+ifndef MAIN_OBJ_EXISTS
+  MAIN_OBJ_LINK        = ${MAIN_OBJ_FILE}
+endif
+endif
+
+#########################################################################
+# Where to install
+#########################################################################
+
+# Where to install binaries, libraries, and include files.  They default
+# first to a TESTxxxDIR (if defined), followed by xxxDIR (if writable
+# by the user), followed finally by the current directory.
+
+# Binaries
+ifdef  CURRBIN
+ifndef INSTBINDIR
+
+ifdef  TESTBINDIR
+  dir        := ${TESTBINDIR}
+  INSTBINDIR := $(dir_writable)
+endif
+
+ifndef INSTBINDIR
+  dir        := ${BINDIR}
+  INSTBINDIR := $(dir_writable)
+endif
+
+ifndef INSTBINDIR
+  INSTBINDIR := .
+endif
+
+endif
+endif
+
+
+# Libraries
+ifndef INSTLIBDIR
+ifdef  TESTLIBDIR
+  dir        := ${TESTLIBDIR}
+  INSTLIBDIR := $(dir_writable)
+endif
+
+ifndef INSTLIBDIR
+  dir        := ${LIBDIR}
+  INSTLIBDIR := $(dir_writable)
+endif
+
+ifndef INSTLIBDIR
+  INSTLIBDIR := .
+endif
+endif
+
+
+# Include files
+ifndef INSTINCDIR
+ifdef  TESTINCDIR
+  dir        := ${TESTINCDIR}
+  INSTINCDIR := $(dir_writable)
+endif
+
+ifndef INSTINCDIR
+  dir        := ${INCDIR}
+  INSTINCDIR := $(dir_writable)
+endif
+
+ifndef INSTINCDIR
+  INSTINCDIR := ./include
+endif
+endif
+
+#########################################################################
+# Old and new installed versions
+#########################################################################
+
+ifdef  CURRBIN
+  NEWINSTBIN := ${INSTBINDIR}/${CURRBIN}
+  file       := ${CURRBIN}
+  dir        := ${TESTBINDIR}
+  OLDINSTBIN := $(file_exists)
+  ifeq (${OLDINSTBIN},)
+    dir        := ${BINDIR}
+    OLDINSTBIN := $(file_exists)
+  endif
+endif
+
+NEWINSTLIB   := ${INSTLIBDIR}/${CURRLIB}
+file         := ${CURRLIB}
+dir          := ${TESTLIBDIR}
+OLDINSTLIB   := $(file_exists)
+ifeq (${OLDINSTLIB},)
+  dir        := ${LIBDIR}
+  OLDINSTLIB := $(file_exists)
+endif
+
+#########################################################################
+# Modules the current module depends on (includes itself and others)
+#########################################################################
+
+# Find out what other modules are linked against (and included from) in
+# the current module.  ALL_LINK_LIBS contains a list of dependent modules
+# for the binaries.  The libraries are omitted since they depend only
+# on themselves.
+
+ifndef MODULES
+  # First, make sure that joda (and perhaps others) appears differently
+  # in the cases:
+  #     joda:ecp:libr
+  #     findif:joda:ecp:libr
+  # Set $(modules) to be:
+  #     joda:ecp:libr      (module: joda)
+  #     aces3              (module: aces3)
+  X             := xxxxx
+  ALL_LINK_LIBS := $(addprefix ${X},${ALL_LINK_LIBS})
+  modules       := $(filter ${X}${CURR}:%,${ALL_LINK_LIBS}) # xxxjoda:ecp:libr
+  modules       := $(strip ${modules})
+  modules       := $(patsubst ${X}%,%,${modules})
+  modules       := $(strip ${modules})
+
+else
+  modules    := ${MODULES}
+endif
+
+# If the module is not in ALL_LINK_LIBS, set it equal to itself if it's
+# a library, or itself plus the default library(s) if it's a binary.
+ifndef modules
+  ifdef CURRBIN
+    modules   := ${CURR}:${DEF_LINK_LIBS}
+  else
+    modules   := ${CURR}
+  endif
+endif
+
+MODULES   := $(subst :, ,${modules})
+MODULES   := $(strip ${MODULES})
+
+#########################################################################
+# Includes
+#########################################################################
+
+# Include from:
+#    ./include  TESTINCDIR  INCDIR
+
+dirs      := ./include ${TESTINCDIR} ${INCDIR}
+INCLUDES  := $(dirs_exist)
+ifneq (${INCLUDES},)
+  INCLUDES := $(addprefix -I,${INCLUDES})
+endif
+INCLUDES  := ${EXTRA_INCLUDES} ${INCLUDES}
+INCLUDES  := $(strip ${INCLUDES})
+
+dirs      := ./include
+tmp       := $(dirs_exist)
+ifneq (${tmp},)
+  INCFILES   := $(wildcard ./include/*)
+  INCIGNORE  := $(addprefix ./include/,${INCIGNORE})
+  INCFILES   := $(filter-out ${INCIGNORE},${INCFILES})
+  INCFILES   := $(strip ${INCFILES})
+endif
+
+#########################################################################
+# Defines
+#########################################################################
+
+DEFINES := ${EXTRA_DEFINES} ${DEFINES} ${C_SUFFIX}
+DEFINES := $(strip ${DEFINES})
+
+#########################################################################
+# Libraries
+#########################################################################
+
+# Link against:
+#     .   TESTLIBDIR   LIBDIR
+
+dirs     := . ${TESTLIBDIR} ${LIBDIR}
+LIBDIRS  := $(dirs_exist)
+LIBDIRS  := $(strip ${LIBDIRS})
+
+# Find which of the modules have libraries that exist (ignore CURR)
+files    := $(filter-out ${CURR},${MODULES})   # all MODULES except CURR
+files    := $(patsubst %,lib%.a,${files})      # libXXX.a
+files    := $(find_first_file)                 # full path to those that exist
+TARGLIBS := ${files}
+TARGLIBS := $(strip ${TARGLIBS})
+files    := $(notdir ${files})                 # libXXX.a
+files    := $(patsubst lib%.a,%,${files})      # XXX
+BINLIBS  := ${CURR} ${files}
+BINLIBS  := $(strip ${BINLIBS})
+LINKLIBS := $(addprefix -L,${LIBDIRS}) $(addprefix -l,${BINLIBS})
+LINKLIBS := $(strip ${LINKLIBS})
+
+#########################################################################
+# Compiler and linker options
+#########################################################################
+
+CFLAGS 	 := ${OPTFLAGS} ${CCFLAGS} ${EXTRA_CCFLAGS} ${INCLUDES} ${DEFINES}
+FFLAGS 	 := ${OPTFLAGS} ${FCFLAGS} ${EXTRA_FCFLAGS}
+LFLAGS 	 := ${OPTFLAGS} ${FCFLAGS} ${EXTRA_FCFLAGS} ${LDFLAGS} ${EXTRA_LDFLAGS}
+CPPFLAGS := ${INCLUDES} ${DEFINES}
+ifneq (${CPPPREFIX},)
+  CPPFLAGS := $(addprefix ${CPPPREFIX},${CPPFLAGS})
+endif
+
+LIBS     := ${EXTRA_LIBS} ${LINKLIBS} ${NUMLIBS}
+
+CFLAGS   := $(strip ${CFLAGS})
+FFLAGS   := $(strip ${FFLAGS})
+LFLAGS   := $(strip ${LFLAGS})
+CPPFLAGS := $(strip ${CPPFLAGS})
+LIBS     := $(strip ${LIBS})
+
+#########################################################################
+# Some targets to make the actual makefile simpler
+#########################################################################
+
+# The first thing to do is build a library.  To do this, you need object
+# files.  They must come either from:
+#    ${OBJ}          if they exists  OR
+#    ${OLDINSTLIB}   otherwise
+# If neither exist, nothing can be built.
+#
+# The build is accomplished by the following:
+#    if ${OBJ}
+#       compile all .o files
+#    if ${OLDINSTLIB}
+#       remove any current library
+#       copy ${OLDINSTLIB} in
+#    if ${OBJ}
+#       replace ${OBJ} in the library
+
+LIB_TARGET        = no-targets
+ifdef CURRLIB
+  LIB_TARGET      = lib
+endif
+
+ifneq (${OLDINSTLIB},)
+  COPY_LIB_TARGET = copy-lib
+endif
+
+ifneq (${OBJ},)
+  REPLACE_OBJ_TARGET = repl-obj
+endif
+
+ifeq (${COPYLIB},NO)
+  COPY_LIB_TARGET =
+endif
+
+# If CURRLIB and OLDINSTLIB both exist and CURRLIB is newer, then DON'T
+# copy it in.
+dir           := .
+file          := ${CURRLIB}
+touch_cmd     := ${TOUCH} ${FLAGFILE}
+CURRLIB_EXIST := $(file_exists)
+CURRLIB_TEST  := ${CURRLIB}:${OLDINSTLIB}\;${touch_cmd}
+ifneq (${OLDINSTLIB},)
+ifneq (${CURRLIB_EXIST},)
+  tmp   := $(shell echo ${CURRLIB_TEST} | make -f - )
+  file  := ${FLAGFILE}
+  file  := $(file_exists)
+  tmp   := $(shell ${RM} ${FLAGFILE})
+  ifeq (${file},)
+    COPY_LIB_TARGET =
+  endif
+endif
+endif
+
+# If CURRLIB doesn't exist, force it to be created
+FORCE_LIB_TARGET =
+ifeq (${CURRLIB_EXIST},)
+  FORCE_LIB_TARGET = force-lib
+endif
+
+#########################################################################
+
+# To then build a binary:
+#
+#    extract main object file from library
+#    link
+
+BIN_TARGET        =
+ifdef CURRBIN
+  BIN_TARGET      = bin
+endif
+
+# Only extract an object if we copy in a new library OR if the
+# main object file won't exist after building all the source
+
+EXTR_MAIN_TARGET =
+ifneq (${COPY_LIB_TARGET},)
+  EXTR_MAIN_TARGET = extr-main
+endif
+ifeq (${MAIN_OBJ_EXISTS},)
+  EXTR_MAIN_TARGET = extr-main
+endif
+
+#########################################################################
+
+# After everything is built, we may want to install stuff.
+
+# To install the library, we have to successfully build it and then be
+# able to install it somewhere.
+
+INST_LIB_TARGET   =
+ifeq  (${LIB_TARGET},lib)
+  ifneq (${INSTLIBDIR},.)
+    INST_LIB_TARGET = inst-lib
+  endif
+else
+  INST_LIB_TARGET = no-targets
+endif
+
+# To install the binary, we have to successfully build it and then be
+# able to install it somewhere.
+#
+# When installing a binary, we only want to install the executable to
+# the system if we are building an optimize version (we may still
+# install the library however).  It is okay to install to ${TESTBINDIR},
+# just not ${BINDIR}.
+
+INST_BIN_TARGET   =
+ifeq  (${BIN_TARGET},bin)
+ifneq (${INSTBINDIR},.)
+  INST_BIN_TARGET = inst-bin
+endif
+endif
+
+ifeq  (${INST_BIN_TARGET},inst-bin)
+ifneq (${OPT},YES)
+ifeq  (${INSTBINDIR},${BINDIR})
+  INST_BIN_TARGET =
+endif
+endif
+endif
+
+# To install include files, some have to exist and we have to be able
+# to install them somewhere.
+
+ifdef INSTINCDIR
+ifdef INCFILES
+ifneq (${INSTINCDIR},./include)
+  INST_INC_TARGET = inst-inc
+endif
+endif
+endif
+
+
+#########################################################################
+#########################################################################
+# The actual makefile
+#########################################################################
+#########################################################################
+export
+
+.SUFFIXES:
+.SUFFIXES:      .c .F .f .d .o .a
+# %.f : %.F
+# %.o : %.f
+# %.o : %.F
+# %.o : %.c
+# %.a : %.o
+# %.a : %.c
+# %.a : %.f
+# %.a : %.F
+
+#########################################################################
+.PHONY: all install FORCE
+
+
+all: ${DEPDIR} ${LIB_TARGET} ${BIN_TARGET}
+
+${DEPDIR}:
+	mkdir ${DEPDIR}
+
+install: all ${INST_LIB_TARGET} ${INST_BIN_TARGET} ${INST_INC_TARGET}
+
+FORCE:
+
+#########################################################################
+#
+# Create and install the library
+#
+.PHONY: lib repl-obj copy-lib inst-lib force-lib
+
+lib: ${CURRLIB}
+
+${CURRLIB}:: ${OBJ}
+	${TOUCH} ${FLAGFILE}
+
+${CURRLIB}:: ${FORCE_LIB_TARGET} ${COPY_LIB_TARGET} ${REPLACE_OBJ_TARGET}
+
+force-lib:
+	${TOUCH} ${FLAGFILE}
+
+copy-lib:
+	${RM} ${CURRLIB}
+	${CP} ${OLDINSTLIB} .
+	${RANLIB} ${RLFLAGS} ${CURRLIB}
+	${TOUCH} ${FLAGFILE}
+
+repl-obj: ${OBJ} ${COPY_LIB_TARGET}
+	if [ -f ${FLAGFILE} ] ;then \
+	  ${AR} ${AR_R_FLAGS} ${CURRLIB} ${OBJ} ; \
+	  ${RANLIB} ${RLFLAGS} ${CURRLIB} ; \
+	  ${RM} ${FLAGFILE} ; \
+	fi
+
+inst-lib: lib
+	${INSTALL} ${CURRLIB} ${NEWINSTLIB}
+	${RANLIB} ${RLFLAGS} ${NEWINSTLIB}
+
+#########################################################################
+#
+# Create (and install) the binary
+#
+.PHONY: bin inst-bin extr-main
+
+
+bin: ${CURRBIN}
+
+${CURRBIN}: ${TARGLIBS} ${EXTR_MAIN_TARGET} ${CURRLIB}
+	${LD} ${LFLAGS} -o ${CURRBIN} ${MAIN_OBJ_LINK} ${OBJ} ${LIBS}
+	${DOSTRIP} ${CURRBIN}
+
+extr-main: ${COPY_LIB_TARGET}
+	${AR} ${AR_X_FLAGS} ${CURRLIB} ${MAIN_OBJ_FILE}
+	${TOUCH} ${FLAGFILE}
+
+inst-bin: bin
+	${RM} ${NEWINSTBIN}
+	${INSTALL} ${CURRBIN} ${NEWINSTBIN}
+
+#########################################################################
+#
+# Installs the include files
+#
+.PHONY: inst-inc
+
+
+inst-inc:
+	${INSTALL} ${INCFILES} ${INSTINCDIR}
+
+#########################################################################
+#
+# How to build the object files
+#
+.PHONY:
+vpath %.d ${DEPDIR}
+
+ifdef FAST
+#---------------------------------------------
+${F_f}: %.f : %.F
+        ifeq ($(MACH),rs6000)
+	  ${CPP} ${CPPFLAGS} $*.F
+	  ${MV} F$*.f $*.f
+        else
+	  ${CPP} ${CPPFLAGS} $*.F $*.f
+        endif
+
+${f_o} ${F_o}: %.o : %.f
+	${FC} ${FFLAGS} $<
+	${TOUCH} ${FLAGFILE}
+
+${c_o}: %.o : %.c
+	${CC} ${CFLAGS} $<
+	${TOUCH} ${FLAGFILE}
+
+else
+#---------------------------------------------
+${F_f}: %.f : %.d FORCE
+	${MAKE} ${MKFLAGS} -f ${DEPDIR}/$(<F)
+
+${F_d}: %.d : %.F
+	${RM} ${DEPDIR}/$(@F)
+	${CPP} -M ${CPPFLAGS} $< | sed -e 's/^.*: /$*.f: /' > ${DEPDIR}/$(@F)
+	echo '	$${CPP} $${CPPFLAGS} $$*.F $$*.f' >> ${DEPDIR}/$(@F)
+	echo '	${TOUCH} ${FLAGFILE}' >> ${DEPDIR}/$(@F)
+
+${f_o} ${F_o}: %.o : %.f
+	${FC} ${FFLAGS} $<
+	${TOUCH} ${FLAGFILE}
+
+${c_o}: %.o : %.d FORCE
+	${MAKE} ${MKFLAGS} -f ${DEPDIR}/$(<F)
+
+${c_d}: %.d : %.c
+	${RM} ${DEPDIR}/$(@F)
+	${CPP} -M ${CPPFLAGS} $< | sed -e 's/^.*: /$*.o: /' >> ${DEPDIR}/$(@F)
+	echo '	$${CC} $${CFLAGS} $<' >> ${DEPDIR}/$(@F)
+	echo '	${TOUCH} ${FLAGFILE}' >> ${DEPDIR}/$(@F)
+
+endif
+#---------------------------------------------
+
+#########################################################################
+#
+# misc
+#
+.PHONY: no-targets clean debug very-clean
+
+no-targets:
+	echo An invalid target was chosen.
+
+clean:
+	${RM} ${CURRLIB} ${CURRBIN} ${OBJ} ${F_f} ${JUNK} ${MAIN_OBJ_FILE} \
+	      ${FLAGFILE}
+
+very-clean: clean
+	${RM} ${DEPDIR}/*.d
+
+debug:
+	echo F_F                  : ${F_F}
+	echo
+	echo F_o                  : ${F_o}
+	echo
+	echo F_f                  : ${F_f}
+	echo
+	echo F_d                  : ${F_d}
+	echo
+	echo F                    : ${F}
+	echo
+	echo f_f                  : ${f_f}
+	echo
+	echo f_o                  : ${f_o}
+	echo
+	echo f                    : ${f}
+	echo
+	echo c_c                  : ${c_c}
+	echo
+	echo c_o                  : ${c_o}
+	echo
+	echo c_d                  : ${c_d}
+	echo
+	echo c                    : ${c}
+	echo
+	echo OBJ                  : ${OBJ}
+	echo
+	echo MACHNAME		  : ${MACHNAME}
+	echo MACH                 : ${MACH}
+	echo OPSYS		  : ${OPSYS}
+	echo LOC		  : ${LOC}
+	echo  
+	echo BINDIR     	  : ${BINDIR}
+	echo TESTBINDIR           : ${TESTBINDIR}
+	echo INSTBINDIR           : ${INSTBINDIR}
+	echo LIBDIR     	  : ${LIBDIR}
+	echo TESTLIBDIR           : ${TESTLIBDIR}
+	echo INSTLIBDIR           : ${INSTLIBDIR}
+	echo INCDIR     	  : ${INCDIR}
+	echo TESTINCDIR           : ${TESTINCDIR}
+	echo INSTINCDIR           : ${INSTINCDIR}
+	echo  
+	echo BLASDIR              : ${BLASDIR}
+	echo BLASLIB              : ${BLASLIB}
+	echo LAPACKDIR            : ${LAPACKDIR}
+	echo LAPACKLIB            : ${LAPACKLIB}
+	echo NUMLIBS              : ${NUMLIBS}
+	echo  
+	echo CURR                 : ${CURR}
+	echo CURRBIN              : ${CURRBIN}
+	echo CURRLIB              : ${CURRLIB}
+	echo OLDINSTLIB           : ${OLDINSTLIB}
+	echo NEWINSTLIB           : ${NEWINSTLIB}
+	echo OLDINSTBIN           : ${OLDINSTBIN}
+	echo NEWINSTBIN           : ${NEWINSTBIN}
+	echo INCFILES             : ${INCFILES}
+	echo INCIGNORE            : ${INCIGNORE}
+	echo
+	echo MAIN_OBJ_FILE        : ${MAIN_OBJ_FILE}
+	echo MAIN_OBJ_EXISTS      : ${MAIN_OBJ_EXISTS}
+	echo MAIN_OBJ_LINK        : ${MAIN_OBJ_LINK}
+	echo  
+	echo MODULES              : ${MODULES}
+	echo INCLUDES             : ${INCLUDES}
+	echo BINLIBS		  : ${BINLIBS}
+	echo LINKLIBS		  : ${LINKLIBS}
+	echo
+	echo OPTFLAGS		  : ${OPTFLAGS}
+	echo DEFINES		  : ${DEFINES}
+	echo LIBDIRS              : ${LIBDIRS}
+	echo TARGLIBS		  : ${TARGLIBS}
+	echo
+	echo FFLAGS               : ${FFLAGS}
+	echo CFLAGS               : ${CFLAGS}
+	echo LFLAGS               : ${LFLAGS}
+	echo CPPFLAGS             : ${CPPFLAGS}
+	echo LIBS 		  : ${LIBS}
+	echo DOSTRIP              : ${DOSTRIP}
+	echo
+	echo LIB_TARGET           : ${LIB_TARGET}
+	echo COPY_LIB_TARGET      : ${COPY_LIB_TARGET}
+	echo REPLACE_OBJ_TARGET   : ${REPLACE_OBJ_TARGET}
+	echo CURRLIB_EXIST        : ${CURRLIB_EXIST}
+	echo CURRLIB_TEST         : ${CURRLIB_TEST}
+	echo FORCE_LIB_TARGET     : ${FORCE_LIB_TARGET}
+	echo INST_LIB_TARGET      : ${INST_LIB_TARGET}
+	echo 
+	echo BIN_TARGET		  : ${BIN_TARGET}
+	echo EXTR_MAIN_TARGET     : ${EXTR_MAIN_TARGET}
+	echo INST_BIN_TARGET      : ${INST_BIN_TARGET}
+	echo INST_INC_TARGET      : ${INST_INC_TARGET}
+
+#########################################################################
+#########################################################################
+
+else # MACH not defined
+
+.PHONY: all install clean debug not-configured
+
+all: not-configured
+install: not-configured
+clean: not-configured
+debug: not-configured
+
+not-configured:
+	echo Aces2 not configured for this machine.
+
+endif
+
+#########################################################################
+# HISTORY
+#########################################################################
+#
+# 1.00  08/31/94
+#       Initial version
+#
+# 2.00  07/06/95
+#       Complete rewrite to use the new ~rjbprogs hierarchy.
+#
+# 2.01  07/11/95
+#       Simplified some targets
+#       Fixes suggested by Steve Gwaltney:
+#          o  build works in an empty directory
+#       Extracts main module first
+#
+# 2.02  07/13/95
+#       Bugs/fixes suggested by Steve Gwaltney:
+#          o  bug setting LIBLIBS if the library had not yet been installed
+#          o  bug when installing an executable
+#          o  bug where LDFLAGS was used where LFLAGS should have been
+#       Bugs/fixes suggested by Nevin Oliphant:
+#          o  now has reasonable defaults for INCLUDES
+#
+# 2.03  07/17/95
+#       Bugs/fixes suggested by Steve Gwaltney:
+#          o  bug where vcc was using information from all modules starting
+#             with vcc rather than named exactly vcc (so vcc was using
+#             vcc, vcc5q, vcc5t, etc.)
+#
+# 2.04  08/18/95
+#       Added some CRAY configuration from Steve Gwaltney.
+#
+# 2.05  08/28/95
+#       Cleaned up includes and libraries selection.
+#       Added inst-inc target to install include files.
+#
+# 2.06  09/04/95
+#       Automatic dependencies generated for include files.
+#
+# 2.07  09/13/95
+#       Made it easy to define what modules to link against.
+#       Fixed some comments.
+#
+# 2.08  09/22/95
+#       Added FAST option.
+#
+# 2.09  10/25/95
+#       Fixed problem passing arguments to the CPP on the IBM.
+#       Made FAST always on when on the IBMs.
+#       Cleaned up targets (especially when copying in a library and
+#          extracting the main routine)
+#       Cleaned up numerical library arguments.
+#
+# 2.10  10/30/95
+#       Installs in TESTLIBDIR if defined.
+#
+# 2.11  11/03/95
+#       Bugs/fixes suggested by Steve Gwaltney
+#         o  When main object is extracted, it must go on the command line
+#         o  File test with an undefined variable
+#       Bugs/fixes suggested by Nevin Oliphant
+#         o  Lowered default optimization (higher levels give more problems)
+#
+# 2.12  11/08/95
+#       Fixes suggested by Marcel Nooijen
+#         o  Checked to make sure that libraries can use include files from
+#            other libraries and adjusted documentation for ALL_LINK_LIBS
+#            accordingly.
+#
+# 2.13  11/22/95
+#       Now has a define of the form -D__JODA
+#       Bugs/fixes suggested by Steve Gwaltney
+#         o  Links agains lapack before blas
+#
+# 3.00  05/21/96
+#       Complete rewrite.  Major changes include:
+#         o  Machine determination section simplified
+#         o  Target and dependancies more consistent
+#       Added MKFLAGS to handle -n option
+#       Added -dalign to sparc FCFLAGS to link against optimized blas
+#
+# 3.01  05/24/96
+#       Fixed a bug where the binary wasn't built when it should have been
+#       Fixed a typo in the RS6000 definitions
+#       Added the target very-clean which removes all .d files
+#
+# 3.02  05/31/96
+#       Added DEC alpha
+#       Fixed extr-main target (it was misnamed extract-main)
+#       Removed a trivial redundancy pointed out by
+#          Steve "desparate-to-find-a-bug" Gwaltney
+#
+# 3.03  06/05/96
+#       Added flag to save .f files
+#       Added savef and cleanf targets
+#       Cleaned up documentation
+#       Added flag to NOT copy in the old library
+#
+# 3.04  06/11/96
+#       Bugs found by Steve Gwaltney
+#         o  Tried to install library/binary before they were built
+#       Bugs/fixes found by Marcel Nooijen
+#         o  SAVEFFLAGS defined for IBM
+#         o  Library locations defined correctly for IBM
+#
+# 3.05  06/12/96
+#       Added .F->.f rule (SAVEFFLAGS removed)
+#       Got rid of some implicit rules that interfered
+#       *NOTE* The following are incompatable with previous versions
+#         o  All includes should include a -I
+#         o  All defines should include a -D
+#       Combined the cleanf target with the clean target
+#
+# 3.06  06/26/96
+#       Added OSCA definitions
+#       Fixed some CPP stuff for the RS6000 (AIX sucks!)
+#       Major enhancements of the documentation
+#
+# 3.07  10/03/96
+#       Fixed a minor bug in the .f->.o rule (it didn't touch Makefile.flag)
+#       Fixed a bug where if a .o file is newer than the library but nothing
+#          needed to be recompiled, it wouldn't get replaced in the library
+#       Automatically strip optimized, non-profiled executables
+#
+# 3.08  11/07/96
+#       Added librt3.a
+#
+# TODO
+#   o  For vmol/vdint extract the block data as well as the main object
+#   o  Option to do static or dynamic linking
+#   o  Add CRAY, SGI, DEC
+
+# Local Variables: #
+# indent-tabs-mode: t #
+# End: #

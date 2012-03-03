@@ -1,0 +1,38 @@
+#!/bin/bash -f
+#
+. /opt/intel/fc/9.1.041/bin/ifortvars.sh
+. /opt/intel/cc/9.1.042/bin/iccvars.sh
+#
+
+export CUR=`pwd`
+ITERATION=$(cat $CUR/iteration)
+
+export WORK=/scr_1/tmp/`uname -n`.`whoami`.$$
+mkdir $WORK
+
+cp $CUR/JOBARC $WORK/
+cp $CUR/JAINDX $WORK/
+cp $CUR/ZMAT   $WORK/
+#
+
+ln -s /share/aces/ACESII-2.7.0-RELEASE/test/GENBAS $WORK/GENBAS
+cd $WORK
+export ACESROOT=/share/aces/ACESII_2HOT/bin
+export PATH=$ACESROOT:$PATH
+#
+xaces2 > out.$$
+#
+if test -f FRQARC; then 
+cp $WORK/FRQARC $CUR/.
+else echo "The file FRQARC does not exsist"
+fi
+cd $CUR
+cp $WORK/out.$$ $CUR/.
+cp $WORK/JOBARC $CUR/.
+cp $WORK/JAINDX $CUR/.
+#
+rm -rf $WORK
+ITERATION=$(( $ITERATION + 1 ))
+echo $ITERATION > $CUR/iteration
+
+

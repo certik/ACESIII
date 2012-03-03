@@ -1,0 +1,42 @@
+      SUBROUTINE DUMPIT(IOO,IVV,IVO,XVO,IUHF)
+C
+C DUMP OUT I AND X INTERMEDIATES
+C
+      IMPLICIT INTEGER (A-Z)
+      CHARACTER*5 SPCASE
+      DIMENSION IOO(*),IVV(*),IVO(*),XVO(*),SPCASE(2)
+      COMMON/MACHSP/IINTLN,IFLTLN,IINTFP,IALONE,IBITWD
+      COMMON/SYMINF/NSTART,NIRREP,IRREPY(255,2),DIRPRD(8,8)
+      COMMON/SYM2/POP(8,2),VRT(8,2),NT(2),NFMI(2),NFEA(2)
+C
+      DATA SPCASE/'alpha','beta '/
+C
+      WRITE(6,1000)
+1000  FORMAT(T3,'@DUMPIT-I, I and X intermediates follow. ')
+C
+      DO 10 ISPIN=1,1+IUHF
+       WRITE(6,1001)SPCASE(ISPIN)
+1001   FORMAT(T3,'Occupied-occupied I intermediate for spin ',A,':')
+       CALL PRVECR(IOO(1+IINTFP*(ISPIN-1)*NFMI(1)),NFMI(ISPIN))
+10    CONTINUE
+C
+      DO 20 ISPIN=1,1+IUHF
+       WRITE(6,2001)SPCASE(ISPIN)
+2001   FORMAT(T3,'Virtual-virtual I intermediate for spin ',A,':')
+       CALL PRVECR(IVV(1+IINTFP*(ISPIN-1)*NFEA(1)),NFEA(ISPIN))
+20    CONTINUE
+C
+      DO 30 ISPIN=1,1+IUHF
+       WRITE(6,3001)SPCASE(ISPIN)
+3001   FORMAT(T3,'Virtual-Occupied I intermediate for spin ',A,':')
+       CALL PRVECR(IVO(1+IINTFP*(ISPIN-1)*NT(1)),NT(ISPIN))
+30    CONTINUE
+C
+      DO 40 ISPIN=1,1+IUHF
+       WRITE(6,4001)SPCASE(ISPIN)
+4001   FORMAT(T3,'Occupied-Virtual I intermediate for spin ',A,':')
+       CALL PRVECR(XVO(1+IINTFP*(ISPIN-1)*NT(1)),NT(ISPIN))
+40    CONTINUE
+C
+      RETURN
+      END

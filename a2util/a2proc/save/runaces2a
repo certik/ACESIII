@@ -1,0 +1,35 @@
+#!/bin/bash -f
+#
+. /opt/intel/fc/9.1.041/bin/ifortvars.sh
+. /opt/intel/cc/9.1.042/bin/iccvars.sh
+#
+
+export CUR=`pwd`
+ITERATION=$(cat $CUR/iteration)
+
+export WORK=/scr_1/tmp/`uname -n`.`whoami`.$$
+mkdir $WORK
+
+cp ZMAT $WORK/ZMAT
+ln -s $CUR/GENBAS $WORK/GENBAS
+cd $WORK
+export ACESROOT=/share/aces/ACESII_2HOT/bin
+export PATH=$ACESROOT:$PATH
+#
+xaces2 > out.$$
+#
+#cp ZMAT $CUR/log/ZMAT.$ITERATION
+#cp $1 $CUR/log/$1.$ITERATION
+
+cp $WORK/JOBARC $CUR/.
+cp $WORK/JAINDX $CUR/.
+cp $WORK/NEWMOS $CUR/.
+cp $WORK/out.$$ $CUR/.
+
+cd $CUR
+rm -rf $WORK
+ITERATION=$(( $ITERATION + 1 ))
+echo $ITERATION > $CUR/iteration
+
+
+

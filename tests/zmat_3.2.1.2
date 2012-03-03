@@ -1,0 +1,20 @@
+Ar4 test of uhf linccsd energy in an aug-cc-pvtz basis, dropmo
+AR   0.0  0.0  0.0
+AR   0.0  0.0  4.0
+AR   0.0  4.0  0.0
+AR   0.0  4.0  4.0
+
+*ACES2(CALC=LCCSD,BASIS=AUG-CC-PVTZ
+dropmo=1-20
+spherical=on
+CHARGE=1,MULT=2
+REF=UHF,UNITS=BOHR
+COORDINATES=CARTESIAN
+SCF_CONV=6
+SYMMETRY=NONE)
+
+*SIP
+MAXMEM=900
+TIMERS=YES
+REGULARIZER=0.1
+

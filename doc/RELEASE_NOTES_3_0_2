@@ -1,0 +1,46 @@
+Release Notes for ACESIII version 3.0.2
+
+1. Zero out scratch array used in eig.F routine.  This eliminates some prblems noted with inconsistencies in diagonalization results.
+
+2. Remove and clean up some outdated code used in building the PST table.
+
+3. Change SSCAL calls to DSCAL to eliminate confusion about use of this routine.
+
+4. Old joda routines coarse_backup and coarse_restore have been modified to eliminate use of the C "system" call.
+
+5. Removed the "create_window" SIAL language construct, changed sub_index to subindex. This work is in preparation for the next round of extensions to the SIAL language.
+
+6. Remove occurrences of sub_index construct in SIAL programs.  Remove test_window.sial (obsolete program).
+
+7. Change dimension of internal arrays in contract_blocks.f from 4 to 6.       
+
+8. Fixed a memory-related bug in built_bgmtrx.F.  A scratch array was used in multiple ways, and an implicit assumption in its dimensions was that NRATOMS is less than or equal to TOTREDNCO/3. Now, the correct dimensions are always used. 
+
+9. Added subindex capability to SIAL language and runtime.
+
+10. Fix error in server: Delete instruction failed when running very tiny jobs with multiple servers.
+
+11. Fix bug in reuse of scratch arrays in built_bgmtrx.  This could cause a job to incorrectly transform the Cartesian coords to internal coords at the end of a geometry step.
+
+12. Fix logic in contract_blocks routine to allow contractions of type 
+   2-index * 4-index -> 4-index as well as 
+   4-index * 2-index -> 4-index.
+
+13. Fixed gfortran (fortran compiler for gcc >= 4.0) problems in sip/open_amp (added filenames) and in geopt/assign_bonds (added length for integer output). 
+
+14. Updated geopt/minv to use lapack routines instead of linpack/eispack routines 
+
+15. Added preprocessor directive to main/sumz.c to comment out the inclusion of malloc.h when on an Apple computer. This file doesn't exist for modern Macs and the relevant routines are stored in other header files already included.
+
+16. In nlo__analyze_rings there is a call to the non-fortran standard dacosd routine.  For gcc compilers, this routine does not exist.  Added preprocessor directive to include an external function that replicates its action for gcc based compilers. Change nlo__analyze_rings.f to nlo__analyze_rings.F
+
+17. Added options for regularized LinCCSD.  The regularization is specified through the SIP section of the ZMAT
+
+18. Added HF instability following capabilities.  This calls the sial code instab_scf_uhf_mo_ao.sio to determine whether or not there is an instability.  If there is (or dropmo is on) then it reruns the SCF code guess_scf_uhf_finish.sio with an initial guess from the instab routine, before proceeding to the correlation calculation. This required the addition of stabvalue as a global constant and several changes to main/beta.F
+
+19. Merged in changes from port to tow (SGI-ICE) and surveyor (IBM Blue Gene/P) systems.
+
+20.  Added tests and test_results for new SIAL codes (3.1.1.1-3.2.3.1).
+
+21.  Fix bug causing crashes in SYMMETRY routine during geometry optimizations on Crays (particularly einstein).
+

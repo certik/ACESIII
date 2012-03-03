@@ -1,0 +1,29 @@
+Release Notes for ACESIII version 3.0.3
+
+1. Improvement in the allocate instruction.  Previously, the ALLOCATE was required to use only the original indices used in the array declaration for non-wildcard indices.  Now, any index whose type mathces that of the corresponding index in the array declaration may be used, as long as it is also in scope at the time of the allocate execution.
+
+2. Fixed 2 problems with running very tiny jobs: (1) incorrect calculation of the COMPANY/IOCOMPANY parameters, and (2) segment error when attempting to determine default segment sizes for very tiny jobs (less than 20 basis fns.).
+
+3. Fixed bugs in SIAL coding in hess_uhf_scf.sial and mp2grad_uhf.sial (incorrectly coded index in allocate).
+
+4. Added checkpoint/restart capability.  This gives us the capability to do inte
+rnal checkpoints within a given SIAL program and restart a later job from that p
+oint using the checkpointed data.
+
+5. Added xyz moment integrals, to any power of x, y, and z.  One is now
+able to compute transition moments and distribution of rydberg and valence state
+s, assuming those separate algorithms are coded.  Merged the xyz integrals withN
+orbert's OED integral package with the name: oed__xyz_... .
+
+6. Fixed bugs in handling of amplitude symmetry in ccsd_rhf_ao_sv1_diis5.sial and lambda_rhf_dropmo_new.sial.
+
+7. Fixed problem with incorrect initial guess used in CIS and EOM codes.
+
+8. New IP, EA, DIP, DEA, and EE-EOM capabilites (new SIAL programs).
+
+9. Parallelized BLOCKDATA restart capability.
+
+10.  Fix problem with new triples code on davinci.  Fix involved a new way of releasing unreferenced data blocks so that they did not hang around unecessarily in later loops.
+
+11. Make corrections to test Makefile preventing test runs on babbage.
+

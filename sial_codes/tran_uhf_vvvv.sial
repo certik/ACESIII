@@ -1,0 +1,922 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+                           SIAL TRAN_UHF_VVVV
+#
+# ---------------------------------------------------------------------------
+#
+# Final set of of fully transformed integrals INCLUDING the 4-virtual ones.
+#
+# ---------------------------------------------------------------------------
+#
+#                         Integral     Type
+#                         --------------------
+#                         VSaaaa      SERVED  
+#                         VSbbbb      SERVED 
+#                         Vaabb       SERVED 
+#
+# ---------------------------------------------------------------------------
+#
+# Declare indeces
+# ---------------
+#
+      aoindex mu     = 1, norb
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      mobindex q = bbocc, ebvirt
+      mobindex q1= bbocc, ebvirt
+      mobindex q2= bbocc, ebvirt
+      mobindex q3= bbocc, ebvirt
+#
+# Declare served arrays
+# ---------------------
+#
+      served VSpipi(p1,i,p,i1)
+      served Viaai(i,a1,a,i1)
+      served Vaaii(a,a1,i,i1)
+      served VSaaai(a2,a,a1,i)
+#
+      served VSqjqj(q1,j,q,j1)
+      served Vjbbj(j,b,b1,j1)
+      served Vbbjj(b,b1,j,j1)
+      served VSbbbj(b2,b,b1,j)
+#
+      served Vpiqj(p,i,q,j)
+      served Vaajj(a,a1,j,j1)
+      served Viabj(i,a,b,j)
+      served Vaabj(a,a1,b,j)
+#
+      served Vjbii(j,b,i,i1)
+      served Vbbii(b,b1,i,i1)
+      served Vbbai(b,b1,a,i)
+#
+      distributed VSTART1A1(a,i)
+      distributed VSTART1A2(a,i)
+      distributed VSTART1A3(a,i)
+      distributed VSTART1A4(a,i)
+      distributed VSTART1A5(a,i)
+      distributed VSTART1A6(a,i)
+      distributed VSTART1A7(a,i)
+      distributed VSTART1A8(a,i)
+      distributed VSTART1A9(a,i)
+      distributed VSTART1A10(a,i)
+      distributed VSTART1A11(a,i)
+      distributed VSTART1A12(a,i)
+#
+      distributed VSTART1B1(b,j)
+      distributed VSTART1B2(b,j)
+      distributed VSTART1B3(b,j)
+      distributed VSTART1B4(b,j)
+      distributed VSTART1B5(b,j)
+      distributed VSTART1B6(b,j)
+      distributed VSTART1B7(b,j)
+      distributed VSTART1B8(b,j)
+      distributed VSTART1B9(b,j)
+      distributed VSTART1B10(b,j)
+      distributed VSTART1B11(b,j)
+      distributed VSTART1B12(b,j)
+#
+      distributed t1a(a,i) 
+      distributed t1b(b,j) 
+      served T2aa(a,i,a1,i1)
+      served T2ab(a,i,b,j)
+      served T2bb(b,j,b1,j1)
+#
+      served Vxxxa(mu,nu,lambda,a) 
+      served Vxxaa(mu,nu,a1,a) 
+      served Vxaaa(mu,a2,a1,a) 
+      served VSaaaa(a,a1,a2,a3)
+#
+      served Vxxxb(mu,nu,lambda,b) 
+      served Vxxbb(mu,nu,b1,b) 
+      served Vxabb(mu,a,b1,b) 
+      served Vxbbb(mu,b2,b1,b) 
+      served VSbbbb(b,b1,b2,b3)
+      served Vaabb(a,a1,b,b1)
+#
+# Declare temporary arrays
+# ------------------------
+#
+      temp Txxxa(mu,nu,lambda,a) 
+      temp T1xxxa(mu,nu,lambda,a) 
+      temp Txxaa(mu,nu,a1,a) 
+      temp T1xxaa(mu,nu,a1,a) 
+      temp Txaaa(mu,a2,a1,a) 
+      temp T1xaaa(mu,a2,a1,a) 
+      temp Taaaa(a3,a2,a1,a) 
+      temp T1aaaa(a3,a2,a1,a) 
+#
+      temp Txxxb(mu,nu,lambda,b) 
+      temp T1xxxb(mu,nu,lambda,b) 
+      temp Txxbb(mu,nu,b1,b) 
+      temp T1xxbb(mu,nu,b1,b) 
+      temp Txbbb(mu,b2,b1,b) 
+      temp T1xbbb(mu,b2,b1,b) 
+      temp Tbbbb(b3,b2,b1,b) 
+      temp T1bbbb(b3,b2,b1,b) 
+#
+      temp Txabb(mu,a2,b1,b) 
+      temp T1xabb(mu,a2,b1,b) 
+      temp Taabb(a3,a2,b1,b) 
+      temp T1aabb(a3,a2,b1,b) 
+#
+# Declare integral arrays
+# ------------------------
+#
+      temp AOINT(mu,nu,lambda,sigma)
+      temp SAOINT(mu,nu,lambda,sigma)
+      local TAOINT(mu,nu,lambda,sigma)
+      local Lxxxa(mu,nu,lambda,a) 
+      local Lxxxb(mu,nu,lambda,b) 
+      local Lxxaa(mu,nu,a1,a) 
+      local Lxxbb(mu,nu,b1,b) 
+      local Lxaaa(mu,a,a1,a2) 
+      local Lxbbb(mu,b,b1,b2) 
+      local Lxabb(mu,a2,b1,b2) 
+#
+# Define scalars
+# --------------
+#
+      scalar e1
+      scalar e2
+      scalar e3
+      scalar esum
+#
+#    ------------------------------------------------------------------------
+#
+#    DEFINE PROCEDURES
+#
+#    ------------------------------------------------------------------------
+#
+#    Compute the integrals and store in the served array saoint.
+#
+     PROC COMP_INTEGRALS
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, nu, lambda, sigma
+#
+              compute_integrals                    AOINT(mu,nu,lambda,sigma)
+              prepare saoint(mu,nu,lambda,sigma) = AOINT(mu,nu,lambda,sigma)
+#
+     ENDPARDO mu, nu, lambda, sigma
+     execute server_barrier
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC COMP_INTEGRALS
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+#    Create the distributed two-particle transformed integral arrays.
+#
+     PROC CREATE_MOINTS
+#
+#    ------------------------------------------------------------------------
+#
+      create VSaaaa
+      create VSbbbb
+      create Vaabb
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC CREATE_MOINTS
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+#    Perform the first two stages of the transformation in two N5 steps.
+#
+     PROC TRAN_TRAN2
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, nu, lambda
+#
+          allocate taoint(mu,nu,lambda,*)
+#
+          DO sigma
+#
+             compute_integrals            saoint(mu,nu,lambda,sigma)
+             taoint(mu,nu,lambda,sigma) = saoint(mu,nu,lambda,sigma)
+#
+          ENDDO sigma
+#
+          DO a
+#
+             Txxxa(mu,nu,lambda,a) = 0.0
+#
+              DO sigma
+#
+                 T1xxxa(mu,nu,lambda,a)  = taoint(mu,nu,lambda,sigma)*ca(sigma,a)
+                 Txxxa(mu,nu,lambda,a)  += T1xxxa(mu,nu,lambda,a)
+#
+              ENDDO sigma
+#
+              PREPARE Vxxxa(mu,nu,lambda,a)  = Txxxa(mu,nu,lambda,a)
+#
+          ENDDO a
+#
+          DO b
+#
+             Txxxb(mu,nu,lambda,b) = 0.0
+#
+              DO sigma
+#
+                 T1xxxb(mu,nu,lambda,b)  = taoint(mu,nu,lambda,sigma)*cb(sigma,b)
+                 Txxxb(mu,nu,lambda,b)  += T1xxxb(mu,nu,lambda,b)
+#
+              ENDDO sigma
+#
+              PREPARE Vxxxb(mu,nu,lambda,b)  = Txxxb(mu,nu,lambda,b)
+#
+          ENDDO b
+#
+          deallocate taoint(mu,nu,lambda,*)
+#
+     ENDPARDO mu, nu, lambda
+     execute server_barrier 
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, nu, a
+#
+           allocate Lxxxa(mu,nu,*,a)
+#
+           DO lambda
+#
+              REQUEST                 Vxxxa(mu,nu,lambda,a) a
+              Lxxxa(mu,nu,lambda,a) = Vxxxa(mu,nu,lambda,a)
+#
+           ENDDO lambda
+#
+           DO a1
+#
+              Txxaa(mu,nu,a1,a) = 0.0
+#
+              DO lambda
+#
+                 T1xxaa(mu,nu,a1,a) = Lxxxa(mu,nu,lambda,a)*ca(lambda,a1)
+                 Txxaa(mu,nu,a1,a) += T1xxaa(mu,nu,a1,a)
+#
+              ENDDO lambda
+#
+              PREPARE Vxxaa(mu,nu,a1,a) = Txxaa(mu,nu,a1,a)
+#
+           ENDDO a1
+#
+           deallocate Lxxxa(mu,nu,*,a)
+#
+     ENDPARDO mu, nu, a
+#
+#    ------------------------------------------------------------------------
+#
+    PARDO mu, nu, b
+#
+           allocate Lxxxb(mu,nu,*,b)
+#
+           DO lambda
+#
+              REQUEST                 Vxxxb(mu,nu,lambda,b) b
+              Lxxxb(mu,nu,lambda,b) = Vxxxb(mu,nu,lambda,b)
+#
+           ENDDO lambda
+#
+           DO b1
+#
+              Txxbb(mu,nu,b1,b) = 0.0
+#
+              DO lambda
+#
+                 T1xxbb(mu,nu,b1,b) = Lxxxb(mu,nu,lambda,b)*cb(lambda,b1)
+                 Txxbb(mu,nu,b1,b) += T1xxbb(mu,nu,b1,b)
+#
+              ENDDO lambda
+#
+              PREPARE Vxxbb(mu,nu,b1,b) = Txxbb(mu,nu,b1,b)
+#
+           ENDDO b1
+#
+           deallocate Lxxxb(mu,nu,*,b)
+#
+     ENDPARDO mu, nu, b
+#
+     execute server_barrier
+     #execute server_delete Vxxxa
+     #execute server_delete Vxxxb
+     destroy Vxxxa
+     destroy Vxxxb
+     execute server_barrier  
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_TRAN2
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+#    Perform the third N5 stage of the transformation.
+#
+     PROC TRAN_TRAN3
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, a, a1
+#
+           allocate Lxxaa(mu,*,a1,a)
+#
+           DO nu
+#
+              REQUEST             Vxxaa(mu,nu,a1,a) a
+              Lxxaa(mu,nu,a1,a) = Vxxaa(mu,nu,a1,a)
+#
+           ENDDO nu
+#
+           DO a2
+#
+              Txaaa(mu,a2,a1,a) = 0.0
+#
+              DO nu
+#
+                 T1xaaa(mu,a2,a1,a) = Lxxaa(mu,nu,a1,a)*ca(nu,a2)
+                 Txaaa(mu,a2,a1,a) += T1xaaa(mu,a2,a1,a)
+#
+              ENDDO nu
+#
+              PREPARE Vxaaa(mu,a2,a1,a) = Txaaa(mu,a2,a1,a)
+#
+           ENDDO a2
+#
+           deallocate Lxxaa(mu,*,a1,a)
+#
+     ENDPARDO mu, a, a1
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO mu, b, b1
+#
+           allocate Lxxbb(mu,*,b1,b)
+#
+           DO nu
+#
+              REQUEST             Vxxbb(mu,nu,b1,b) b
+              Lxxbb(mu,nu,b1,b) = Vxxbb(mu,nu,b1,b)
+#
+           ENDDO nu
+#
+           DO b2
+#
+              Txbbb(mu,b2,b1,b) = 0.0
+#
+              DO nu
+#
+                 T1xbbb(mu,b2,b1,b) = Lxxbb(mu,nu,b1,b)*cb(nu,b2)
+                 Txbbb(mu,b2,b1,b) += T1xbbb(mu,b2,b1,b)
+#
+              ENDDO nu
+#
+              PREPARE Vxbbb(mu,b2,b1,b) = Txbbb(mu,b2,b1,b)
+#
+           ENDDO b2
+#
+           DO a
+#
+              Txabb(mu,a,b1,b) = 0.0
+#
+              DO nu
+#
+                 T1xabb(mu,a,b1,b) = Lxxbb(mu,nu,b1,b)*ca(nu,a)
+                 Txabb(mu,a,b1,b) += T1xabb(mu,a,b1,b)
+#
+              ENDDO nu
+#
+              PREPARE Vxabb(mu,a,b1,b) = Txabb(mu,a,b1,b)
+#
+           ENDDO a
+#
+           deallocate Lxxbb(mu,*,b1,b)
+#
+     ENDPARDO mu, b, b1
+#
+#    ------------------------------------------------------------------------
+#   
+     execute server_barrier
+#
+     ENDPROC TRAN_TRAN3
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_TRAN4
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO a, a1, a2
+#
+           allocate Lxaaa(*,a,a1,a2)
+#
+           DO mu
+#
+              REQUEST             Vxaaa(mu,a,a1,a2) a2
+              Lxaaa(mu,a,a1,a2) = Vxaaa(mu,a,a1,a2)
+#
+           ENDDO mu
+#
+           DO a3
+#
+              Taaaa(a3,a,a1,a2) = 0.0
+#
+              DO mu
+#
+                 T1aaaa(a3,a,a1,a2) = Lxaaa(mu,a,a1,a2)*ca(mu,a3)
+                 Taaaa(a3,a,a1,a2) += T1aaaa(a3,a,a1,a2)
+#
+              ENDDO mu
+#
+              T1aaaa(a1,a,a3,a2)           = Taaaa(a3,a,a1,a2)
+              T1aaaa(a1,a,a3,a2)          *= -1.0
+              PREPARE VSaaaa(a3,a,a1,a2)  += Taaaa(a3,a,a1,a2)
+              PREPARE VSaaaa(a1,a,a3,a2)  += T1aaaa(a1,a,a3,a2)
+#
+           ENDDO a3
+#
+           deallocate Lxaaa(*,a,a1,a2)
+#
+     ENDPARDO a, a1, a2
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO b, b1, b2
+#
+           allocate Lxbbb(*,b,b1,b2)
+#
+           DO mu
+#
+              REQUEST             Vxbbb(mu,b,b1,b2) b2
+              Lxbbb(mu,b,b1,b2) = Vxbbb(mu,b,b1,b2)
+#
+           ENDDO mu
+#
+           DO b3
+#
+              Tbbbb(b3,b,b1,b2) = 0.0
+#
+              DO mu
+#
+                 T1bbbb(b3,b,b1,b2) = Lxbbb(mu,b,b1,b2)*cb(mu,b3)
+                 Tbbbb(b3,b,b1,b2) += T1bbbb(b3,b,b1,b2)
+#
+              ENDDO mu
+#
+              T1bbbb(b1,b,b3,b2)          = Tbbbb(b3,b,b1,b2)
+              T1bbbb(b1,b,b3,b2)         *= -1.0
+              PREPARE VSbbbb(b3,b,b1,b2) += Tbbbb(b3,b,b1,b2)
+              PREPARE VSbbbb(b1,b,b3,b2) += T1bbbb(b1,b,b3,b2)
+#
+           ENDDO b3
+#
+           deallocate Lxbbb(*,b,b1,b2)
+#
+     ENDPARDO b, b1, b2
+#
+#    ------------------------------------------------------------------------
+#
+     PARDO a2, b1, b2
+#
+           allocate Lxabb(*,a2,b1,b2)
+#
+           DO mu
+#
+              REQUEST              Vxabb(mu,a2,b1,b2) b2
+              Lxabb(mu,a2,b1,b2) = Vxabb(mu,a2,b1,b2)
+#
+           ENDDO mu
+#
+           DO a1
+#
+              Taabb(a1,a2,b1,b2) = 0.0
+#
+              DO mu
+#
+                 T1aabb(a1,a2,b1,b2) = Lxabb(mu,a2,b1,b2)*ca(mu,a1)
+                 Taabb(a1,a2,b1,b2) += T1aabb(a1,a2,b1,b2)
+#
+              ENDDO mu
+#
+              PREPARE Vaabb(a1,a2,b1,b2)  = Taabb(a1,a2,b1,b2)
+#
+           ENDDO a1
+#
+           deallocate Lxabb(*,a2,b1,b2)
+#
+     ENDPARDO a2, b1, b2
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_TRAN4
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_UHF
+#
+#        CALL COMP_INTEGRALS # --> compute integrals and put into served array
+         CALL TRAN_TRAN2     # --> performs the first two stages of the
+                             #     two-electron integral transformation.
+         CALL TRAN_TRAN3     # --> performs the third stage
+                             #     two-electron integral transformation.
+         CALL TRAN_TRAN4     # --> performs the fourth stage of the
+                             #     two-electron integral transformation.
+#
+     ENDPROC TRAN_UHF
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC READ_CIS 
+#    ------------- 
+#
+      create t1a 
+      create t1b 
+      create VSTART1A1
+      create VSTART1B1
+      create VSTART1A2
+      create VSTART1B2
+      create VSTART1A3
+      create VSTART1B3
+      create VSTART1A4
+      create VSTART1B4
+      create VSTART1A5
+      create VSTART1B5
+      create VSTART1A6
+      create VSTART1B6
+      create VSTART1A7
+      create VSTART1B7
+      create VSTART1A8
+      create VSTART1B8
+      create VSTART1A9
+      create VSTART1B9
+      create VSTART1A10
+      create VSTART1B10
+      create VSTART1A11
+      create VSTART1B11
+      create VSTART1A12
+      create VSTART1B12
+#
+      execute sip_barrier
+      execute server_barrier
+      execute list_to_blocks                VSpipi(p,i,p1,i1)
+      execute list_to_blocks                Vaaii
+      execute list_to_blocks                Viaai
+      execute list_to_blocks                VSaaai
+      execute list_to_blocks                VSqjqj(q,j,q1,j1)
+      execute list_to_blocks                Vbbjj
+      execute list_to_blocks                Vjbbj
+      execute list_to_blocks                VSbbbj
+      execute list_to_blocks                Vbbii
+      execute list_to_blocks                Vjbii
+      execute list_to_blocks                Vbbai
+      execute list_to_blocks                Vpiqj(p,i,q,j)
+      execute list_to_blocks                Vaajj
+      execute list_to_blocks                Viabj
+      execute list_to_blocks                Vaabj
+     #execute list_to_blocks                VSaaaa
+     #execute list_to_blocks                VSbbbb
+     #execute list_to_blocks                Vaabb
+      execute list_to_blocks                t1a
+      execute list_to_blocks                t1b
+      execute list_to_blocks                T2aa
+      execute list_to_blocks                T2ab
+      execute list_to_blocks                T2bb
+#
+      execute list_to_blocks VSTART1A1
+      execute list_to_blocks VSTART1B1
+      execute list_to_blocks VSTART1A2
+      execute list_to_blocks VSTART1B2
+      execute list_to_blocks VSTART1A3
+      execute list_to_blocks VSTART1B3
+      execute list_to_blocks VSTART1A4
+      execute list_to_blocks VSTART1B4
+      execute list_to_blocks VSTART1A5
+      execute list_to_blocks VSTART1B5
+      execute list_to_blocks VSTART1A6
+      execute list_to_blocks VSTART1B6
+      execute list_to_blocks VSTART1A7
+      execute list_to_blocks VSTART1B7
+      execute list_to_blocks VSTART1A8
+      execute list_to_blocks VSTART1B8
+      execute list_to_blocks VSTART1A9
+      execute list_to_blocks VSTART1B9
+      execute list_to_blocks VSTART1A10
+      execute list_to_blocks VSTART1B10
+      execute list_to_blocks VSTART1A11
+      execute list_to_blocks VSTART1B11
+      execute list_to_blocks VSTART1A12
+      execute list_to_blocks VSTART1B12
+#
+      execute read_list_to_blocks  
+      execute sip_barrier
+      execute server_barrier
+#
+     ENDPROC READ_CIS 
+#    ---------------- 
+#
+#    ------------------------------------------------------------------------
+#
+     PROC WRITE_DATA 
+#    --------------- 
+#
+      execute sip_barrier
+      execute server_barrier
+#
+      execute blocks_to_list                VSpipi(p,i,p1,i1)
+      execute blocks_to_list                Vaaii
+      execute blocks_to_list                Viaai
+      execute blocks_to_list                VSaaai
+      execute blocks_to_list                VSqjqj(q,j,q1,j1)
+      execute blocks_to_list                Vbbjj
+      execute blocks_to_list                Vjbbj
+      execute blocks_to_list                VSbbbj
+      execute blocks_to_list                Vbbii
+      execute blocks_to_list                Vjbii
+      execute blocks_to_list                Vbbai
+      execute blocks_to_list                Vpiqj(p,i,q,j)
+      execute blocks_to_list                Vaajj
+      execute blocks_to_list                Viabj
+      execute blocks_to_list                Vaabj
+      execute blocks_to_list                VSaaaa
+      execute blocks_to_list                VSbbbb
+      execute blocks_to_list                Vaabb
+      execute blocks_to_list                t1a
+      execute blocks_to_list                t1b
+      execute blocks_to_list                T2aa
+      execute blocks_to_list                T2ab
+      execute blocks_to_list                T2bb
+#
+      execute blocks_to_list VSTART1A1
+      execute blocks_to_list VSTART1B1
+      execute blocks_to_list VSTART1A2
+      execute blocks_to_list VSTART1B2
+      execute blocks_to_list VSTART1A3
+      execute blocks_to_list VSTART1B3
+      execute blocks_to_list VSTART1A4
+      execute blocks_to_list VSTART1B4
+      execute blocks_to_list VSTART1A5
+      execute blocks_to_list VSTART1B5
+      execute blocks_to_list VSTART1A6
+      execute blocks_to_list VSTART1B6
+      execute blocks_to_list VSTART1A7
+      execute blocks_to_list VSTART1B7
+      execute blocks_to_list VSTART1A8
+      execute blocks_to_list VSTART1B8
+      execute blocks_to_list VSTART1A9
+      execute blocks_to_list VSTART1B9
+      execute blocks_to_list VSTART1A10
+      execute blocks_to_list VSTART1B10
+      execute blocks_to_list VSTART1A11
+      execute blocks_to_list VSTART1B11
+      execute blocks_to_list VSTART1A12
+      execute blocks_to_list VSTART1B12
+#
+      execute write_blocks_to_list
+
+      execute sip_barrier
+      execute server_barrier
+#
+     ENDPROC WRITE_DATA 
+#    ------------------ 
+#
+#    ------------------------------------------------------------------------
+#
+#
+#    ------------------------------------------------------------------------
+#
+#    Main Program
+#
+     CALL READ_CIS 
+     CALL TRAN_UHF
+     CALL WRITE_DATA 
+     execute server_barrier
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO a, a1, a2, i
+           #REQUEST VSaaai(a,a1,a2,i) i 
+           #e2  = VSaaai(a,a1,a2,i)*VSaaai(a,a1,a2,i)
+           #e1 += e2
+           #Taaai(a,a1,a2,i) = VSaaai(a,a1,a2,i)
+#          execute dump_block VSaaai
+     #ENDPARDO a, a1, a2, i
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO b, b1, b2, j
+           #REQUEST VSbbbj(b,b1,b2,j) j 
+           #e2  = VSbbbj(b,b1,b2,j)*VSbbbj(b,b1,b2,j)
+           #e1 += e2
+           #Tbbbj(b,b1,b2,j) = VSbbbj(b,b1,b2,j)
+##          execute dump_block VSbbbj
+     #ENDPARDO b, b1, b2, j
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO p, p1, i, i1
+           #REQUEST VSpipi(p,i,p1,i1) i1 
+           #e2  = VSpipi(p,i,p1,i1)*VSpipi(p,i,p1,i1)
+           #e1 += e2
+     #ENDPARDO p, p1, i, i1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO q, q1, j, j1
+           #REQUEST VSqjqj(q,j,q1,j1) j1 
+           #e2  = VSqjqj(q,j,q1,j1)*VSqjqj(q,j,q1,j1)
+           #e1 += e2
+     #ENDPARDO q, q1, j, j1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO a, a1, i, i1
+           #REQUEST Vaaii(a,a1,i,i1) i1 
+           #e2  = Vaaii(a,a1,i,i1)*Vaaii(a,a1,i,i1)
+           #e1 += e2
+     #ENDPARDO a, a1, i, i1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO b, b1, j, j1
+           #REQUEST Vbbjj(b,b1,j,j1) j1 
+           #e2  = Vbbjj(b,b1,j,j1)*Vbbjj(b,b1,j,j1)
+           #e1 += e2
+     #ENDPARDO b, b1, j, j1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO a, a1, i, i1
+           #REQUEST Viaai(i,a,a1,i1) i1 
+           #e2  = Viaai(i,a,a1,i1)*Viaai(i,a,a1,i1)
+           #e1 += e2
+     #ENDPARDO a, a1, i, i1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO b, b1, j, j1
+           #REQUEST Vjbbj(j,b,b1,j1) j1 
+           #e2  = Vjbbj(j,b,b1,j1)*Vjbbj(j,b,b1,j1)
+           #e1 += e2
+     #ENDPARDO b, b1, j, j1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO b, b1, i, i1
+           #REQUEST Vbbii(b,b1,i,i1) i1 
+           #e2  = Vbbii(b,b1,i,i1)*Vbbii(b,b1,i,i1)
+           #e1 += e2
+     #ENDPARDO b, b1, i, i1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO a, a1, j, j1
+           #REQUEST Vaajj(a,a1,j,j1) j1 
+           #e2  = Vaajj(a,a1,j,j1)*Vaajj(a,a1,j,j1)
+           #e1 += e2
+     #ENDPARDO a, a1, j, j1
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO b, b1, a, i
+           #REQUEST Vbbai(b,b1,a,i) i 
+           #Tbbai(b,b1,a,i) = Vbbai(b,b1,a,i)
+           #e2  = Vbbai(b,b1,a,i)*Vbbai(b,b1,a,i)
+           #e1 += e2
+     #ENDPARDO b, b1, a, i
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO a, a1, b, j
+           #REQUEST Vaabj(a,a1,b,j) j 
+           #e2  = Vaabj(a,a1,b,j)*Vaabj(a,a1,b,j)
+           #e1 += e2
+     #ENDPARDO a, a1, b, j
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+# TEST CODE TO TEST ACCURACY OF TRANSFORMATION
+# --------------------------------------------
+#
+     #e1 = 0.0
+     #esum = 0.0
+     #PARDO p, q, i, j
+           #REQUEST Vpiqj(p,i,q,j) j 
+           #Tpiqj(p,i,q,j) = Vpiqj(p,i,q,j)
+           #e2  = Vpiqj(p,i,q,j)*Vpiqj(p,i,q,j)
+           #e1 += e2
+     #ENDPARDO p, q, i, j
+     #execute sip_barrier
+     #collective esum += e1
+     #execute print_scalar esum
+#
+#    ------------------------------------------------------------------------
+#
+#
+                           ENDSIAL TRAN_UHF_VVVV
+#
+#    ------------------------------------------------------------------------
+#

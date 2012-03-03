@@ -1,0 +1,160 @@
+#
+     SIAL MP2_N5_RHF  
+#
+# Make index definitions 
+#
+     aoindex mu     = 1, norb 
+     aoindex nu     = 1, norb 
+     aoindex lambda = 1, norb 
+     aoindex sigma   = 1, norb 
+#
+     moindex i = bocc, eocc 
+     moindex i1= bocc, eocc  
+#
+     moindex a = bvirt, evirt  
+     moindex a1= bvirt, evirt 
+#
+# Define array types 
+#
+     distributed Vxxxi(mu,nu,sigma,i) # ()  
+     distributed Vxixi(mu,i1,sigma,i) # ()  
+     distributed Vxiai(mu,i1,a,i)     # ()  
+     distributed Vaiai(a1,i1,a,i)     # (1010)  
+#
+     temp Txxxi(mu,nu,sigma,i) # ()  
+     temp Txixi(mu,i1,sigma,i) # ()  
+     temp Txiai(mu,i1,a,i)     # ()  
+     temp Taiai(a1,i1,a,i)     # (1010)  
+# 
+     temp Vblock(a1,i1,a,i)     # (1010)  
+     temp Ablock(a1,i1,a,i)     # (1010)  
+#
+     served aoint(mu,nu,lambda,sigma) 
+#
+# Define scalars 
+#
+     scalar mp2_energy  
+     scalar e_temp 
+     scalar esum 
+# 
+# Do two-electron transformation 
+# 
+     CREATE Vxxxi 
+     execute sip_barrier Vblock 
+# 
+     PARDO mu, lambda
+# 
+           DO nu 
+           DO sigma 
+# 
+              compute_integrals aoint(mu,nu,lambda,sigma) 
+# 
+              DO i 
+                 Txxxi(mu,nu,lambda,i) = aoint(mu,nu,lambda,sigma)*c(sigma,i) 
+                 PUT Vxxxi(mu,nu,lambda,i) += Txxxi(mu,nu,lambda,i) 
+              ENDDO i 
+#
+           ENDDO sigma 
+           ENDDO nu 
+# 
+     ENDPARDO mu, lambda
+     CREATE Vxixi 
+     execute sip_barrier Vblock 
+# 
+     PARDO mu, lambda
+# 
+           DO nu 
+           DO i 
+# 
+              GET Vxxxi(mu,nu,lambda,i) 
+# 
+              DO i1 
+                 Txixi(mu,i1,lambda,i) = Vxxxi(mu,nu,lambda,i)*c(nu,i1) 
+                 put Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i) 
+              ENDDO i1  
+# 
+           ENDDO i 
+           ENDDO nu 
+# 
+     ENDPARDO mu, lambda
+     DELETE Vxxxi 
+     CREATE Vxiai 
+     execute sip_barrier Vblock 
+# 
+     PARDO mu, lambda
+#
+           DO i 
+           DO i1
+#
+              GET Vxixi(mu,i1,lambda,i) 
+#
+              DO a 
+                 Txiai(mu,i1,a,i) = vxixi(mu,i1,lambda,i)*c(lambda,a)  
+                 put Vxiai(mu,i1,a,i) += Txiai(mu,i1,a,i) 
+              ENDDO a 
+#
+           ENDDO i1 
+           ENDDO i 
+#
+     ENDPARDO mu, lambda 
+     DELETE Vxixi 
+     CREATE Vaiai 
+     execute sip_barrier Vblock 
+#
+     PARDO a, a1  
+#
+           DO i 
+           DO i1 
+#
+              DO mu  
+                 GET Vxiai(mu,i1,a,i) 
+                 Taiai(a1,i1,a,i) = vxiai(mu,i1,a,i)*c(mu,a1)  
+                 put Vaiai(a1,i1,a,i) += Taiai(a1,i1,a,i) 
+              ENDDO mu 
+#
+           ENDDO i1 
+           ENDDO i 
+#
+     ENDPARDO a, a1  
+     DELETE Vxiai 
+     execute sip_barrier Vblock 
+# 
+# End of Transformation 
+#
+# Now compute the energy 
+#
+#
+     esum = 0.0
+     mp2_energy = 0.0
+#
+     PARDO a, a1
+#
+           DO i
+           DO i1
+#
+              GET Vaiai(a1,i1,a,i)
+              GET Vaiai(a1,i ,a,i1)
+#
+              Ablock(a1,i1,a,i) = Vaiai(a1,i,a,i1)
+              Vblock(a1,i1,a,i) = 2.0*Vaiai(a1,i1,a,i)
+#
+              Vblock(a1,i1,a,i) -= Ablock(a1,i1,a,i)
+              execute ENERGY_DENOMINATOR Vblock
+#
+              e_temp = Vblock(a1,i1,a,i)*Vaiai(a1,i1,a,i)
+              esum += e_temp
+#
+           ENDDO i1
+           ENDDO i
+#
+     ENDPARDO a, a1
+
+     execute sip_barrier Vblock
+     collective mp2_energy += esum
+     totenerg = scfeneg + mp2_energy
+#
+# Done computing the energy 
+#
+     ENDSIAL MP2_N5_RHF  
+#
+     

@@ -1,0 +1,2341 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+      SIAL CCSDPT_UHF_BBX 
+
+# Make index definitions 
+#
+      Index   i      = 1, naocc   
+      Index   j      = 1, naocc   
+      Index   k      = 1, naocc   
+      Index   ib     = 1, nbocc 
+      Index   jb     = 1, nbocc 
+      Index   kb     = 1, nbocc 
+      index   pp = subb, sube    
+#
+      aoindex mu     = 1, norb 
+      aoindex nu     = 1, norb 
+      aoindex lambda = 1, norb 
+      aoindex sigma  = 1, norb 
+#
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+      moaindex k1= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt 
+#
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+      mobindex m1= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt 
+#
+      moaindex p = baocc, eavirt  
+      moaindex p1= baocc, eavirt  
+      moaindex p2= baocc, eavirt  
+      moaindex p3= baocc, eavirt  
+#
+      mobindex q = bbocc, ebvirt  
+      mobindex q1= bbocc, ebvirt  
+      mobindex q2= bbocc, ebvirt  
+      mobindex q3= bbocc, ebvirt  
+#
+# Declare served arrays which are read from disk  
+# 
+      served VSaaai(a1,a2,a3,i1)
+      distributed XSaaai(a1,a2,a3,pp)
+      served YSaaai(a1,a2,a3,i)
+      served VSpipi(p,i1,p1,i2)
+      served VSbbbj(b,b1,b2,j1)
+      distributed XSbbbj(b,b1,b2,pp)
+      served YSbbbj(b,b1,b2,jb)
+      served VSbjjj(b,j1,j2,j3)
+      served Vaaii(a,a1,i1,i2)
+      served Viaai(i1,a,a1,i2)
+      served VSqjqj(q,j1,q2,j2)
+      served Vbbjj(b,b1,j1,j2)
+      served Vjbbj(j1,b,b1,j2)
+      served Vbbii(b,b1,i1,i2)
+      served Vjbii(j1,b,i1,i2)
+      served Vbbai(b,b1,a,i1)
+      distributed Xbbai(b,b1,a,pp)
+      served Ybbai(b,b1,a,i)
+      served Vpiqj(p,i1,q,j2)
+      served Vaajj(a,a1,j1,j2)
+      served Viabj(i1,a,b,j1)
+      served Vaabj(a,a1,b,j1)
+      distributed Xaabj(a,a1,b,pp)
+      served Yaabj(a,a1,b,jb)
+
+      served Vaiai(a,i1,a1,i2) 
+      served Vbjbj(b,j1,b1,j2) 
+      served Vaibj(a,i1,b,j1) 
+#
+      served T2aiai(a,i1,a1,i2)
+      served T2bjbj(b,j1,b1,j2) 
+      served T2aibj(a,i1,b,j1) 
+#
+      distributed XSaiii(a,i,i1,j)  
+      distributed XSbjjj(b,ib,j1,jb)  
+      distributed XaIjJ(a,k1,j1,jb)  
+      distributed XiIbJ(i1,k1,b,jb)  
+      static Xib_ik(i1,b) 
+      static Xib_jk(i1,b) 
+      distributed Xib_ki(i1,b,k1) 
+      distributed Xib_kj(i1,b,k1) 
+      static Xjb_ij(j1,b1) 
+      distributed Xja_ik(j1,a,k1)  
+      distributed Xja_jk(j1,a,k1)  
+      distributed XSbI_ki(j1,b,m1)   
+      distributed XSbI_kj(j1,b,m1)  
+      distributed XSbi_ij(j1,b)
+#
+# Declare distributed arrays 
+# 
+      distributed Paaai(a,a1,a2) 
+      distributed Paaaj(a,a1,a2) 
+      distributed Paaak(a,a1,a2) 
+      distributed Pbbbi(b,b1,b2)  
+      distributed Pbbbj(b,b1,b2)  
+      distributed Pbbbk(b,b1,b2)  
+      distributed Pbbai(b,b1,a) 
+      distributed Pbbaj(b,b1,a) 
+      distributed Paabk(a,a1,b) 
+      distributed Paabi(a,a1,b) 
+      distributed Paabj(a,a1,b) 
+      distributed Pbbak(b,b1,a) 
+#
+      temp Paiii(a,i,i1,j)   
+      temp Pbjjj(b,ib,j1,jb)   
+      temp PaIjJ(a,k1,j1,jb) 
+      temp PiIbJ(i1,k1,b,jb) 
+#
+      temp XaJbK(a,j,b,kb) 
+      temp X1aJbK(a,j,b,kb) 
+      temp X2aJbK(a,j,b,kb) 
+      temp XaIbK(a,i,b,kb) 
+      temp X1aIbK(a,i,b,kb) 
+      temp X2aIbK(a,i,b,kb) 
+      temp XaJaI(a,j,a1,i) 
+      temp X1aJaI(a,j,a1,i) 
+      temp YaibK(a,i1,b,kb) 
+      temp Y1aibK(a,i1,b,kb) 
+      temp XaIbj(a,i,b,j1) 
+      temp X1aIbj(a,i,b,j1) 
+      temp XaJbj(a,j,b,j1) 
+      temp X1aJbj(a,j,b,j1) 
+      temp XaiaI(a,i1,a1,i) 
+      temp XaiaJ(a,i1,a1,j) 
+#
+      distributed DbjbS(b,j1,b1) 
+      distributed D1bjbS(b,j1,b1) 
+      distributed D2bjbS(b,j1,b1,m1) 
+      distributed EaibS(a,i1,b) 
+      distributed E1aibS(a,i1,b) 
+      distributed EabjS(a,b,j1,k1) 
+#
+      distributed Y3bbb(b,b1,b2,m1) 
+      distributed DD3bbb(b,b1,b2,m1) 
+      distributed Y3aab(a,a1,b2) 
+      served Y3bba(b,b1,a2,k1) 
+      local L3bba(b,b1,a,k1) 
+      local L3bbb(b,b1,b2,m1) 
+      served S3bbb(b,b1,b2,m1) 
+      temp P1bJjJ(b,ib,j1,kb) 
+      temp P2bJjJ(b,ib,j1,kb) 
+      temp P3bJjJ(b,ib,j1,kb) 
+#
+      distributed sai(a,i) 
+      distributed sbj(b,kb) 
+      temp txai(a,i) 
+      distributed txbj(b,kb) 
+      served t1a_old(a,i1) 
+      served t1b_old(b,j1) 
+      distributed t1ai(a,i) 
+      distributed t1bj(b,jb) 
+#
+# Declare temporary arrays 
+#
+      temp xa(a) 
+      temp xb(b) 
+      temp xai(a,i) 
+      temp xbj(b,kb) 
+      temp Pai(a,i) 
+      temp Pbj(b,kb) 
+      temp tpp(p,p1) 
+      temp tqp(q,p) 
+      temp tqq(q,q1) 
+      temp t1qq(q,q1) 
+#
+      temp tppp(p,p1,p2) 
+      temp t1ppp(p,p1,p2) 
+      temp t2ppp(p,p1,p2) 
+      temp t4ppp(p,p1,p2) 
+      temp t3ppp(p,p1,p2) 
+      temp s3ppp(p,p1,p2) 
+      temp t5ppp(p,p1,p2) 
+      temp taaaiii(a,a1,a2,i,j,k) 
+      temp t1aaaiii(a,a1,a2,i,j,k) 
+      temp t2aaaiii(a,a1,a2,i,j,k) 
+      temp t3aaaiii(a,a1,a2,i,j,k) 
+      temp t4aaaiii(a,a1,a2,i,j,k) 
+      temp t5aaaiii(a,a1,a2,i,j,k) 
+      temp t6aaaiii(a,a1,a2,i,j,k) 
+      temp t7aaaiii(a,a1,a2,i,j,k) 
+      temp t8aaaiii(a,a1,a2,i,j,k) 
+      temp t9aaaiii(a,a1,a2,i,j,k) 
+#
+      temp tpppp(p,p1,p2,i) 
+      temp tppps(p,p1,p2,i) 
+      temp t1ppps(p,p1,p2,i) 
+      temp t2ppps(p,p1,p2,j) 
+      temp t3ppps(p,p1,p2,k) 
+      temp tpsps(p,j,p2,i) 
+      temp t1psps(p,j,p2,i) 
+      temp t2psps(p,j,p2,i) 
+#
+      temp tpsqq(a,i,b,j1) 
+      temp t1psqq(a,j,b,j1) 
+#
+      temp tpsqs(a,i,b,kb) 
+      temp t1psqs(a,j,b,kb) 
+#
+      temp t0qqqq(q,q1,q2,m1) 
+      temp tqqqq(q,q1,q2,m1) 
+      temp t1qqqq(q,q1,q2,m1) 
+      temp t2qqqq(q,q1,q2,m1) 
+      temp t3qqqq(q,q1,q2,m1) 
+      temp t4qqqq(q,q1,q2,m1) 
+      temp t5qqqq(q,q1,q2,m1) 
+      temp tqqqs(q,q1,q2,ib) 
+      temp tqSqS(b,jb,b1,ib) 
+      temp t1qSqS(b,jb,b1,ib) 
+#
+      temp tqqps(b,b1,a,i) 
+      temp t1qqpi(b,b1,a,i) 
+      temp tppqs(p,p1,q,kb) 
+      temp t1ppqs(p,p1,q,kb) 
+      temp tpqqs(a,b,j1,k)    
+#
+      temp tpqqj(a,b,b1,ib)
+#
+      temp tqqq(q,q1,q2) 
+      temp t1qqq(q,q1,q2) 
+      temp t2qqq(q,q1,q2) 
+      temp t3qqq(q,q1,q2) 
+      temp s3qqq(q,q1,q2) 
+      temp t4qqq(q,q1,q2) 
+      temp t5qqq(q,q1,q2) 
+#
+      temp xqqqq(q,q1,q2,m1) 
+      temp x1qqqq(q,q1,q2,m1) 
+      temp x2qqqq(q,q1,q2,m1) 
+      temp x3qqqq(q,q1,q2,m1) 
+#
+      temp tppq(p,p1,q) 
+      temp t1ppq(p,p1,q) 
+      temp t2ppq(p,p1,q) 
+      temp t3ppq(p,p1,q) 
+      temp t4ppq(p,p1,q) 
+      temp t4qqp(q,q1,p,ib,jb,k) 
+
+      temp tqqp(q,q1,p) 
+      temp sqqp(q,q1,p) 
+      temp t1qqp(q,q1,p) 
+      temp t2qqp(q,q1,p) 
+      temp t3qqp(q,q1,p) 
+      temp tqpp(q,p,p1) 
+      temp t1qpp(q,p,p1) 
+      temp t2qpp(q,p,p1) 
+      temp tqpq(q,p,q1)      
+      temp t1qpq(q,p,q1)      
+      temp tpqp(p,q,p1)  
+      temp t1pqp(p,q,p1)  
+      temp tpqq(p,q,q1)  
+      temp t1pqq(p,q,q1)  
+      temp t2pqq(p,q,q1)  
+#
+      temp tpppi(p,p1,p2,i) 
+      temp tppii(p,p1,i,j) 
+      temp tpipi(p,i,p1,j) 
+      temp Y1pipi(p,i,p1,j) 
+      temp Y2pipi(p,i,p1,j) 
+      temp Y3pipi(p,i,p1,j) 
+      temp Y4pipi(p,i,p1,j) 
+      temp Y5pipi(p,i,p1,j) 
+      temp Y6pipi(p,i,p1,j) 
+      temp Y7pipi(p,i,p1,j) 
+      temp Y8pipi(p,i,p1,j) 
+      temp Y9pipi(p,i,p1,j) 
+      temp t2pipi(p,i,p1,j) 
+#
+      temp t1pipi(p,i1,p1,i) 
+      temp X1pipi(p,i1,p1,i) 
+      temp X2pipi(p,i1,p1,i) 
+      temp X3pipi(p,i1,p1,i) 
+      temp X4pipi(p,i1,p1,i) 
+      temp X5pipi(p,i1,p1,i) 
+      temp X6pipi(p,i1,p1,i) 
+      temp X7pipi(p,i1,p1,i) 
+      temp X8pipi(p,i1,p1,i) 
+      temp X9pipi(p,i1,p1,i) 
+      temp t1ppii(p,p1,i1,i) 
+      temp t2aiii(a,i1,j,i)   
+#
+      temp tppqj(p,p1,q,ib) 
+      temp tqqpi(q,q1,p,i) 
+      temp tqppj(b,a,a1,kb) 
+#
+      temp tqqqj(q,q1,q2,ib) 
+      temp tqqjj(q,q1,ib,jb) 
+      temp tqjqj(q,ib,q1,jb) 
+
+      temp taab(a,a1,b1)
+      temp t1aab(a,a1,b1)
+      temp tbba(b,b1,a2)
+      temp t1bba(b,b1,a2)
+      temp tpi(p,i) 
+      temp tpj(p,j) 
+      temp tpk(p,k) 
+      temp tqi(q,ib) 
+      temp tqj(q,jb) 
+      temp tqk(q,kb) 
+      temp tpqpi(a,b,a1,i)
+      temp tqpqj(b,a,b1,ib) 
+      temp t1jaij(j1,a,j,kb) 
+      
+      temp taiaiai(a,i,a1,j,a2,k) 
+#
+# Arrays used in Tbbbjjj computation
+#
+      temp Tbbbjjj(b,b1,b2,ib,jb,kb) 
+      temp tbjbjbj(b,ib,b1,jb,b2,kb)   
+      temp t1bbbjjj(b,b1,b2,ib,jb,kb) 
+      temp t2bbbjjj(b,b1,b2,jb,ib,kb) 
+      temp t3bbbjjj(b,b1,b2,kb,jb,ib) 
+      temp t4bbbjjj(b1,b,b2,ib,jb,kb) 
+      temp t5bbbjjj(b2,b1,b,ib,jb,kb) 
+      temp t6bbbjjj(b1,b,b2,jb,ib,kb) 
+      temp t7bbbjjj(b1,b,b2,kb,jb,ib) 
+      temp t8bbbjjj(b2,b1,b,jb,ib,kb) 
+      temp t9bbbjjj(b2,b1,b,kb,jb,ib) 
+      temp t2bjjj(b,j1,kb,jb)  
+      temp t1qjqj(b1,j1,b2,ib) 
+      temp X1qjqj(b1,j1,b2,ib) 
+      temp X2qjqj(b1,j1,b2,ib) 
+      temp X3qjqj(b1,j1,b2,ib) 
+      temp X4qjqj(b1,j1,b2,ib) 
+      temp X5qjqj(b1,j1,b2,ib) 
+      temp X6qjqj(b1,j1,b2,ib) 
+      temp X7qjqj(b1,j1,b2,ib) 
+      temp X8qjqj(b1,j1,b2,ib) 
+      temp X9qjqj(b1,j1,b2,ib) 
+      temp t1qqjj(b1,b2,j1,ib)
+#
+# Arrays used in Taabiij computation
+#
+      temp Dabij(a,b1,j,kb)  
+      temp P2aibj(a,j,b,kb) 
+      temp P4aibj(a,j,b,kb) 
+      temp P5aibj(a,j,b,kb) 
+      temp P6aibj(a,j,b,kb) 
+      temp P3aibj(a,i,b,jb) 
+      temp Tpq(p,q) 
+      temp tppqi(a,a1,b,i)
+      temp tqppi(b,a,a1,i)   
+      temp tpqqi(a,b1,b,k)   
+      temp P1bbai(b,b1,a1,i) 
+      temp t1aibj(a1,i,b,j1) 
+      temp taijj(a,j,j1,kb) 
+      temp t1ajij(a,j1,j,kb) 
+      temp tabji(a1,b,j1,i) 
+      temp t1ppqj(a1,a2,b,kb) 
+      temp t2ppqj(a1,a2,b,kb) 
+      temp taibj(a1,i,b,kb) 
+      temp t4aibj(a1,i,b,kb) 
+      temp t3aibj(a1,i1,b,kb) 
+      temp tpiqj(i1,j,b,kb) 
+      temp tbijj(b,i1,j,kb) 
+#
+      temp t1aabiij(a,a1,b,i,j,kb) 
+      temp t2aabiij(a,a1,b,j,i,kb) 
+      temp t3aabiij(a1,a,b,i,j,kb) 
+      temp t4aabiij(a1,a,b,j,i,kb) 
+      temp taiaibj(a,i,a1,j,b,kb) 
+      temp taabjii(a,a1,b,kb,i,j) 
+      temp t1aabjii(a,a1,b,kb,i,j) 
+#
+      temp Taabiij(a,a1,b,i,j,kb) 
+      temp Tbaajii(b,a,a1,kb,i,j) 
+#
+# Arrays used in the Tbbajji computation. 
+# --------------------------------------- 
+#
+      temp P1aibj(a,i,b1,ib) 
+      temp P2iibj(i1,k,b,jb) 
+      temp P1aabj(a,a2,b1,ib)
+      temp P1bjbj(b,jb,b2,ib)
+      temp P2bjbj(b,jb,b2,ib)
+      temp P3bjbj(b,jb,b2,ib)
+      temp P4bjbj(b,jb,b2,ib)
+      temp P5bjbj(b,jb,b2,ib)
+      temp P6bjbj(b,jb,b2,ib)
+      temp P7bjbj(b,jb,b2,ib)
+      temp P8bjbj(b,jb,b2,ib)
+      temp P9bjbj(b,jb,b2,ib)
+      temp P1bbbj(b,b2,b1,ib) 
+      temp P2aijj(a,k,j1,jb) 
+#
+      temp t2pqij(a2,b,k,jb) 
+      temp tqqaj(b,b1,a,ib)  
+      temp t2bbji(b,b2,jb,ib)
+      temp tqqai(b,b1,a,k) 
+      temp t2abij(a,b2,k,jb) 
+      temp t2ajij(a,j1,k,jb) 
+#
+      temp t1bbajji(b,b1,a,ib,jb,k) 
+      temp t2bbajji(b,b1,a,jb,ib,k) 
+      temp t3bbajji(b1,b,a,ib,jb,k) 
+      temp t4bbajji(b1,b,a,jb,ib,k) 
+      temp tbjbjai(b,ib,b1,jb,a,k)
+      temp tbbaijj(b,b1,a,k,ib,jb) 
+      temp tbiji(b,i1,jb,k) 
+      temp tbjjj(b,j1,jb,ib) 
+#
+      temp Tbbajji(b,b1,a,ib,jb,k) 
+      temp tqqa(b,b1,a) 
+#
+# Arrays used in the sai computation 
+# ----------------------------------- 
+#
+      temp P1aiai(a1,j,a2,k) 
+      temp P2aiai(a1,j,a2,k) 
+      temp P3aiai(a1,j,a2,k) 
+      temp P4aiai(a1,j,a2,k) 
+      temp P5aiai(a1,j,a2,k) 
+      temp P6aiai(a1,j,a2,k) 
+      temp P7aiai(a1,j,a2,k) 
+      temp P8aiai(a1,j,a2,k) 
+      temp P9aiai(a1,j,a2,k) 
+      temp t1pppi(a,a1,a2,i) 
+      temp t2ppii(a1,a2,j,k) 
+#
+      temp Tabbijj(a,b1,b2,i,jb,kb) 
+      temp taibjbj(a,i,b1,jb,b2,kb) 
+      temp t1abbijj(a,b1,b2,i,jb,kb) 
+      temp t1pqqi(a,b1,b2,i) 
+      temp t2qqjj(b1,b2,jb,kb) 
+      temp t1ppqi(a,a1,b2,i) 
+#
+# Arrays used in the sbj computation 
+# ----------------------------------- 
+#
+      temp t1qqqj(b,b1,b2,ib) 
+      temp t1qppj(b,a1,a,ib) 
+      temp tqqpj(b,b1,a,ib) 
+      temp tpqij(p,q,i,jb) 
+      temp tqpij(q,p,k,jb) 
+      temp tpqji(i1,b,jb,k) 
+#
+      temp t1baajii(b,a1,a,ib,j,k) 
+#
+# Distributed arrays to partially hold amplitudes 
+# ------------------------------------------------ 
+#
+      distributed DaiaS(a,i1,a1) 
+      distributed D1aiaS(a,i1,a1) 
+      distributed D2aiaS(a,i1,a1) 
+#
+      distributed DaSbj(a,b,j1) 
+      distributed D1aSbj(a,b,j1) 
+      distributed DaibS(a,i1,b) 
+#
+      distributed Dab(a,b) 
+      distributed D1ab(a,b) 
+      distributed Daa(a,a1) 
+      distributed D1aa(a,a1) 
+      distributed D2aa(a,a1) 
+      distributed Eab(a,b,k1) 
+      distributed E1ab(a,b,k1) 
+      distributed Dbb(b,b1) 
+      distributed D1bb(b,b1,m1) 
+      distributed D2bb(b,b1,m1) 
+#
+      static SEab(a,b) 
+      static SE1ab(a,b) 
+      static SDbb(b,b1) 
+#
+# Arrays used to form identity
+# ----------------------------
+#
+      temp PIi(i,i1)
+      served Sii(i2,i1)
+      distributed IIi(i,i1)
+      static tii(i1,i2)
+      static t1ii(i1,i2)
+#
+      temp PJj(ib,j1)
+      served Sjj(j2,j1)
+      distributed IJj(ib,j1)
+      static tjj(j1,j2)
+      static t1jj(j1,j2)
+#
+# 'NEW' arrays 
+# ------------ 
+#
+      distributed Dbj(b,j1)  
+      distributed S3(b,b1)  
+      temp t1qqqs(b,j1,b1,ib) 
+      temp zqsqq(b,ib,b1,m1) 
+      temp z1qsqq(b,ib,j1,m1)
+      temp zqqqs(b,m1,j1,ib) 
+      temp tqqss(q,q1,jb,ib)  
+      temp t1qqss(q,q1,jb,ib)  
+      temp t2qqss(q,q1,jb,ib)  
+      temp t2qqqs(q,q1,q2,jb)
+      temp x3qsqq(b,jb,b1,m1) 
+      temp z2qqqs(b,m1,j1,jb) 
+      temp s3qqqq(b,b1,b2,m1)  
+      temp tbbbojj(b,b1,b2,m1,ib,jb) 
+      temp xqsqq(b1,jb,b2,m1) 
+      temp x2qsqq(b,ib,b2,m1) 
+# 
+      distributed D3bba(b,b1,a1,k1) 
+      temp tqqpp(q,q1,p,k1) 
+      temp t1qqpp(q,q1,p,k1) 
+      temp t2qqpp(q,q1,p,k1) 
+      temp t3qqpp(q,q1,p,k1) 
+      temp tpqqp(p,q,q1,k1)   
+      temp t1pqqp(p,q,q1,k1)   
+      temp t2pqqp(p,q,q1,k1)   
+      temp yppqs(a,k1,b,ib)
+      temp y1ppqs(a,k1,b,jb) 
+      temp tpqps(p,q,p1,ib) 
+      temp t1pqps(p,q,p1,ib) 
+      temp tqpps(q,p,p1,ib)   
+      temp tqpqp(q,p,q1,k1) 
+      temp t1qpqp(q,p,q1,k1) 
+      temp Tabbojj(a,b,b1,k1,ib,jb)
+      temp P1aibs(a,k1,b1,jb) 
+      temp P2aibs(a,k1,b,ib) 
+      distributed S3bb(b,b1) 
+      distributed Dai(a,k1) 
+#
+# Declare scalars 
+#
+      scalar fact 
+      scalar etemp 
+      scalar etemp1
+      scalar etemp2
+      scalar etemp3
+      scalar etemp4
+      scalar etemp5
+      scalar etempa
+      scalar esum 
+      scalar esum1
+      scalar esum2
+      scalar esum3
+      scalar esum4
+      scalar esum5
+      scalar esum6
+      scalar esuma  
+      scalar ecorrT 
+      scalar ecorraaa 
+      scalar ecorraab 
+      scalar ecorrbba 
+      scalar ecorrbbb 
+      scalar ecorrsa 
+      scalar ecorrsb 
+#
+# --------------------------------------------------------------------------
+#
+     PROC READ_BLOCKDATA  
+#    -------------------  
+#
+#   Read BLOCKDATA file.
+#
+      execute sip_barrier 
+      execute server_barrier
+      execute list_to_blocks                VSpipi(p,i1,p1,i2)
+      execute list_to_blocks                Vaaii
+      execute list_to_blocks                Viaai
+      execute list_to_blocks                VSaaai
+      execute list_to_blocks                VSqjqj(q,j1,q1,j2)
+      execute list_to_blocks                Vbbjj
+      execute list_to_blocks                Vjbbj
+      execute list_to_blocks                VSbbbj
+      execute list_to_blocks                Vbbii
+      execute list_to_blocks                Vjbii
+      execute list_to_blocks                Vbbai
+      execute list_to_blocks                Vpiqj(p,i1,q,j2)
+      execute list_to_blocks                Vaajj
+      execute list_to_blocks                Viabj
+      execute list_to_blocks                Vaabj
+
+      execute list_to_blocks                t1a_old(a,i1) 
+      execute list_to_blocks                t1b_old
+      execute list_to_blocks                T2aiai(a,i1,a1,i2)
+      execute list_to_blocks                T2aibj
+      execute list_to_blocks                T2bjbj
+      execute read_list_to_blocks
+      execute server_barrier
+      execute sip_barrier
+#
+      etemp = 0.0 
+      etemp1= 0.0 
+      etemp2= 0.0 
+      etemp3= 0.0 
+      etemp4= 0.0 
+      etemp5= 0.0 
+      esuma = 0.0
+      esum  = 0.0 
+      esum1 = 0.0 
+      esum2 = 0.0 
+      esum3 = 0.0 
+      esum4 = 0.0 
+      esum5 = 0.0 
+      esum6 = 0.0 
+#
+     ENDPROC READ_BLOCKDATA  
+#    ----------------------  
+#
+# --------------------------------------------------------------------------
+#
+# --------------------------------------------------------------------------
+#
+#
+     PROC PDATA  
+#    ---------- 
+#
+#    Put the vOoO integrals into a distributed array 
+#    ----------------------------------------------- 
+#
+     create XiIbJ
+     create XaIjJ
+     create t1ai 
+     create t1bj 
+     execute sip_barrier 
+#
+     PARDO a, j1, k1, jb
+           PREQUEST PaIjJ(a,k1,j1,jb) = Vpiqj(a,k1,j1,j3) 
+           PUT XaIjJ(a,k1,j1,jb)      = Paijj(a,k1,j1,jb)
+     ENDPARDO a, j1, k1, jb
+#
+     PARDO b, i1, k1, jb  
+           PREQUEST PiIbJ(i1,k1,b,jb) = Vpiqj(i1,k1,b,j3) 
+           PUT XiIbJ(i1,k1,b,jb)      = PiIbJ(i1,k1,b,jb)
+     ENDPARDO b, i1, k1, jb
+#
+#    PREPARE Vaaai type arrays into XaaaI ones 
+#    ----------------------------------------- 
+#
+     IF subb > 0 
+     IF sube > 0 
+        CREATE Xbbai #(*,*,*,I)    
+        CREATE Xaabj#(*,*,*,JB)   
+     ENDIF 
+     ENDIF 
+     execute sip_barrier 
+#
+     PARDO kb, a, a1, b 
+           tppqs(a,a1,b,kb) = 0.0
+           DO j1
+              REQUEST            Vaabj(a,a1,b,j1) b
+              GET                IJj(kb,j1)
+              t1ppqj(a,a1,b,kb)= Vaabj(a,a1,b,j1)*IJj(kb,j1)
+              tppqs(a,a1,b,kb)+= t1ppqj(a,a1,b,kb)
+           ENDDO j1
+#
+           IF kb >= subb  
+           IF kb <= sube  
+              PUT XaabJ(a,a1,b,kb) = tppqs(a,a1,b,kb)
+           ENDIF 
+           ENDIF 
+           IF kb < subb  
+              PREPARE YaabJ(a,a1,b,kb) = tppqs(a,a1,b,kb) 
+           ENDIF 
+           IF kb > sube  
+              PREPARE YaabJ(a,a1,b,kb) = tppqs(a,a1,b,kb) 
+           ENDIF 
+     ENDPARDO kb, a, a1, b 
+#
+     PARDO k, b, b1, a 
+           tqqps(b,b1,a,k) = 0.0
+           DO i1
+              REQUEST            Vbbai(b,b1,a,i1) a
+              GET                IIi(k,i1)
+              t1qqpi(b,b1,a,k) = Vbbai(b,b1,a,i1)*IIi(k,i1)
+              tqqps(b,b1,a,k) += t1qqpi(b,b1,a,k)
+           ENDDO i1
+           IF k >= subb  
+           IF k <= sube  
+              PUT XbbaI(b,b1,a,k) = tqqps(b,b1,a,k)
+           ENDIF 
+           ENDIF 
+           IF k < subb  
+              PREPARE YbbaI(b,b1,a,k) = tqqps(b,b1,a,k) 
+           ENDIF 
+           IF k > sube  
+              PREPARE YbbaI(b,b1,a,k) = tqqps(b,b1,a,k) 
+           ENDIF 
+     ENDPARDO k, b, b1, a 
+#
+#    Put the singles amplitudes into a distributed array t1aI/t1bJ 
+#    ------------------------------------------------------------- 
+#
+     PARDO a, i 
+           PREQUEST tpi(a,i) = t1a_old(a,i1)  
+           PUT t1ai(a,i)     = tpi(a,i) 
+     ENDPARDO a, i 
+#
+     PARDO b, jb
+           PREQUEST tqj(b,jb) = t1b_old(b,j1)  
+           PUT t1bj(b,jb)     = tqj(b,jb) 
+     ENDPARDO b, jb
+#
+     execute sip_barrier 
+     execute server_barrier 
+#
+# --------------------------------------------------------------------------
+#
+     ENDPROC PDATA  
+#    ------------- 
+#
+# --------------------------------------------------------------------------
+#
+# --------------------------------------------------------------------------
+#
+     PROC P1DATA  
+#    ----------- 
+#
+#    Put the vOoO integrals into a distributed array 
+#    ----------------------------------------------- 
+#
+     create XSbJjJ 
+     IF subb > 0 
+     IF sube > 0 
+        CREATE XSbbbj#(*,*,*,JB)   
+     ENDIF 
+     ENDIF 
+     execute sip_barrier 
+#
+     PARDO b, j1, ib, jb 
+           PREQUEST PbJjJ(b,ib,j1,jb) = VSqjqj(b,j2,j1,j3) 
+           PUT XSbJjJ(b,ib,j1,jb)     = Pbjjj(b,ib,j1,jb)
+     ENDPARDO b, j1, ib, jb  
+#
+#    PREPARE Vaaai type arrays into XaaaI ones 
+#    ----------------------------------------- 
+#
+     PARDO kb, b, b1, b2 
+           tqqqs(b,b1,b2,kb) = 0.0
+           DO j1
+              REQUEST             VSbbbj(b,b1,b2,j1) b
+              GET                 IJj(kb,j1)
+              t1qqqj(b,b1,b2,kb)= VSbbbj(b,b1,b2,j1)*IJj(kb,j1)
+              tqqqs(b,b1,b2,kb)+= t1qqqj(b,b1,b2,kb)
+           ENDDO j1
+#
+           IF kb >= subb  
+           IF kb <= sube  
+              PUT XSbbbJ(b,b1,b2,kb) = tqqqs(b,b1,b2,kb)
+           ENDIF 
+           ENDIF 
+           IF kb < subb  
+              PREPARE YSbbbJ(b,b1,b2,kb) = tqqqs(b,b1,b2,kb)
+           ENDIF 
+           IF kb > sube  
+              PREPARE YSbbbJ(b,b1,b2,kb) = tqqqs(b,b1,b2,kb)
+           ENDIF 
+     ENDPARDO kb, b, b1, b2 
+#
+     execute sip_barrier 
+     execute server_barrier 
+#
+# --------------------------------------------------------------------------
+#
+     ENDPROC P1DATA  
+#    -------------- 
+#
+# --------------------------------------------------------------------------
+#
+# --------------------------------------------------------------------------
+#
+     PROC T4BBB 
+#    ---------- 
+#
+     esum4 = 0.0 
+     esum1 = 0.0 
+#
+     create DbjbS 
+     create Dbb 
+     create D1bjbS 
+     create Pbbbi 
+     create Pbbbj 
+     create Pbbbk 
+     create D2bjbS 
+     create D1bb 
+     create D2bb 
+#
+     create XSbI_ki   
+     create XSbI_kj  
+     create XSbI_ij
+#
+     create Dbj 
+     create S3 
+#
+     execute sip_barrier 
+#
+     PARDO m1, b, b1, j1
+           REQUEST                  T2bjbj(b,j1,b1,m1) b
+           PUT D2bjbS(b,j1,b1,m1) = T2bjbj(b,j1,b1,m1)
+     ENDPARDO m1, b, b1, j1 
+#
+#    beta/beta/beta/ block. 
+#    ----------------------- 
+#
+     DO ib # segment size of 1
+#
+        IF ib >= itrips
+        IF ib <= itripe
+#
+        execute sip_barrier
+        execute server_barrier
+#
+        PARDO b, b1, b2
+              IF ib >= subb
+              IF ib <= sube
+                 GET                  XSbbbj(b,b1,b2,ib)
+                 tqqq(b,b1,b2)      = XSbbbj(b,b1,b2,ib)
+              ENDIF
+              ENDIF
+              IF ib < subb
+                 REQUEST              YSbbbj(b,b1,b2,ib) b  
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,ib)
+              ENDIF
+              IF ib > sube
+                 REQUEST              YSbbbj(b,b1,b2,ib) b
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,ib)
+              ENDIF
+              PUT Pbbbi(b,b1,b2) = tqqq(b,b1,b2)
+        ENDPARDO b, b1, b2
+#
+        PARDO b, b1, j1
+              PREQUEST t1qqqs(b,j1,b1,ib) = T2bjbj(b,j1,b1,j2)
+              t1qqq(b,j1,b1)             = t1qqqs(b,j1,b1,ib)
+              PUT DbjbS(b,j1,b1)         = t1qqq(b,j1,b1)
+        ENDPARDO b, b1, j1
+#
+        PARDO m1, b, b1
+              PREQUEST zqsqq(b,ib,b1,m1) = T2bjbj(b,j1,b1,m1)
+              tqqqs(b,b1,m1,ib)           = zqsqq(b,ib,b1,m1)
+              tqqq(b,b1,m1)              = tqqqs(b,b1,m1,ib)
+              t1qqq(b1,b,m1)             = tqqq(b,b1,m1)
+              PUT D1bb(b1,b,m1)          = t1qqq(b1,b,m1)
+        ENDPARDO m1, b, b1
+#
+        PARDO m1, b, j1
+              PREQUEST zqqqs(b,m1,j1,ib) = VSqjqj(b,m1,j1,j3)
+              Tqqqs(b,j1,m1,ib)          = zqqqs(b,m1,j1,ib)
+              tqqq(b,j1,m1)              = Tqqqs(b,j1,m1,ib)
+              t1qqq(j1,b,m1)             = tqqq(b,j1,m1)
+              PUT XSbI_ki(j1,b,m1)       = t1qqq(j1,b,m1)
+        ENDPARDO m1, b, j1
+#
+        DO jb # segment size of 1
+#
+        IF jb >= ib 
+#
+        execute server_barrier
+#
+        PARDO b, b1, b2
+              IF jb >= subb
+              IF jb <= sube
+                 GET                  XSbbbj(b,b1,b2,jb)
+                 tqqq(b,b1,b2)      = XSbbbj(b,b1,b2,jb)
+              ENDIF
+              ENDIF
+              IF jb < subb
+                 REQUEST              YSbbbj(b,b1,b2,jb) b
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,jb)
+              ENDIF
+              IF jb > sube
+                 REQUEST              YSbbbj(b,b1,b2,jb) b
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,jb)
+              ENDIF
+              PUT Pbbbj(b,b1,b2) = tqqq(b,b1,b2)
+        ENDPARDO b, b1, b2
+#
+        PARDO b, b1
+              PREQUEST tqsqs(b,jb,b1,ib) = T2bjbj(b,j1,b1,j2)
+              tqqss(b,b1,jb,ib)          = tqsqs(b,jb,b1,ib)
+              tqq(b,b1)                = tqqss(b,b1,jb,ib)
+              t1qq(b1,b)               = tqq(b,b1)
+              PUT Dbb(b1,b)            = t1qq(b1,b)
+        ENDPARDO b, b1
+#
+        PARDO b, b1, j1
+              PREQUEST t2qqqs(b,j1,b1,jb) = T2bjbj(b,j1,b1,j2)
+              t2qqq(b,j1,b1)             = t2qqqs(b,j1,b1,jb)
+              PUT D1bjbS(b,j1,b1)        = t2qqq(b,j1,b1)
+        ENDPARDO b, b1, j1
+#
+#       Put 'slices' of VSpipi(a,i2,i1,i3) into 2-d arrays
+#       --------------------------------------------------
+#
+        PARDO b, j1
+              PREQUEST PbJjJ(b,ib,j1,jb) = VSqjqj(b,j2,j1,j3)
+              Tqqss(b,j1,ib,jb)          = Pbjjj(b,ib,j1,jb)
+              tqq(b,j1)                = Tqqss(b,j1,ib,jb)
+              t1qq(j1,b)               = tqq(b,j1)
+              PUT XSbI_ij(j1,b)        = t1qq(j1,b)
+        ENDPARDO b, j1
+#
+           PARDO m1, b, b1
+                 PREQUEST x3qsqq(b,jb,b1,m1) = T2bjbj(b,j1,b1,m1)
+                 tqqqs(b,b1,m1,jb)           = x3qsqq(b,jb,b1,m1)
+                 tqqq(b,b1,m1)              = tqqqs(b,b1,m1,jb)
+                 t1qqq(b1,b,m1)             = tqqq(b,b1,m1)
+                 PUT D2bb(b1,b,m1)          = t1qqq(b1,b,m1)
+           ENDPARDO m1, b, b1
+#
+#          Put 'slices' of VSpipi(a,i2,i1,i3) into 2-d arrays
+#          --------------------------------------------------
+#
+           PARDO m1, b, j1
+                 PREQUEST z2qqqs(b,m1,j1,jb) = VSqjqj(b,m1,j1,j3)
+                 Tqqqs(b,j1,m1,jb)          = z2qqqs(b,m1,j1,jb)
+                 tqqq(b,j1,m1)              = Tqqqs(b,j1,m1,jb)
+                 t1qqq(j1,b,m1)             = tqqq(b,j1,m1)
+                 PUT XSbI_kj(j1,b,m1)       = t1qqq(j1,b,m1)
+           ENDPARDO m1, b, j1
+#
+           execute sip_barrier
+           execute server_barrier
+#
+#          Compute contributions to amplitude array
+#          ----------------------------------------
+#
+           PARDO m1, b1, b2
+#
+                 IF b1 <= b2
+#
+                    allocate L3bbb(*,b1,b2,m1)
+#
+                    DO b3
+#
+                       REQUEST           VSbbbj(b1,b3,b2,m1) m1 
+                       GET               Pbbbj(b1,b3,b2)
+                       GET               Pbbbi(b1,b3,b2)
+                       t0qqqq(b3,b1,b2,m1) = VSbbbj(b1,b3,b2,m1)
+                       tqqq(b3,b1,b2)  = Pbbbj(b1,b3,b2)
+                       t2qqq(b3,b1,b2) = Pbbbi(b1,b3,b2)
+#
+                       DO b
+#
+                          IF b <= b1
+#
+                             GET               D1bb(b3,b,m1)
+                             GET               Dbb(b3,b)
+                             GET               D2bb(b3,b,m1)
+#
+                             xqqqq(b,b1,b2,m1)   = t2qqq(b3,b1,b2)*D2bb(b3,b,m1)
+                             x1qqqq(b,b1,b2,m1)  = tqqq(b3,b1,b2)*D1bb(b3,b,m1)
+                             xqqqq(b,b1,b2,m1)  -= x1qqqq(b,b1,b2,m1)
+                             x2qqqq(b,b1,b2,m1)  = t0qqqq(b3,b1,b2,m1)*Dbb(b3,b)
+                             xqqqq(b,b1,b2,m1)  -= x2qqqq(b,b1,b2,m1)
+#
+                             L3bbb(b,b1,b2,m1) += xqqqq(b,b1,b2,m1)
+#
+                          ENDIF
+#
+                       ENDDO b
+#
+                    ENDDO b3
+#
+                    DO b
+                       IF b <= b1
+                          tqqqq(b,b1,b2,m1)       = L3bbb(b,b1,b2,m1)
+                          PREPARE S3bbb(b,b1,b2,m1) += tqqqq(b,b1,b2,m1)
+                       ENDIF
+                    ENDDO b
+#
+                    deallocate L3bbb(*,b1,b2,m1)
+#
+                 ENDIF
+#
+           ENDPARDO m1, b1, b2
+#
+           PARDO m1, b, b2
+#
+                 allocate L3bbb(b,*,b2,m1)
+#
+                 DO b3
+#
+                    REQUEST VSbbbj(b,b3,b2,m1) m1 
+                    GET     Pbbbi(b,b3,b2)
+                    GET     Pbbbj(b,b3,b2)
+#
+                    DO b1
+#
+                       IF b <= b1
+                       IF b1 <= b2
+#
+                          GET               Dbb(b3,b1)
+                          GET               D1bb(b3,b1,m1)
+                          GET               D2bb(b3,b1,m1)
+#
+                          xqqqq(b,b1,b2,m1)   = VSbbbj(b,b3,b2,m1)*Dbb(b3,b1)
+                          x1qqqq(b,b1,b2,m1)  = Pbbbj(b,b3,b2)*D1bb(b3,b1,m1)
+                          xqqqq(b,b1,b2,m1)  += x1qqqq(b,b1,b2,m1)
+                          x2qqqq(b,b1,b2,m1)  = Pbbbi(b,b3,b2)*D2bb(b3,b1,m1)
+                          xqqqq(b,b1,b2,m1)  -= x2qqqq(b,b1,b2,m1)
+#
+                          L3bbb(b,b1,b2,m1) += xqqqq(b,b1,b2,m1)
+#
+                       ENDIF
+                       ENDIF
+#
+                    ENDDO b1
+#
+                 ENDDO b3
+#
+                 DO b1
+                    IF b <= b1
+                       tqqqq(b,b1,b2,m1)       = L3bbb(b,b1,b2,m1)
+                       PREPARE S3bbb(b,b1,b2,m1) += tqqqq(b,b1,b2,m1)
+                    ENDIF
+                 ENDDO b1
+#
+                 deallocate L3bbb(b,*,b2,m1)
+#
+           ENDPARDO m1, b, b2
+#
+           PARDO m1, b, b1
+#
+                 IF b <= b1
+#
+                    allocate L3bbb(b,b1,*,m1)
+#
+                    DO b3
+#
+                       REQUEST          VSbbbj(b1,b3,b,m1) b 
+                       GET              Pbbbj(b1,b3,b)
+                       GET              Pbbbi(b1,b3,b)
+                       tqqq(b,b1,b3)  = Pbbbj(b1,b3,b)
+                       t0qqqq(b,b1,b3,m1) = VSbbbj(b1,b3,b,m1)
+                       t2qqq(b,b1,b3) = Pbbbi(b1,b3,b)
+#
+                       DO b2
+#
+                          IF b1 <= b2
+#
+                             GET                   D1bb(b3,b2,m1)
+                             GET                   D2bb(b3,b2,m1)
+                             GET                   Dbb(b3,b2)
+#
+                             xqqqq(b,b1,b2,m1)       = tqqq(b,b1,b3)*D1bb(b3,b2,m1)
+                             x1qqqq(b,b1,b2,m1)      = t0qqqq(b,b1,b3,m1)*Dbb(b3,b2)
+                             xqqqq(b,b1,b2,m1)      += x1qqqq(b,b1,b2,m1)
+                             x2qqqq(b,b1,b2,m1)      = t2qqq(b,b1,b3)*D2bb(b3,b2,m1)
+                             xqqqq(b,b1,b2,m1)      -= x2qqqq(b,b1,b2,m1)
+#
+                             L3bbb(b,b1,b2,m1)     += xqqqq(b,b1,b2,m1)
+#
+                          ENDIF
+#
+                       ENDDO b2
+#
+                    ENDDO b3
+#
+                    DO b2
+                       IF b <= b1
+                          tqqqq(b,b1,b2,m1)       = L3bbb(b,b1,b2,m1)
+                          PREPARE S3bbb(b,b1,b2,m1) += tqqqq(b,b1,b2,m1)
+                       ENDIF
+                    ENDDO b2
+#
+                    deallocate L3bbb(b,b1,*,m1)
+#
+                 ENDIF
+#
+           ENDPARDO m1, b, b1
+#
+# End contributions from terms containing Pbbbi
+# ---------------------------------------------
+#
+           PARDO m1, b1, b2
+#
+                 IF b1 <= b2
+#
+                    allocate L3bbb(*,b1,b2,m1)
+#
+                    DO j1
+#
+                       GET               D2bjbS(b1,j1,b2,m1) 
+                       GET               DbjbS(b1,j1,b2)
+                       GET               D1bjbS(b1,j1,b2)
+                       tqqq(j1,b1,b2)  = DbjbS(b1,j1,b2)
+                       t1qqq(j1,b1,b2) = D1bjbS(b1,j1,b2)
+                       t0qqqq(j1,b1,b2,m1) = D2bjbS(b1,j1,b2,m1)
+#
+                       DO b
+#
+                          IF b <= b1
+#
+                             GET               XSbi_kj(j1,b,m1)
+                             GET               XSbi_ki(j1,b,m1)
+                             GET               XSbi_ij(j1,b)
+#
+                             xqqqq(b,b1,b2,m1)   = tqqq(j1,b1,b2)*XSbi_kj(j1,b,m1)
+                             x1qqqq(b,b1,b2,m1)  = t1qqq(j1,b1,b2)*XSbi_ki(j1,b,m1)
+                             x2qqqq(b,b1,b2,m1)  = t0qqqq(j1,b1,b2,m1)*XSbi_ij(j1,b)
+                             xqqqq(b,b1,b2,m1)  -= x1qqqq(b,b1,b2,m1)
+                             xqqqq(b,b1,b2,m1)  -= x2qqqq(b,b1,b2,m1)
+                             L3bbb(b,b1,b2,m1) += xqqqq(b,b1,b2,m1)
+#
+                          ENDIF
+#
+                        ENDDO b
+#
+                    ENDDO j1
+#
+                    DO b
+                       IF b <= b1
+                          tqqqq(b,b1,b2,m1)       = L3bbb(b,b1,b2,m1)
+                          PREPARE S3bbb(b,b1,b2,m1) += tqqqq(b,b1,b2,m1)
+                       ENDIF
+                    ENDDO b
+#
+                    deallocate L3bbb(*,b1,b2,m1)
+#
+                 ENDIF
+#
+           ENDPARDO m1,b1, b2
+#
+           PARDO m1, b, b2
+#
+                 allocate L3bbb(b,*,b2,m1)
+#
+                 DO j1
+#
+                    GET DbjbS(b,j1,b2)
+                    GET D1bjbS(b,j1,b2)
+                    GET D2bjbS(b,j1,b2,m1)
+#
+                    DO b1
+#
+                       IF b <= b1
+                       IF b1 <= b2
+#
+                          GET                XSbi_kj(j1,b1,m1)
+                          GET                XSbi_ki(j1,b1,m1)
+                          GET                XSbi_ij(j1,b1)
+#
+                          xqqqq(b,b1,b2,m1)   = DbjbS(b,j1,b2)*XSbi_kj(j1,b1,m1)
+                          x1qqqq(b,b1,b2,m1)  = D1bjbS(b,j1,b2)*XSbi_ki(j1,b1,m1)
+                          x2qqqq(b,b1,b2,m1)  = D2bjbS(b,j1,b2,m1)*XSbi_ij(j1,b1)
+                          x2qqqq(b,b1,b2,m1) += x1qqqq(b,b1,b2,m1)
+                          x2qqqq(b,b1,b2,m1) -= xqqqq(b,b1,b2,m1)
+#
+                          L3bbb(b,b1,b2,m1) += x2qqqq(b,b1,b2,m1)
+#
+                       ENDIF
+                       ENDIF
+#
+                    ENDDO b1
+#
+                 ENDDO j1
+#
+                 DO b1
+                    IF b <= b1
+                       tqqqq(b,b1,b2,m1)       = L3bbb(b,b1,b2,m1)
+                       PREPARE S3bbb(b,b1,b2,m1) += tqqqq(b,b1,b2,m1)
+                    ENDIF
+                 ENDDO b1
+#
+                 deallocate L3bbb(*,b1,b2,m1)
+#
+           ENDPARDO m1, b, b2
+#
+           PARDO m1, b, b1
+#
+                 IF b <= b1
+#
+                 allocate L3bbb(b,b1,*,m1)
+#
+                 DO j1
+#
+                    GET              D2bjbS(b1,j1,b,m1)
+                    GET              DbjbS(b1,j1,b)
+                    GET              D1bjbS(b1,j1,b)
+                    tqqq(b,b1,j1)  = DbjbS(b1,j1,b)
+                    t1qqq(b,b1,j1) = D1bjbS(b1,j1,b)
+                    t0qqqq(b,b1,j1,m1) = D2bjbS(b1,j1,b,m1)
+#
+                    DO b2
+#
+                       IF b1 <= b2
+#
+                          GET                XSbi_kj(j1,b2,m1)
+                          GET                XSbi_ki(j1,b2,m1)
+                          GET                XSbi_ij(j1,b2)
+#
+                          xqqqq(b,b1,b2,m1)   = tqqq(b,b1,j1)*XSbi_kj(j1,b2,m1)
+                          x1qqqq(b,b1,b2,m1)  = t1qqq(b,b1,j1)*XSbi_ki(j1,b2,m1)
+                          x2qqqq(b,b1,b2,m1)  = t0qqqq(b,b1,j1,m1)*XSbi_ij(j1,b2)
+                          x2qqqq(b,b1,b2,m1) += x1qqqq(b,b1,b2,m1)
+                          x2qqqq(b,b1,b2,m1) -= xqqqq(b,b1,b2,m1)
+#
+                          L3bbb(b,b1,b2,m1) += x2qqqq(b,b1,b2,m1)
+#
+                       ENDIF
+#
+                    ENDDO b2
+#
+                 ENDDO j1
+#
+                 DO b2
+                    IF b <= b1
+                       tqqqq(b,b1,b2,m1)       = L3bbb(b,b1,b2,m1)
+                       PREPARE S3bbb(b,b1,b2,m1) += tqqqq(b,b1,b2,m1)
+                    ENDIF
+                 ENDDO b2
+#
+                 deallocate L3bbb(b,b1,*,m1)
+#
+                 ENDIF
+#
+           ENDPARDO m1, b, b1
+#
+          #execute sip_barrier
+           execute server_barrier
+#
+# Create the S3 array for the s_1 computetion(perm 3)
+# ---------------------------------------------------
+#
+        PARDO b, b1
+#
+              PREQUEST P3bjbj(b1,jb,b,ib) = VSqjqj(b1,j3,b,j2)
+              t2qqss(b1,b,jb,ib)          = P3bjbj(b1,jb,b,ib)
+              tqq(b1,b)                 = t2qqss(b1,b,jb,ib)
+              PUT S3(b1,b)              = tqq(b1,b)
+#
+        ENDPARDO b, b1
+#
+# Antisymmetrize the amplitude array
+# ----------------------------------
+#
+        DO m1
+#
+           create Y3bbb(*,*,*,m1)
+           create DD3bbb(*,*,*,m1)
+           execute sip_barrier
+#
+           PARDO b, b1, b2
+#
+                 IF b <= b1
+                 IF b1 <= b2
+#
+#                   Complete and symmetrize distributed array
+#                   -----------------------------------------
+#
+                    REQUEST               S3bbb(b,b1,b2,m1) b
+                    s3qqqq(b,b1,b2,m1)      = S3bbb(b,b1,b2,m1)
+#
+                    t1qqqq(b1,b,b2,m1)      = s3qqqq(b,b1,b2,m1)
+                    t2qqqq(b2,b1,b,m1)      = s3qqqq(b,b1,b2,m1)
+                    t3qqqq(b,b2,b1,m1)      = s3qqqq(b,b1,b2,m1)
+                    t4qqqq(b1,b2,b,m1)      = s3qqqq(b,b1,b2,m1)
+                    t5qqqq(b2,b,b1,m1)      = s3qqqq(b,b1,b2,m1)
+                    t1qqqq(b1,b,b2,m1)     *= -1.0
+                    t2qqqq(b2,b1,b,m1)     *= -1.0
+                    t3qqqq(b,b2,b1,m1)     *= -1.0
+
+                    PUT Y3bbb(b,b1,b2,m1) = s3qqqq(b,b1,b2,m1)
+                    PUT Y3bbb(b1,b,b2,m1) = t1qqqq(b1,b,b2,m1)
+                    PUT Y3bbb(b2,b1,b,m1) = t2qqqq(b2,b1,b,m1)
+                    PUT Y3bbb(b,b2,b1,m1) = t3qqqq(b,b2,b1,m1)
+                    PUT Y3bbb(b1,b2,b,m1) = t4qqqq(b1,b2,b,m1)
+                    PUT Y3bbb(b2,b,b1,m1) = t5qqqq(b2,b,b1,m1)
+#
+                 ENDIF
+                 ENDIF
+#
+           ENDPARDO b, b1, b2
+#
+           execute sip_barrier
+           execute server_barrier
+#
+# Compute the contribution to the energy and one-particle intermediates 
+# --------------------------------------------------------------------- 
+#
+           PARDO b, b1, b2 
+#
+                 GET                         Y3bbb(b,b1,b2,m1) 
+                 tbbbojj(b,b1,b2,m1,ib,jb) = Y3bbb(b,b1,b2,m1)
+                 execute energy_tdenominator tbbbojj(b,b1,b2,m1,ib,jb) 
+#
+# Form contribution to the energy 
+# ------------------------------- 
+#
+                 t1qqqq(b,b1,b2,m1) = tbbbojj(b,b1,b2,m1,ib,jb) 
+                 etemp          = Y3bbb(b,b1,b2,m1)*t1qqqq(b,b1,b2,m1)
+                 etemp          = etemp/18.0  
+                 esum4         += etemp 
+#
+                 PUT DD3bbb(b,b1,b2,m1) = t1qqqq(b,b1,b2,m1) 
+#
+            ENDPARDO b, b1, b2 
+#
+           execute sip_barrier # VFL 
+#
+# Form contribution to sbj
+# ------------------------
+#
+# Perm 1
+# -------
+#
+           PARDO b1, b2
+#
+                 PREQUEST xqsqq(b1,jb,b2,m1) = VSqjqj(b1,j1,b2,m1)
+                 t2qqqs(b1,b2,m1,jb)         = xqsqq(b1,jb,b2,m1)
+                 tqqq(b1,b2,m1)             = t2qqqs(b1,b2,m1,jb)
+                 tqqqs(b1,b2,m1,ib)          = tqqq(b1,b2,m1)
+#
+                 DO b
+#
+                    GET                         DD3bbb(b,b1,b2,m1)
+                    xbj(b,ib)                  = DD3bbb(b,b1,b2,m1)*tqqqs(b1,b2,m1,ib)
+                    xbj(b,ib)                 *= 0.6666666666666666666666667
+                    PUT sbj(b,ib)             += xbj(b,ib)
+#
+                 ENDDO b
+#
+           ENDPARDO b1, b2
+#
+# Perm 2
+# -------
+#
+           PARDO b, b2
+#
+                 PREQUEST x2qsqq(b,ib,b2,m1) = VSqjqj(b,j1,b2,m1)
+                 t2qqqs(b,b2,m1,ib)          = x2qsqq(b,ib,b2,m1)
+                 tqqq(b,b2,m1)              = t2qqqs(b,b2,m1,ib)
+                 tqqqs(b,b2,m1,jb)           = tqqq(b,b2,m1)
+#
+                 DO b1
+#
+                    GET                         DD3bbb(b,b1,b2,m1)
+                   #t1qqqq(b1,b,b2,m1)        = tqqqq(b,b1,b2,m1)
+                    xbj(b1,jb)                 = DD3bbb(b,b1,b2,m1)*tqqqs(b,b2,m1,jb) # VFL
+                    xbj(b1,jb)                *= 0.6666666666666666666666667
+                    PUT sbj(b1,jb)            += xbj(b1,jb)
+#
+                 ENDDO b1
+#
+           ENDPARDO b, b2
+#
+# Perm 3
+# -------
+#
+           PARDO b2, b1, b
+#
+                 GET                  DD3bbb(b,b1,b2,m1)
+                 GET                  S3(b1,b)
+                #t1qqqq(b2,m1,b1,b) = DD3ijk(b,b1,b2,m1) # VFL
+                 t1qq(b2,m1)        = DD3bbb(b,b1,b2,m1)*S3(b1,b) # VFL
+                 t1qq(b2,m1)       *= 0.6666666666666666666666667
+                 PUT Dbj(b2,m1)    += t1qq(b2,m1)
+#
+                 t2qqqq(b,b1,b2,m1)        = 0.0
+                 PREPARE S3bbb(b,b1,b2,m1) = t2qqqq(b,b1,b2,m1)
+#
+           ENDPARDO b2, b1, b
+#
+           execute sip_barrier # VFL
+           execute server_barrier
+           delete Y3bbb(*,*,*,m1)
+           delete DD3bbb(*,*,*,m1)
+#
+        ENDDO m1 
+#
+	ENDIF # i>=j 
+	ENDDO jb # segment size of 1  
+#
+        ENDIF # ib <= itripe
+        ENDIF # ib >= itrips
+#
+     ENDDO ib # segment size of 1  
+#
+     execute server_barrier 
+     execute sip_barrier
+     collective ecorrbbb += esum4
+     execute print_scalar ecorrbbb  
+#
+     delete DbjbS 
+     delete D1bjbS 
+     delete Dbb 
+     delete D2bjbS 
+     delete D1bb 
+     delete D2bb 
+     delete XSbI_ki   
+     delete XSbI_kj  
+     delete XSbI_ij
+     execute sip_barrier 
+#
+     ENDPROC T4BBB 
+#    ------------- 
+#
+# --------------------------------------------------------------------------
+#
+# --------------------------------------------------------------------------
+#
+     PROC T4BBA 
+#    ---------- 
+#
+     esum4 = 0.0 
+     esum1 = 0.0 
+
+     create DbjbS 
+     create EaibS 
+     create D1bjbS 
+     create Dbb 
+     create E1aibS 
+     create D2bjbS 
+     create Paabj 
+     create Paabi 
+     create Pbbak 
+     create EabjS 
+     create Eab
+     create E1ab
+
+     create Xib_ki  
+     create Xib_kj  
+     create Xja_ik  
+     create Xja_jk  
+#
+     create S3bb 
+     create dai 
+
+     execute sip_barrier 
+#
+#    beta/beta/beta/ block. 
+#    ----------------------- 
+#
+     PARDO a, b, j1, k1  
+           REQUEST                     T2aibj(a,k1,b,j1) a  
+           tpqqp(a,b,j1,k1)          = T2aibj(a,k1,b,j1)  
+           PUT EabjS(a,b,j1,k1)      = tpqqp(a,b,j1,k1) 
+     ENDPARDO a, b, j1, k1  
+#
+     DO ib # segment size of 1  
+#
+        IF ib >= itrips
+        IF ib <= itripe
+#
+        execute sip_barrier 
+        execute server_barrier 
+#
+        PARDO b, b1, b2
+              IF ib >= subb  
+              IF ib <= sube  
+                 GET                  XSbbbj(b,b1,b2,ib) 
+                 tqqq(b,b1,b2)      = XSbbbj(b,b1,b2,ib)
+              ENDIF 
+              ENDIF 
+              IF ib < subb  
+                 REQUEST              YSbbbj(b,b1,b2,ib) b  
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,ib)
+              ENDIF 
+              IF ib > sube 
+                 REQUEST              YSbbbj(b,b1,b2,ib) b  
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,ib)
+              ENDIF 
+              PUT Pbbbi(b,b1,b2) = tqqq(b,b1,b2)
+        ENDPARDO b, b1, b2 
+#
+        PARDO a, a1, b
+              IF ib >= subb  
+              IF ib <= sube  
+                 GET                 Xaabj(a,a1,b,ib) 
+                 tppq(a,a1,b)      = Xaabj(a,a1,b,ib)
+              ENDIF 
+              ENDIF 
+              IF ib < subb  
+                 REQUEST             Yaabj(a,a1,b,ib) a  
+                 tppq(a,a1,b)      = Yaabj(a,a1,b,ib)
+              ENDIF 
+              IF ib > sube  
+                 REQUEST             Yaabj(a,a1,b,ib) a  
+                 tppq(a,a1,b)      = Yaabj(a,a1,b,ib)
+              ENDIF 
+              PUT Paabi(a,a1,b) = tppq(a,a1,b)
+        ENDPARDO a, a1, b 
+#
+        PARDO b, b1, j1 
+              PREQUEST tqqqS(b,j1,b1,ib) = T2bjbj(b,j1,b1,j2) 
+              tqqq(b,j1,b1)              = tqqqS(b,j1,b1,ib) 
+              PUT DbjbS(b,j1,b1)         = tqqq(b,j1,b1)  
+        ENDPARDO b, b1, j1 
+#
+        PARDO a, b, i1 
+              PREQUEST tppqs(a,i1,b,ib) = T2aibj(a,i1,b,j1) 
+              tppq(a,i1,b)              = tppqs(a,i1,b,ib) 
+              PUT EaibS(a,i1,b)         = tppq(a,i1,b) 
+        ENDPARDO a, b, i1 
+#
+        PARDO a, b, k1  
+              PREQUEST yppqs(a,k1,b,ib) = T2aibj(a,k1,b,j1) 
+              tpqps(a,b,k1,ib)          = yppqs(a,k1,b,ib) 
+              tpqp(a,b,k1)              = tpqps(a,b,k1,ib)
+              PUT Eab(a,b,k1)           = tpqp(a,b,k1) 
+        ENDPARDO a, b, k1  
+#
+        PARDO a, j1, k1 
+           GET                   Xaijj(a,k1,j1,ib)
+           tqpps(j1,a,k1,ib)   = Xaijj(a,k1,j1,ib)
+           tqpp(j1,a,k1)       = tqpps(j1,a,k1,ib) 
+           PUT Xja_ik(j1,a,k1) = tqpp(j1,a,k1) 
+        ENDPARDO a, j1, k1 
+#
+        PARDO b, i1, k1 
+           GET                   Xiibj(i1,k1,b,ib)
+           tpqps(i1,b,k1,ib)   = Xiibj(i1,k1,b,ib) 
+           tpqp(i1,b,k1)       = tpqps(i1,b,k1,ib) 
+           PUT Xib_ki(i1,b,k1) = tpqp(i1,b,k1) 
+        ENDPARDO b, i1, k1 
+#
+        execute server_barrier 
+#
+        DO jb # segment size of 1  
+#
+        IF jb >= ib  
+#
+        execute server_barrier 
+#
+        PARDO b, b1, b2
+              IF jb >= subb  
+              IF jb <= sube  
+                 GET                  XSbbbj(b,b1,b2,jb) 
+                 tqqq(b,b1,b2)      = XSbbbj(b,b1,b2,jb)
+              ENDIF 
+              ENDIF 
+              IF jb < subb  
+                 REQUEST              YSbbbj(b,b1,b2,jb) b  
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,jb)
+              ENDIF 
+              IF jb > sube  
+                 REQUEST              YSbbbj(b,b1,b2,jb) b  
+                 tqqq(b,b1,b2)      = YSbbbj(b,b1,b2,jb)
+              ENDIF 
+              PUT Pbbbj(b,b1,b2) = tqqq(b,b1,b2)
+        ENDPARDO b, b1, b2 
+#
+        PARDO a, a1, b
+              IF jb >= subb  
+              IF jb <= sube  
+                 GET                 Xaabj(a,a1,b,jb) 
+                 tppq(a,a1,b)      = Xaabj(a,a1,b,jb)
+              ENDIF 
+              ENDIF 
+              IF jb < subb  
+                 REQUEST             Yaabj(a,a1,b,jb) a  
+                 tppq(a,a1,b)      = Yaabj(a,a1,b,jb)
+              ENDIF 
+              IF jb > sube  
+                 REQUEST             Yaabj(a,a1,b,jb) a  
+                 tppq(a,a1,b)      = Yaabj(a,a1,b,jb)
+              ENDIF 
+              PUT Paabj(a,a1,b) = tppq(a,a1,b)
+        ENDPARDO a, a1, b 
+#
+        PARDO b, b1, j1 
+              PREQUEST tqqqS(b,j1,b1,jb) = T2bjbj(b,j1,b1,j2) 
+              tqqq(b,j1,b1)              = tqqqS(b,j1,b1,jb) 
+              PUT D1bjbS(b,j1,b1)        = tqqq(b,j1,b1)  
+        ENDPARDO b, b1, j1 
+#
+        PARDO b, b1  
+              PREQUEST tqSqS(b,jb,b1,ib) = T2bjbj(b,j1,b1,j2) 
+              tqqjj(b,b1,jb,ib)          = tqSqS(b,jb,b1,ib) 
+              tqq(b,b1)                  = tqqjj(b,b1,jb,ib)
+              t1qq(b1,b)                 = tqq(b,b1) 
+              PUT Dbb(b1,b)              = T1qq(b1,b) 
+        ENDPARDO b, b1  
+#
+        PARDO a, b, i1 
+              PREQUEST tppqs(a,i1,b,jb) = T2aibj(a,i1,b,j1) 
+              tppq(a,i1,b)              = tppqs(a,i1,b,jb) 
+              PUT E1aibS(a,i1,b)        = tppq(a,i1,b) 
+        ENDPARDO a, b, i1 
+#
+        execute sip_barrier 
+#
+        DO b 
+        DO b1 
+           GET          Dbb(b,b1)  
+           SDbb(b,b1) = Dbb(b,b1) 
+        ENDDO b1 
+        ENDDO b 
+#
+        DO b1 
+        DO j1 
+           GET                  XSbJjJ(b1,jb,j1,ib)
+           tqqjj(j1,b1,ib,jb) = XSbJjJ(b1,jb,j1,ib) 
+           tqq(j1,b1)         = tqqjj(j1,b1,ib,jb) 
+           Xjb_ij(j1,b1)      = tqq(j1,b1) 
+        ENDDO j1 
+        ENDDO b1 
+#
+#    alpha/beta/beta/ block.
+#    ------------------------
+#
+# Zero out the amplitude arrays 
+# ----------------------------- 
+#
+           PARDO a, b, k1  
+                 PREQUEST y1ppqs(a,k1,b,jb) = T2aibj(a,k1,b,j1) 
+                 tpqps(a,b,k1,jb)           = y1ppqs(a,k1,b,jb) 
+                 tpqp(a,b,k1)               = tpqps(a,b,k1,jb)
+                 PUT E1ab(a,b,k1)           = tpqp(a,b,k1) 
+           ENDPARDO a, b, k1  
+#
+           PARDO b, i1, k1 
+              GET                   Xiibj(i1,k1,b,jb)
+              tpqps(i1,b,k1,jb)   = Xiibj(i1,k1,b,jb) 
+              tpqp(i1,b,k1)       = tpqps(i1,b,k1,jb) 
+              PUT Xib_kj(i1,b,k1) = tpqp(i1,b,k1) 
+           ENDPARDO b, i1, k1 
+#
+           PARDO a, j1, k1 
+              GET                   Xaijj(a,k1,j1,jb)
+              tqpps(j1,a,k1,jb)   = Xaijj(a,k1,j1,jb)
+              tqpp(j1,a,k1)       = tqpps(j1,a,k1,jb) 
+              PUT Xja_jk(j1,a,k1) = tqpp(j1,a,k1) 
+           ENDPARDO a, j1, k1 
+#
+           execute server_barrier 
+           execute sip_barrier 
+#
+###############################################################################
+#
+#          Compute contributions to the amplitudes 
+#          --------------------------------------- 
+#
+            PARDO k1, a, b1
+#
+                 allocate L3bba(*,b1,a,k1) 
+#
+                 DO a2 
+#
+                   GET              Paabi(a,a2,b1)
+                   GET              Paabj(a2,a,b1)
+                   t1pqp(a2,b1,a) = Paabi(a,a2,b1)  
+                   tpqp(a2,b1,a)  = Paabj(a2,a,b1)  
+#
+                   DO b
+# 
+                      IF b <= b1
+#
+                         GET Eab(a2,b,k1) 
+                         GET E1ab(a2,b,k1) 
+#
+                         tqqpp(b,b1,a,k1)   = tpqp(a2,b1,a)*Eab(a2,b,k1)
+                         t1qqpp(b,b1,a,k1)  = t1pqp(a2,b1,a)*E1ab(a2,b,k1)
+                         tqqpp(b,b1,a,k1)  -= t1qqpp(b,b1,a,k1) 
+                         L3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+#
+                      ENDIF
+#
+                   ENDDO b
+#
+                 ENDDO a2 
+#
+                 DO b2 
+#
+                   REQUEST              Vbbai(b2,b1,a,k1) a 
+                   t3qqpp(b2,b1,a,k1) = Vbbai(b2,b1,a,k1)  
+#
+                   DO b
+# 
+                      IF b <= b1
+#
+                         tqqpp(b,b1,a,k1)   = t3qqpp(b2,b1,a,k1)*SDbb(b2,b) 
+                         L3bba(b,b1,a,k1) -= tqqpp(b,b1,a,k1)
+#
+                      ENDIF
+#
+                   ENDDO b
+#
+                 ENDDO b2 
+#
+                 DO b 
+                    IF b <= b1
+                       tqqpp(b,b1,a,k1)          = L3bba(b,b1,a,k1) 
+                       PREPARE Y3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1) 
+                    ENDIF 
+                 ENDDO b 
+#
+                 deallocate L3bba(*,b1,a,k1) 
+#
+            ENDPARDO k1, a, b1
+#
+            PARDO k1, b, b1
+
+                 IF b <= b1
+#
+                    allocate L3bba(b,b1,*,k1) 
+#
+                    DO b2  
+#
+                       GET Pbbbi(b,b2,b1)
+                       GET Pbbbj(b,b2,b1)
+#
+                       DO a
+#
+                          GET                 Eab(a,b2,k1) 
+                          GET                 E1ab(a,b2,k1) 
+#
+                          tqpp(b2,a,k1)     = Eab(a,b2,k1)
+                          tqpqp(b,a,b1,k1)  = Pbbbj(b,b2,b1)*tqpp(b2,a,k1)
+#
+                          tqpp(b2,a,k1)     = E1ab(a,b2,k1)
+                          t1qpqp(b,a,b1,k1) = Pbbbi(b,b2,b1)*tqpp(b2,a,k1)
+                          tqpqp(b,a,b1,k1) -= t1qpqp(b,a,b1,k1)
+#
+                          tqqpp(b,b1,a,k1)   = tqpqp(b,a,b1,k1)
+                          L3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+#
+                       ENDDO a
+#
+                    ENDDO b2  
+#
+                    DO a 
+                       tqqpp(b,b1,a,k1)          = L3bba(b,b1,a,k1) 
+                       PREPARE Y3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+                    ENDDO a 
+#
+                    deallocate L3bba(b,b1,*,k1) 
+#
+                 ENDIF
+#
+            ENDPARDO k1, b, b1
+#
+            PARDO k1, a, b 
+#
+                 allocate L3bba(b,*,a,k1) 
+#
+                 DO a2
+#
+                    GET Paabj(a,a2,b)
+                    GET Paabi(a,a2,b)
+#
+                    DO b1  
+#
+                       IF b <= b1
+#
+                          GET                 Eab(a2,b1,k1) 
+                          GET                 E1ab(a2,b1,k1) 
+#
+                          tpqqp(a,b1,b,k1)  = Paabi(a,a2,b)*E1ab(a2,b1,k1)
+                          t1pqqp(a,b1,b,k1) = Paabj(a,a2,b)*Eab(a2,b1,k1)
+                          tpqqp(a,b1,b,k1) -= t1pqqp(a,b1,b,k1)
+                          tqqpp(b,b1,a,k1)  = tpqqp(a,b1,b,k1)
+                          L3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+#
+                       ENDIF
+#
+                     ENDDO b1  
+#
+                 ENDDO a2
+#
+                  DO b2 
+#
+                    REQUEST Vbbai(b,b2,a,k1) a 
+#
+                    DO b1
+#
+                       IF b <= b1
+#
+                          tqqpp(b,b1,a,k1) = Vbbai(b,b2,a,k1)*SDbb(b2,b1)
+                          L3bba(b,b1,a,k1)+= tqqpp(b,b1,a,k1)
+#
+                       ENDIF 
+#
+                    ENDDO b1
+#
+                  ENDDO b2 
+#
+                 DO b1 
+                    IF b <= b1 
+                       tqqpp(b,b1,a,k1)          = L3bba(b,b1,a,k1) 
+                       PREPARE Y3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+                    ENDIF 
+                 ENDDO b1 
+#
+                 deallocate L3bba(b,*,a,k1) 
+#
+            ENDPARDO k1, a, b 
+#
+# End contributions from 3-virtual integrals 
+# ------------------------------------------
+#
+            PARDO k1, a, b1
+#
+                  allocate L3bba(*,b1,a,k1) 
+#
+                  DO i1 
+#
+                     GET              E1aibS(a,i1,b1)
+                     GET              EaibS(a,i1,b1)
+                     tpqp(i1,b1,a)  = EaibS(a,i1,b1) 
+                     t1pqp(i1,b1,a) = E1aibS(a,i1,b1) 
+#
+                     DO b
+
+                        IF b <= b1
+#
+                           GET                 Xib_kj(i1,b,k1) 
+                           GET                 Xib_ki(i1,b,k1) 
+#
+                           tqqpp(b,b1,a,k1)  = tpqp(i1,b1,a)*Xib_kj(i1,b,k1)
+                           t1qqpp(b,b1,a,k1) = t1pqp(i1,b1,a)*Xib_ki(i1,b,k1)
+                           tqqpp(b,b1,a,k1) -= t1qqpp(b,b1,a,k1)
+#
+                           L3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+#
+                        ENDIF 
+#
+                    ENDDO b
+#
+                 ENDDO i1
+#
+                 DO j1 
+#
+                    GET                  EabjS(a,b1,j1,k1)
+                    t2qqpp(j1,b1,a,k1) = EabjS(a,b1,j1,k1) 
+#
+                    DO b 
+
+                       IF b <= b1
+#
+                          tqqpp(b,b1,a,k1)  = t2qqpp(j1,b1,a,k1)*Xjb_ij(j1,b)
+                          L3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+#
+                       ENDIF 
+#
+                    ENDDO b
+#
+                 ENDDO j1
+#
+                 DO b 
+                    IF b <= b1 
+                       tqqpp(b,b1,a,k1)          = L3bba(b,b1,a,k1) 
+                       PREPARE Y3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+                    ENDIF 
+                 ENDDO b 
+#
+                 deallocate L3bba(*,b1,a,k1) 
+#
+            ENDPARDO k1, a, b1
+#
+            PARDO k1, b, a
+#
+                  allocate L3bba(b,*,a,k1) 
+#
+                  DO i1 
+#
+                     GET             E1aibS(a,i1,b)
+                     GET             EaibS(a,i1,b)
+                     t1qpp(b,i1,a) = E1aibS(a,i1,b) 
+                     tqpp(b,i1,a)  = EaibS(a,i1,b) 
+#
+                     DO b1
+#
+                        IF b <= b1
+#
+                           GET                  Xib_ki(i1,b1,k1) 
+                           GET                  Xib_kj(i1,b1,k1) 
+#
+                           t1qqpp(b,b1,a,k1)  = t1qpp(b,i1,a)*Xib_ki(i1,b1,k1)
+                           tqqpp(b,b1,a,k1)   = tqpp(b,i1,a)*Xib_kj(i1,b1,k1)
+                           t1qqpp(b,b1,a,k1) -= tqqpp(b,b1,a,k1)
+                           L3bba(b,b1,a,k1)  += t1qqpp(b,b1,a,k1)
+#
+                       ENDIF  
+#
+                    ENDDO b1
+#
+                  ENDDO i1 
+#
+                  DO j1
+#
+                     GET                 EabjS(a,b,j1,k1)
+                     t2qqpp(b,j1,a,k1) = EabjS(a,b,j1,k1) 
+#
+                     DO b1
+#
+                        IF b <= b1
+#
+                           t1qqpp(b,b1,a,k1) = t2qqpp(b,j1,a,k1)*Xjb_ij(j1,b1)
+                           L3bba(b,b1,a,k1) -= t1qqpp(b,b1,a,k1)
+#
+                        ENDIF 
+#
+                     ENDDO b1
+#
+                 ENDDO j1
+#
+                 DO b1 
+                    IF b <= b1 
+                       tqqpp(b,b1,a,k1)         = L3bba(b,b1,a,k1) 
+                       PREPARE Y3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+                    ENDIF 
+                 ENDDO b1 
+#
+                 deallocate L3bba(*,b1,a,k1) 
+#
+            ENDPARDO k1, b, a
+#
+            PARDO k1, b, b1
+#
+                 allocate L3bba(b,b1,*,k1) 
+
+                 IF b <= b1
+#
+                 DO j1 
+#
+                    GET              D1bjbS(b,j1,b1)
+                    GET              DbjbS(b,j1,b1)
+                    tqqq(b,b1,j1)  = DbjbS(b,j1,b1)  
+                    t1qqq(b,b1,j1) = D1bjbS(b,j1,b1)  
+#
+                    DO a
+#
+                       GET                 Xja_jk(j1,a,k1) 
+                       GET                 Xja_ik(j1,a,k1) 
+#
+                       tqqpp(b,b1,a,k1)  = tqqq(b,b1,j1)*Xja_jk(j1,a,k1)
+                       t1qqpp(b,b1,a,k1) = t1qqq(b,b1,j1)*Xja_ik(j1,a,k1)
+                       tqqpp(b,b1,a,k1) -= t1qqpp(b,b1,a,k1)
+                       L3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+#
+                    ENDDO a
+#
+                 ENDDO j1 
+#
+                 ENDIF
+#
+                 DO a 
+                    tqqpp(b,b1,a,k1)          = L3bba(b,b1,a,k1) 
+                    PREPARE Y3bba(b,b1,a,k1) += tqqpp(b,b1,a,k1)
+                 ENDDO a 
+#
+                 deallocate L3bba(b,b1,*,k1) 
+#
+            ENDPARDO k1, b, b1
+#
+           PARDO b, b1
+#
+                 PREQUEST P4bjbj(b,ib,b1,jb) = VSqjqj(b,j1,b1,j2)
+                 t2qqjj(b,b1,ib,jb)          = P4bjbj(b,ib,b1,jb)
+                 tqq(b,b1)                   = t2qqjj(b,b1,ib,jb)
+                 PUT S3bb(b,b1)              = tqq(b,b1) 
+#
+           ENDPARDO b, b1
+#
+           execute server_barrier 
+#
+         DO k1 
+            create D3bba(*,*,*,k1) 
+            execute sip_barrier 
+#
+# Symmetrize the distributed amplitude array 
+# ------------------------------------------ 
+#
+           PARDO b, b1, a 
+#
+# Compute contribution to the energy and the one-particle intermediates
+# ---------------------------------------------------------------------
+# 
+                 IF b < b1 
+#
+                    REQUEST                     Y3bba(b,b1,a,k1) a  
+                    t2pqqp(a,b,b1,k1)         = Y3bba(b,b1,a,k1)
+#
+                    Tabbojj(a,b,b1,k1,ib,jb)  = t2pqqp(a,b,b1,k1)
+                    execute energy_tdenominator Tabbojj(a,b,b1,k1,ib,jb) 
+#
+# Compute contribution to energy
+# ------------------------------ 
+#
+                   t1pqqp(a,b,b1,k1) = Tabbojj(a,b,b1,k1,ib,jb)
+                   t1qqpp(b,b1,a,k1) = t1pqqp(a,b,b1,k1) 
+                   etemp             = Y3bba(b,b1,a,k1)*t1qqpp(b,b1,a,k1) 
+		   esum1             += etemp 
+#
+                   PUT D3bba(b,b1,a,k1) = t1qqpp(b,b1,a,k1)
+                   tqqpp(b1,b,a,k1)     = t1qqpp(b,b1,a,k1)                    
+                   tqqpp(b1,b,a,k1)    *= -1.0 
+                   PUT D3bba(b1,b,a,k1) = tqqpp(b1,b,a,k1)  
+#
+                 ENDIF 
+# 
+                 IF b == b1 
+#
+                    REQUEST                     Y3bba(b,b1,a,k1) a  
+                    t2pqqp(a,b,b1,k1)         = Y3bba(b,b1,a,k1)
+#
+                    Tabbojj(a,b,b1,k1,ib,jb)  = t2pqqp(a,b,b1,k1)
+                    execute energy_tdenominator Tabbojj(a,b,b1,k1,ib,jb) 
+#
+# Compute contribution to energy
+# ------------------------------ 
+#
+                   t1pqqp(a,b,b1,k1) = Tabbojj(a,b,b1,k1,ib,jb)
+                   t1qqpp(b,b1,a,k1) = t1pqqp(a,b,b1,k1) 
+                   etemp             = Y3bba(b,b1,a,k1)*t1qqpp(b,b1,a,k1) 
+                   etemp             = etemp/2.0 
+		   esum1             += etemp 
+#
+                   PUT D3bba(b,b1,a,k1) = t1qqpp(b,b1,a,k1)
+#
+                 ENDIF 
+#
+           ENDPARDO b, b1, a 
+#
+           execute sip_barrier 
+           execute server_barrier 
+#
+# Compute the contribution to Sai
+# -------------------------------
+#
+             PARDO a, b, b1
+#
+                      GET                        D3bba(b,b1,a,k1)
+                      GET                        S3bb(b,b1) 
+                      tpp(a,k1)                = D3bba(b,b1,a,k1)*S3bb(b,b1)  
+                      tpp(a,k1)               *= 2.0
+                      PUT dai(a,k1)           += tpp(a,k1)
+#
+                      tqqpp(b,b1,a,k1)         = 0.0 
+                      PREPARE Y3bba(b,b1,a,k1) = tqqpp(b,b1,a,k1) 
+#
+             ENDPARDO a, b, b1 
+#
+# Compute the contribution to Sbj
+# -------------------------------
+#
+#            PERM 1
+#            ------
+#
+             PARDO a, b1
+#
+                   PREQUEST P1aibs(a,k1,b1,jb) = Vpiqj(a,k1,b1,j1)
+                   tpqps(a,b1,k1,jb)           = P1aibs(a,k1,b1,jb)
+                   tpqp(a,b1,k1)               = tpqps(a,b1,k1,jb)
+                   tpqps(a,b1,k1,ib)           = tpqp(a,b1,k1) 
+                   tqpps(b1,a,k1,ib)           = tpqps(a,b1,k1,ib) 
+#
+                   DO b
+#
+                      GET                         D3bba(b,b1,a,k1)
+                      xbj(b,ib)                 = D3bba(b,b1,a,k1)*tqpps(b1,a,k1,ib) 
+                      xbj(b,ib)                *= 4.0
+                      PUT sbj(b,ib)            += xbj(b,ib)
+#
+                   ENDDO b
+#
+             ENDPARDO a, b1
+#
+#            PERM 2
+#            ------
+#
+             PARDO a, b
+#
+                   PREQUEST P2aibs(a,k1,b,ib) = Vpiqj(a,k1,b,j1)
+                   tpqps(a,b,k1,ib)           = P2aibs(a,k1,b,ib)
+                   tpqp(a,b,k1)               = tpqps(a,b,k1,ib)
+                   t1pqps(a,b,k1,jb)          = tpqp(a,b,k1) 
+#
+                   DO b1
+#
+                      GET                         D3bba(b,b1,a,k1)
+                      xbj(b1,jb)                = D3bba(b,b1,a,k1)*t1pqps(a,b,k1,jb)  
+                      xbj(b1,jb)               *= 4.0
+                      PUT sbj(b1,jb)           += xbj(b1,jb)
+#
+                   ENDDO b1
+#
+             ENDPARDO a, b
+#
+             execute sip_barrier 
+#
+           execute sip_barrier 
+           execute server_barrier 
+           delete D3bba(*,*,*,k1) 
+         ENDDO k1 
+#
+	ENDIF # i>=j 
+	ENDDO jb # segment size of 1  
+#
+        ENDIF # ib <= itripe
+        ENDIF # ib >= itrips
+#
+     ENDDO ib # segment size of 1  
+#
+     execute server_barrier 
+     execute sip_barrier
+     collective ecorrbba += esum1
+     execute print_scalar ecorrbba  
+
+     esum = 0.0 
+     esum = ecorrbbb 
+     esum += ecorrbba 
+     execute print_scalar esum 
+#
+     delete DbjbS 
+     delete EaibS 
+     delete D1bjbS 
+     delete Dbb 
+     delete E1aibS 
+     delete D2bjbS 
+     execute sip_barrier 
+#
+     ENDPROC T4BBA 
+#    ------------- 
+#
+# --------------------------------------------------------------------------
+#
+     PROC ST5 
+#    -------- 
+#
+# Compute contribution to the energy from sai 
+# -------------------------------------------  
+#
+     esum = 0.0 
+     execute sip_barrier 
+     PARDO a, i 
+#
+	   PREQUEST Pai(a,i) = t1a_old(a,i1) 
+	   GET sai(a,i) 
+	   etemp = Pai(a,i)*sai(a,i) 
+	   etemp *= 0.25
+	   esum += etemp  
+#
+     ENDPARDO a, i 
+#
+     PARDO a, i1  
+#
+	   REQUEST t1a_old(a,i1) a  
+	   GET Dai(a,i1) 
+	   etemp = t1a_old(a,i1)*Dai(a,i1)  
+	   etemp *= 0.25
+	   esum += etemp  
+#
+     ENDPARDO a, i1  
+#
+     execute sip_barrier 
+     collective ecorrsa += esum 
+     execute sip_barrier 
+     execute print_scalar ecorrsa  
+     execute server_barrier 
+#
+# Compute contribution to the energy from sbj 
+# ------------------------------------------- 
+#
+     esum = 0.0 
+     execute sip_barrier 
+     PARDO b, ib 
+#
+	   PREQUEST Pbj(b,ib) = t1b_old(b,j1) 
+	   GET sbj(b,ib) 
+	   etemp = Pbj(b,ib)*sbj(b,ib) 
+	   etemp *= 0.25
+	   esum += etemp  
+#
+     ENDPARDO b, ib 
+#
+     PARDO b, j1  
+#
+	   REQUEST t1b_old(b,j1) b  
+	   GET Dbj(b,j1) 
+	   etemp = t1b_old(b,j1)*Dbj(b,j1)  
+	   etemp *= 0.25
+	   esum += etemp  
+#
+     ENDPARDO b, j1  
+#
+     execute sip_barrier 
+     collective ecorrsb += esum 
+     execute sip_barrier 
+     execute print_scalar ecorrsb  
+     execute server_barrier 
+
+     ENDPROC ST5 
+#    ----------- 
+#
+# --------------------------------------------------------------------------
+#
+# --------------------------------------------------------------------------
+#
+     PROC FORM_IDENTITY
+#    ------------------
+#
+     create IIi
+     create IJj
+#
+# Form identity arrays
+# --------------------
+#
+     DO i1
+     DO i2
+           tii(i1,i2) = 1.0
+           t1ii(i1,i2) = 0.0
+           execute return_diagonal tii t1ii
+           tpp(i1,i2) = t1ii(i1,i2)
+           PREPARE Sii(i1,i2) = tpp(i1,i2)
+     ENDDO i2
+     ENDDO i1
+#
+     DO j1
+     DO j2
+           tjj(j1,j2) = 1.0
+           t1jj(j1,j2) = 0.0
+           execute return_diagonal tjj t1jj
+           tqq(j1,j2) = t1jj(j1,j2)
+           PREPARE Sjj(j1,j2) = tqq(j1,j2)
+     ENDDO j2
+     ENDDO j1
+     execute sip_barrier
+     execute server_barrier
+#
+     PARDO i1, i
+#
+           PREQUEST PIi(i,i1) = Sii(i2,i1)
+           PUT IIi(i,i1) = PIi(i,i1)
+#
+     ENDPARDO i1, i
+#
+     PARDO j1, jb
+#
+           PREQUEST PJj(jb,j1) = Sjj(j2,j1)
+           PUT IJj(jb,j1) = PJj(jb,j1)
+#
+     ENDPARDO j1, jb
+     execute sip_barrier
+#
+     ENDPROC FORM_IDENTITY
+#    ---------------------
+#
+# --------------------------------------------------------------------------
+#
+     PROC WRITE_BLOCKDATA  
+#    -------------------  
+#
+      PARDO a, i1 
+            REQUEST t1a_old(a,i1) a  
+      ENDPARDO a, i1 
+      PARDO b, j1 
+            REQUEST t1b_old(b,j1) b  
+      ENDPARDO b, j1 
+      PARDO p,i1,q,j2 
+            REQUEST Vpiqj(p,i1,q,j2) p 
+      ENDPARDO p,i1,q,j2 
+      PARDO a,i1,b,j1 
+            REQUEST T2aibj(a,i1,b,j1) a  
+      ENDPARDO a,i1,b,j1 
+      PARDO b,j1,b1,j2 
+            REQUEST T2bjbj(b,j1,b1,j2) b 
+      ENDPARDO b,j1,b1,j2 
+      execute server_barrier 
+#
+#   Write BLOCKDATA file.
+#
+      execute sip_barrier 
+      execute server_barrier
+      execute blocks_to_list                VSpipi(p,i1,p1,i2)
+      execute blocks_to_list                VSaaai(a1,a2,a3,i1)
+      execute blocks_to_list                Vbbai(b,b1,a,i1)
+      execute blocks_to_list                Vpiqj(p,i1,q,j2)
+      execute blocks_to_list                Vaabj(a,a1,b,j1)
+
+      execute blocks_to_list                t1a_old(a,i1) 
+      execute blocks_to_list                t1b_old(b,j1) 
+      execute blocks_to_list                T2aiai(a,i1,a1,i2)
+      execute blocks_to_list                T2aibj(a,i1,b,j1) 
+      execute blocks_to_list                T2bjbj(b,j1,b1,j2) 
+#
+      execute blocks_to_list                Sai(a,i) 
+      execute blocks_to_list                sbj(b,kb) 
+#
+      execute write_blocks_to_list 
+      execute server_barrier
+      execute sip_barrier
+#
+     ENDPROC WRITE_BLOCKDATA  
+#    ----------------------  
+#
+# --------------------------------------------------------------------------
+#
+# MAIN PROGRAM 
+#
+# --------------------------------------------------------------------------
+#
+# Compute E^{[4]}_T contribution only and form sai and sbj  
+# -------------------------------------------------------- 
+#
+     create sai  
+     create sbj  
+     execute sip_barrier 
+#
+     CALL READ_BLOCKDATA  
+     CALL FORM_IDENTITY 
+     CALL PDATA 
+     CALL P1DATA 
+     CALL T4BBB 
+     CALL T4BBA 
+     CALL ST5  
+    #CALL READ_BLOCKDATA  # STUPID !!!!!!!!!!  
+    #CALL WRITE_BLOCKDATA  
+#
+# Sum the total energy contribution and add to etot. 
+# -------------------------------------------------- 
+#
+     ecorrT  = ecorrbbb 
+     ecorrT += ecorrbba 
+     ecorrT += ecorrsa 
+     ecorrT += ecorrsb 
+     execute print_scalar ecorrT 
+
+     totenerg += ecorrbba 
+     totenerg += ecorrbbb 
+     totenerg += ecorrsa 
+     totenerg += ecorrsb 
+#
+     execute sip_barrier
+#
+     ENDSIAL CCSDPT_UHF_BBX 
+#
+#
+#

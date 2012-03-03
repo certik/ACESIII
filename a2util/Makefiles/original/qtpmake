@@ -1,0 +1,109 @@
+#!/bin/ksh
+# keep qtp executables and libraries up to date
+#
+# Usage:  qtpmake libr ecp vmol 
+#	or
+#	  qtpmake all
+#
+# this script assumes that if there are updated dependencies they are specified in the
+# correct order.
+# 
+# example: qtpmake libr vmol
+# 
+# This is built with the previous version of libecp.a and the updated version of liblibr.a
+#
+# you have to set TMPDIR to a correct value 
+# variable QTPMAKE is specified on the command line 
+# 
+# Makefile and Makefile.src are copied from ~rjbprogs/Src/Makefiles/
+# code is copied from ~rjbprogs/Src/
+# KJW 4/3/00
+###########################################################################################
+TMPDIR=/scr/crunch_2/tmp/keep.rjbprogs.17-04-00/
+mkdir $TMPDIR
+
+if [ $# -eq 0 ] 
+then echo " you must specify a module or modules to build"
+exit 1
+fi
+
+if [ $1 = "all" ] 
+	then build="libr libr2 librt3 ecp trp joda vcc aces2 anti bcktrn cphf dens dtran findif fsip hfdft intprc lambda nmr props squint symcor tdhf vcc5q vcc5t vcceh vdint vea vee vmol vmol2ja vprops vscf vtran ccsdtq rdycom"
+else
+	build=$*
+fi
+
+echo "$build will be made"
+
+#take out blank lines or rather lines that don't contain =
+sed /=/!d ~rjbprogs/Src/Makefiles/Makefile.src > ~rjbprogs/Src/Makefiles/Makefile.src.new
+mv ~rjbprogs/Src/Makefiles/Makefile.src.new ~rjbprogs/Src/Makefiles/Makefile.src
+
+for arch in sparc sparcd x86 power power2 kwik power3_64 power3huge 
+#for arch in sparcd
+do
+if [ $arch = "sparc" -o $arch = "sparcd" ] 
+	then machine=crunch
+elif [ $arch = "x86" ] 
+	then machine=solx
+elif [ $arch = "power" -o $arch = "power2" -o $arch = "kwik" -o $arch = "power3_64" -o $arch = "power3huge" ]
+	then machine=zap
+else
+	echo "a machine to build executables for $arch is not known"
+	exit 1
+fi
+
+for module in $build
+do
+	if [ $module = "libr" ]
+		then mkdir $TMPDIR/$module
+		cp ~rjbprogs/Src/$module/libr.Common/*		$TMPDIR/$module 
+		cp ~rjbprogs/Src/$module/libr.Unix/* 		$TMPDIR/$module
+		if [ $arch = "sparc" -o $arch = "sparcd" ] 
+			then cp ~rjbprogs/Src/$module/libr.SPARC/* $TMPDIR/$module
+		elif [ $arch = "power" -o $arch = "power2" -o $arch = "kwik" -o $arch = "power3_64" -o $arch = "power3huge" ]
+			then cp ~rjbprogs/Src/$module/libr.IBM/* $TMPDIR/$module
+		else
+			echo "Machine dependent libraries for $arch are not known"
+		fi
+	elif [ $module = "vee" ] 
+		then cp -r ~rjbprogs/Src/$module $TMPDIR
+		cp ~rjbprogs/Src/Makefiles/Makefile $TMPDIR/$module/misc
+		if [ $arch = "sparcd" ]
+                	then rm -f $TMPDIR/$module/misc/Makefile.src
+        	else
+                	cp ~rjbprogs/Src/Makefiles/Makefile.src $TMPDIR/$module
+        	fi
+        	rsh -n $machine ". ~/.kshrc; cd $TMPDIR/$module/misc; gmake clean"
+        	rsh -n $machine ". ~/.kshrc; cd $TMPDIR/$module/misc; gmake QTPMAKE=$arch"
+        	mv $TMPDIR/$module/misc/libmisc.a ~rjbprogs/lib/$arch
+	else
+		cp -r ~rjbprogs/Src/$module $TMPDIR
+	fi
+	cp ~rjbprogs/Src/Makefiles/Makefile $TMPDIR/$module
+	if [ $arch = "sparcd" ]
+		then rm -f $TMPDIR/$module/Makefile.src
+	else
+		cp ~rjbprogs/Src/Makefiles/Makefile.src $TMPDIR/$module
+	fi
+	rsh -n $machine ". ~/.kshrc; cd $TMPDIR/$module; gmake clean"
+	if [ -a $TMPDIR/AOK ] 
+		then rm $TMPDIR/AOK
+	fi
+	rsh -n $machine ". ~/.kshrc; cd $TMPDIR/$module; gmake QTPMAKE=$arch && touch $TMPDIR/AOK"
+	if [ -a $TMPDIR/AOK ] 
+		then rm $TMPDIR/AOK
+	else
+		echo "problem building $module for $arch"
+		echo "qtpmake terminated"
+		exit 1
+	fi
+	mv $TMPDIR/$module/lib$module.a ~rjbprogs/lib/$arch
+	mv $TMPDIR/$module/x$module ~rjbprogs/bin/$arch
+	rm -r $TMPDIR/$module
+done
+exit
+done
+
+
+

@@ -1,0 +1,8 @@
+#ifndef _MOLCAS_DAT_
+#define _MOLCAS_DAT_
+c molcas.dat : begin
+      data luord /40/
+      data fnord /"ORDINT  "/
+      data lbbt /1/, lbbs /2/
+c molcas.dat : end
+#endif /* _MOLCAS_DAT_ */

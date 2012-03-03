@@ -1,0 +1,2411 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+                           SIAL LINCCSD_UHF_SV2_CG
+#
+#
+# Status of served update: mimimize prepare/request 
+# -------------------------------------------------
+#
+# AOLADDER --> DONE  
+# T2NEW    --> DONE  
+# WAEBF    --> DONE  
+# WMINJ    --> DONE  
+# WMEBJ    --> ALMOST DONE  
+# T2AAS2   --> ALMOST DONE  #
+# BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+#
+# Declare indeces 
+# --------------- 
+#
+      index kiter    = 1, cc_iter   
+#
+      aoindex mu     = 1, norb 
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      mobindex q = bbocc, ebvirt
+      mobindex q1= bbocc, ebvirt
+      mobindex q2= bbocc, ebvirt
+      mobindex q3= bbocc, ebvirt
+# 
+# Declare static arrays 
+# --------------------- 
+#
+      distributed t1a_old(a,i) 
+      distributed t1a_new(a,i) 
+      distributed t1b_old(b,j) 
+      distributed t1b_new(b,j)
+      distributed t1a_safe(a,i)
+      distributed t1b_safe(b,j)
+      distributed z1a(a,i)
+      distributed z1b(b,j)
+      distributed r1a(a,i)
+      distributed r1b(b,j) 
+#
+# Arrays used in transformation for AO2 algorithm
+# -----------------------------------------------
+#
+      temp Txixi(mu,i1,lambda,i)
+      temp Txxii(mu,nu,i1,i)
+      temp Tixxi(i1,nu,lambda,i)
+      temp Txipi(mu,i,p,i1)
+      temp Tpipi(p1,i,p,i1)
+      temp T1pipi(p1,i,p,i1)
+      temp Tixai(i,mu,a,i1)
+      temp Txaii(mu,a,i,i1)
+      temp Tiaai(i,a1,a,i1)
+      temp Taaii(a,a1,i,i1)
+      temp Txaai(mu,a1,a,i)
+      temp Taaai(a2,a,a1,i)
+      temp Txxai(mu,nu,a,i)
+#
+      served VSpipi(p1,i,p,i1)
+      served Viaai(i,a1,a,i1) 
+      served Vaaii(a,a1,i,i1)
+      served VSaaai(a2,a,a1,i)
+#
+      temp Txjxj(mu,j1,lambda,j)
+      temp Txxjj(mu,nu,j1,j)
+      temp Tjjxx(j1,nu,lambda,j)
+      temp Tjxxj(j1,nu,lambda,j)
+      temp Txjqj(mu,j,q,j1)
+      temp Tqjqj(q1,j,q,j1)
+      temp T1qjqj(q1,j,q,j1)
+      temp Tjxbj(j,mu,b,j1)
+      temp Txbjj(mu,b,j,j1)
+      temp Tjbbj(j,b1,b,j1)
+      temp Tbbjj(b,b1,j,j1)
+      temp Txbbj(mu,b1,b,j)
+      temp Tbbbj(b2,b,b1,j)
+      temp Txxbj(mu,nu,b,j)
+#
+      served VSqjqj(q1,j,q,j1)
+      served Vjbbj(j,b1,b,j1)
+      served Vbbjj(b,b1,j,j1)
+      served VSbbbj(b2,b,b1,j)
+#
+      temp Txixj(mu,i,nu,j)
+      temp Txiqj(mu,i,q,j)
+      temp Tpiqj(p,i,q,j)
+      temp Tiixx(i,i1,mu,nu)
+      temp Tiixb(i,i1,mu,b)
+      temp Tiibb(i,i1,b1,b)
+      temp Txajj(mu,a,j,j1)
+      temp Taajj(a,a1,j,j1)
+      temp Txabj(mu,a,b,j)
+      temp Tixxj(i,mu,nu,j)
+      temp Tixbj(i,mu,b,j)
+      temp Tiabj(i,a,b,j)
+      temp Taabj(a,a1,b,j)
+#
+      served Vpiqj(p,i,q,j)
+      served Vaajj(a,a1,j,j1)
+      served Viabj(i,a,b,j)
+      served Vaabj(a,a1,b,j) 
+#
+      temp Txbii(mu,b,i,i1)
+      temp Tbbii(b,b1,i,i1)
+      temp Tjbii(j,b,i,i1)
+      temp Txbai(mu,b,a,i)
+      temp Tbbai(b,b1,a,i)
+#
+      served Vjbii(j,b,i,i1)
+      served Vbbii(b,b1,i,i1)
+      served Vbbai(b,b1,a,i)
+#
+# End Arrays used in transformation for AO2 algorithm
+# --------------------------------------------------- 
+#
+# Declare temporary arrays 
+# ------------------------ 
+#
+      temp Txxxi(mu,nu,lambda,i)
+      temp Txxxj(mu,nu,lambda,j)
+      temp T1xixi(mu,i,nu,i1)
+      temp Txiix(mu,i,i1,nu)
+      temp Txjjx(mu,j,j1,nu)
+      temp Txijx(mu,i,j,nu)
+      temp Txpii(mu,p,i,i1)
+      temp Txqii(mu,q,i,i1)
+      temp Tppii(p,p1,i,i1)
+      temp Tqqii(q,q1,i,i1)
+      temp Txpjj(mu,p,j,j1)
+      temp Txqjj(mu,q,j,j1)
+      temp Tppjj(p,p1,j,j1)
+      temp Tqqjj(q,q1,j,j1)
+      temp Tixpi(i,mu,p,i1)
+      temp Tippi(i,p,p1,i1)
+      temp Tjxqj(j,mu,q,j1)
+      temp Tjqqj(j,q,q1,j1)
+      temp Tixqj(i,mu,q,j)
+      temp Tipqj(i,p,q,j)
+#
+      temp Vblock(i,i1,i2,i3)
+      temp Taiai(p,i,p1,i1)
+      temp T1aiai(p,i,p1,i1)
+      temp T2aiai(p,i,p1,i1)
+      temp T3aiai(p,i,p1,i1)
+      temp Tbjbj(q,j,q1,j1)
+      temp T1bjbj(q,j,q1,j1)
+      temp T2bjbj(q,j,q1,j1)
+      temp T3bjbj(q,j,q1,j1)
+      temp Taibj(p,i,q,j)
+      temp T1aibj(p,i,q,j)
+      temp T2aibj(p,i,q,j)
+#
+      temp Txxxp(mu,nu,lambda,i)
+      temp Txxxq(mu,nu,lambda,j)
+      temp Txxpp(mu,nu,p1,i)
+      temp Txxqq(mu,nu,q1,j)
+      temp Txppp(mu,p2,p1,i)
+      temp Txqpp(mu,q,p1,i)
+      temp Txqqq(mu,q2,q1,j)
+      temp Txpqq(mu,p,q1,j)
+      temp Tpppp(p3,p2,p1,p)
+      temp Tqqqq(q3,q2,q1,q)
+      temp Tppqq(p1,p,q1,j)
+      temp Tqqpp(q1,q,p1,i)
+      temp Tixxx(i,mu,nu,sigma) 
+      temp Tipxx(i,p,nu,sigma) 
+      temp Tipqx(i,p,q,sigma) 
+      temp Tipqq(i,p,q,q1) 
+      temp Txiai(lambda,i,a1,i1) 
+      temp Txjbj(lambda,j,b1,j1) 
+      temp Txibj(lambda,i,b1,j1) 
+#
+      temp tmp1_aiai(a,i,a1,i1) 
+      temp tmp2_aiai(a,i,a1,i1) 
+      temp tmp3_aiai(a,i,a1,i1) 
+      temp tmp1_bjbj(b,j,b1,j1) 
+      temp tmp2_bjbj(b,j,b1,j1) 
+      temp tmp3_bjbj(b,j,b1,j1) 
+      temp tmp1_aibj(a,i,b,j) 
+      temp tmp2_aibj(a,i,b,j) 
+#
+      temp Tai(a,i) 
+      temp T1ai(a,i) 
+      temp T2ai(a,i) 
+      temp Tbj(b,j) 
+      temp T1bj(b,j) 
+      temp T2bj(b,j) 
+#
+      temp Taa(a,a1) 
+      temp T1aa(a,a1) 
+      temp Tbb(b,b1) 
+      temp T1bb(b,b1) 
+      temp Tae_a(a,a1) 
+      temp Tae_b(b,b1) 
+#
+      temp Tia(i,a) 
+      temp T1ia(i,a) 
+      temp Tjb(j,b) 
+      temp T1jb(j,b) 
+      temp Tme_a(i,a) 
+      temp Tme_b(j,b) 
+#
+      temp Tii(i,i1) 
+      temp T1ii(i,i1) 
+      temp Tjj(j,j1) 
+      temp T1jj(j,j1) 
+      temp Tmi_a(i,i1) 
+      temp Tmi_b(j,j1) 
+#
+      temp T1pppp(p,p1,p2,p3) 
+      temp T1qqqq(q,q1,q2,q3) 
+      temp Taiii(a,i,i1,i2) 
+      temp T1aiii(a,i,i1,i2) 
+#
+      temp  Tiiii(i,i1,i2,i3) 
+      temp T1iiii(i,i1,i2,i3) 
+#
+      temp  Tjjjj(j,j1,j2,j3) 
+      temp T1jjjj(j,j1,j2,j3) 
+      temp  Tbjjj(b,j,j1,j2) 
+      temp T1bjjj(b,j,j1,j2) 
+#
+      temp  Tiijj(i,i1,j2,j3) 
+      temp T1iijj(i,i1,j2,j3) 
+#
+      temp  tmp_aa(a,a1) 
+      temp tmp1_aa(a,a1) 
+      temp  tmp_ii(i,i1) 
+      temp tmp1_ii(i,i1) 
+#
+      temp  Tiiai(i,i1,a,i2) 
+      temp T1iiai(i,i1,a,i2) 
+#
+      temp  tmp_bb(b,b1) 
+      temp tmp1_bb(b,b1) 
+      temp  tmp_jj(j,j1) 
+      temp tmp1_jj(j,j1) 
+#
+      temp  Tjjbj(j,j1,b,j2) 
+      temp T1jjbj(j,j1,b,j2) 
+# 
+      temp T1aaai(a,a1,a2,i)  
+      temp T2aaai(a,a1,a2,i)  
+      temp Taaaa(a,a1,a2,a3)  
+      temp T1aaaa(a,a1,a2,a3)  
+#
+      temp T1bbbj(b,b1,b2,j)  
+      temp T2bbbj(b,b1,b2,j)  
+      temp Tbbbb(b,b1,b2,b3)  
+      temp T1bbbb(b,b1,b2,b3)  
+#
+      temp Taabb(a,a1,b,b1)  
+      temp T1aabb(a,a1,b,b1)  
+#
+      temp R1aiai(a,i,a1,i1) 
+      temp R2aiai(a,i,a1,i1) 
+      temp R3aiai(a,i,a1,i1) 
+      temp R4aiai(a,i,a1,i1) 
+      temp R1bjbj(b,j,b1,j1) 
+      temp R2bjbj(b,j,b1,j1) 
+      temp R3bjbj(b,j,b1,j1) 
+      temp R4bjbj(b,j,b1,j1) 
+      temp R1aibj(a,i,b,j) 
+      temp R2aibj(a,i,b,j) 
+      temp R3aibj(a,i,b,j) 
+      temp R4aibj(a,i,b,j) 
+#
+      temp T1iaai(i,a,a1,i1) 
+      temp T2iaai(i,a,a1,i1) 
+      temp T1jbbj(j,b,b1,j1) 
+      temp T2jbbj(j,b,b1,j1) 
+      temp T1iabj(i,a,b,j) 
+      temp T2iabj(i,a,b,j) 
+      temp Tjjpp(j,j1,p,p1) 
+      temp T1jjpp(j,j1,p,p1) 
+      temp T2jjpp(j,j1,p,p1) 
+      temp  Tiiqq(i,i1,q,q1) 
+      temp T1iiqq(i,i1,q,q1) 
+      temp T2iiqq(i,i1,q,q1) 
+      temp  Tjjai(j,j1,a,i) 
+      temp T1jjai(j,j1,a,i) 
+      temp T2jjai(j,j1,a,i) 
+      temp  Tiibj(i,i1,b,j) 
+      temp T1iibj(i,i1,b,j) 
+      temp T2iibj(i,i1,b,j) 
+      temp  Tjbai(j,b,a,i)  
+      temp T1jbai(j,b,a,i)  
+      temp T2jbai(j,b,a,i)  
+      temp  Taijj(a,i,j,j1) 
+      temp T1aijj(a,i,j,j1) 
+      temp Tqqip(a,i,b,b1)  
+#
+      temp tpx(p,mu) 
+      temp t1px(p,mu) 
+      temp tqx(q,mu) 
+      temp t1qx(q,mu) 
+      temp txi(mu,i) 
+      temp t1xi(mu,i) 
+      temp txj(mu,j) 
+      temp t1xj(mu,j) 
+#
+# Declare distributed arrays 
+# -------------------------- 
+#
+      served T2new_aa(a,i,a1,i1)
+      served T2new_bb(b,j,b1,j1)
+      served T2new_ab(a,i,b,j)
+      served T2safe_aa(a,i,a1,i1)
+      served T2safe_bb(b,j,b1,j1)
+      served T2safe_ab(a,i,b,j)
+      served R2_aa(a,i,a1,i1)
+      served R2_bb(b,j,b1,j1)
+      served R2_ab(a,i,b,j)
+      served Z2_aa(a,i,a1,i1)
+      served Z2_bb(b,j,b1,j1)
+      served Z2_ab(a,i,b,j)
+      distributed T2old_aa(a,i,a1,i1)
+      distributed T2old_bb(b,j,b1,j1)
+      distributed T2old_ab(a,i,b,j)    
+#
+# Declare served arrays 
+# --------------------- 
+#
+      served AOINT(mu,nu,lambda,sigma) 
+#
+# Arrays needed for AOLADDER contribution
+# ---------------------------------------
+#
+     temp Zaa(lambda,i,a1,i1)
+     temp Zbb(lambda,j,b,j1)
+     temp Zab(lambda,i,b,j)
+     temp ZZaa(lambda,i,sigma,i1)
+     temp ZZ1aa(lambda,i,sigma,i1)
+     temp ZZbb(lambda,j,sigma,j1)
+     temp ZZ1bb(lambda,j,sigma,j1)
+     temp ZZab(lambda,i,sigma,j)
+#
+     temp Yaa(lambda,i,mu,i1)
+     temp Ybb(lambda,j,mu,j1)
+     temp Yab(lambda,i,mu,j)
+#
+     temp TXaiai(a,i,nu,i1)
+     temp Taixi(a,i,nu,i1)   
+     temp TYaiai(a,i,a1,i1)
+     temp TY1aiai(a,i,a1,i1)
+     temp TXbjbj(b,j,nu,j1)
+     temp Tbjxj(b,j,nu,j1)
+     temp TYbjbj(b,j,b1,j1)
+     temp TY1bjbj(b,j,b1,j1)
+     temp TXaibj(a,i,nu,j)
+     temp TZaibj(a,i,nu,j)
+     temp Taixj(a,i,nu,j)
+     temp TYaibj(a,i,b,j)
+#
+     served TAO_aa(lambda,i,sigma,i1)
+     served TAO_bb(lambda,j,sigma,j1)
+     served TAO_ab(lambda,i,sigma,j)
+     served T1AO_aa(lambda,i,a,i1)
+     served T1AO_bb(lambda,j,b,j1)
+     served T1AO_ab(lambda,i,b,j)
+     served T2AO_aa(lambda,i,sigma,i1)
+     served T2AO_bb(lambda,j,sigma,j1)
+     served T2AO_ab(lambda,i,sigma,j)
+     distributed t1a_ax(a,mu) 
+     distributed t1b_bx(b,mu) 
+     distributed t1a_xi(mu,i) 
+     distributed t1b_xj(mu,j) 
+#
+# local arrays used for data storage
+# ---------------------------------- 
+#
+     local Liiai(i2,i,a,i1) 
+     local L1iiai(i,i1,a2,i2) 
+     local L2iiai(i2,i1,a2,i)  
+     local L3iiai(i,i1,a,i2)  
+     local L4iiai(i2,i1,a,i)  
+     local Laiai(a,i,a2,i1) 
+     local L1aiai(a,i,a1,i2) 
+     local L2aiai(a1,i1,a2,i) 
+     local L3aiai(a2,i1,a,i2) 
+     local L4aiai(a1,i,a2,i1) 
+     local Laaai(a,a2,a1,i) 
+#
+     local Ljjbj(j2,j,b,j1) 
+     local Lbjbj(b,j,b2,j1) 
+     local L1bjbj(b,j,b1,j2) 
+     local L2bjbj(b1,j1,b2,j) 
+     local L3bjbj(b2,j1,b,j2) 
+     local L4bjbj(b1,j,b2,j1) 
+     local Lbbbj(b,b2,b1,j) 
+#
+     local Laijj(a,i,j1,j) 
+     local Laibj(a,i,b1,j) 
+     local L1aibj(a1,i,b,j) 
+     local L2aibj(a,i,b,j2) 
+     local L3aibj(a,i1,b,j) 
+     local L4aibj(a,i,b1,j) 
+     local Liibj(i1,i,b,j) 
+     local L1iibj(i,i1,b,j) 
+     local Lbbai(b,b1,a,i) 
+     local Laabj(a,a1,b,j) 
+     local LLaiai(a,i,a1,i1) 
+     local Lxiai(lambda,i,a1,i1) 
+     local LLbjbj(b,j,b1,j1) 
+     local Lxjbj(lambda,j,b1,j1) 
+     local LLaibj(a,i,b,j) 
+     local Lxibj(lambda,i,b,j) 
+     local L1xixi(mu,i,nu,i1)  
+     local L2xixi(nu,i1,mu,i)  
+     local L1xjxj(mu,j,nu,j1)  
+     local L2xjxj(nu,j1,mu,j)  
+     local L1xixj(mu,i,nu,j)  
+     local Laiii(a,i,i2,i1) 
+     local L1aiii(a1,i2,i,i1) 
+     local Lbjjj(b,j,j2,j1) 
+     local L1bjjj(b1,j2,j,j1) 
+     local Ljjai(a,i,j,j1) 
+#
+     local LWaaai(a2,a,a1,i1) 
+     local LWbbbj(b2,b,b1,j1) 
+     local LWbbai(b1,b,a,i) 
+     local LWaabj(a1,a,b,j) 
+     local LXbbai(b1,b,a1,i1) 
+     local LXaabj(a1,a,b1,j1) 
+     local LWaiai(a2,i,a,i1) 
+     local LWbjbj(b2,j,b,j1) 
+     local LWaibj(a,i,b,j) 
+#
+# Distributed two-particle arrays 
+# ------------------------------- 
+#
+     distributed Wminj_aa(i2,i,i3,i1) 
+     distributed Wminj_bb(j2,j,j3,j1) 
+     distributed Wminj_ab(i2,i,j3,j1) 
+#
+# Declare scalars 
+# --------------- 
+#
+      scalar etemp
+      scalar esum
+      scalar esuma
+      scalar esumb
+      scalar esumab
+      scalar ecorraa
+      scalar ecorrbb
+      scalar ecorrab
+      scalar ecorrT
+      scalar enew 
+      scalar eold 
+      scalar ecrit 
+      scalar ediff 
+      scalar mp2_energy
+      scalar gamma
+      scalar gsum
+      scalar gtemp
+      scalar aaccum
+      scalar asum
+      scalar atemp
+      scalar alpha
+      scalar btemp
+      scalar bsum
+      scalar baccum
+      scalar beta
+      scalar rnorm2
+      scalar rsum
+      scalar rtemp
+      scalar half
+      
+#
+
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC READ_2EL   
+# 
+#    ------------------------------------------------------------------------ 
+#
+      execute server_barrier
+      execute list_to_blocks                VSpipi
+      execute list_to_blocks                Vaaii
+      execute list_to_blocks                Viaai
+      execute list_to_blocks                VSaaai
+      execute list_to_blocks                VSqjqj
+      execute list_to_blocks                Vbbjj
+      execute list_to_blocks                Vjbbj
+      execute list_to_blocks                VSbbbj
+      execute list_to_blocks                Vbbii
+      execute list_to_blocks                Vjbii
+      execute list_to_blocks                Vbbai
+      execute list_to_blocks                Vpiqj
+      execute list_to_blocks                Vaajj
+      execute list_to_blocks                Viabj
+      execute list_to_blocks                Vaabj
+      execute read_list_to_blocks
+      execute server_barrier
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC READ_2EL   
+# 
+#    ------------------------------------------------------------------------ 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC WRITE_2EL   
+# 
+#    ------------------------------------------------------------------------ 
+#
+      execute server_barrier
+      execute blocks_to_list                VSpipi(p,i,p1,i1) 
+      execute blocks_to_list                Vaaii
+      execute blocks_to_list                Viaai
+      execute blocks_to_list                VSaaai
+      execute blocks_to_list                VSqjqj(q,j,q1,j1) 
+      execute blocks_to_list                Vbbjj
+      execute blocks_to_list                Vjbbj
+      execute blocks_to_list                VSbbbj
+      execute blocks_to_list                Vbbii
+      execute blocks_to_list                Vjbii
+      execute blocks_to_list                Vbbai
+      execute blocks_to_list                Vpiqj(p,i,q,j) 
+      execute blocks_to_list                Vaajj
+      execute blocks_to_list                Viabj
+      execute blocks_to_list                Vaabj
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC WRITE_2EL   
+# 
+#    ------------------------------------------------------------------------ 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC IGUESS_UHF  
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PARDO a, a1, i, i1 
+#
+           REQUEST VSpipi(a,i,a1,i1) i1  
+#
+           Taiai(a,i,a1,i1)            = VSpipi(a,i,a1,i1)
+           execute energy_reg_denominator    Taiai 
+           PUT   T2old_aa(a,i,a1,i1) = Taiai(a,i,a1,i1)  
+#
+     ENDPARDO a, a1, i, i1  
+#
+     PARDO b, b1, j, j1 
+#
+           REQUEST VSqjqj(b,j,b1,j1) j1  
+#
+           Tbjbj(b,j,b1,j1)            = VSqjqj(b,j,b1,j1)  
+           execute energy_reg_denominator    Tbjbj 
+           PUT   T2old_bb(b,j,b1,j1) = Tbjbj(b,j,b1,j1)  
+#
+     ENDPARDO b, b1, j, j1 
+#
+     PARDO a, b, i, j 
+#
+           REQUEST Vpiqj(a,i,b,j) j  
+#
+           Taibj(a,i,b,j)            = Vpiqj(a,i,b,j)
+           execute energy_reg_denominator  Taibj 
+           PUT   T2old_ab(a,i,b,j) = Taibj(a,i,b,j)  
+#
+     ENDPARDO a, b, i, j 
+#
+     PARDO a, i
+#
+           tai(a,i) = 0.0
+           PUT t1a_old(a,i) = tai(a,i)
+#
+     ENDPARDO a, i
+#
+     PARDO b, j
+#
+           tbj(b,j) = 0.0
+           PUT t1b_old(b,j) = tbj(b,j)
+#
+     ENDPARDO b, j
+#
+#    ------------------------------------------------------------------------ 
+# 
+     ENDPROC IGUESS_UHF 
+#
+# ---------------------------------------------------------------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+# In the procedure T1ANEW all contributions to the singles amplitude t1a 
+# are computed. 
+#
+      PROC T1ANEW 
+#     -----------
+#
+#
+      PARDO a, i, b, j  
+#
+            REQUEST Viabj(i,a,b,j) j  
+            GET t1b_old(b,j) 
+#
+            tai(a,i)         = Viabj(i,a,b,j)*t1b_old(b,j) 
+#
+            PUT t1a_new(a,i) += tai(a,i) 
+#
+      ENDPARDO a, i, b, j  
+#
+      PARDO a, i, i1, a1  
+#
+            REQUEST Vaaii(a,a1,i1,i) i  
+            REQUEST Viaai(i1,a1,a,i) i  
+            GET     t1a_old(a1,i1) 
+#
+            Tpppp(i1,a1,a,i)  = Vaaii(a,a1,i1,i)  
+            Tpppp(i1,a1,a,i) -= Viaai(i1,a1,a,i)  
+#
+            tai(a,i)         = Tpppp(i1,a1,a,i)*t1a_old(a1,i1) 
+            tai(a,i)        *= -1.0
+#
+            PUT t1a_new(a,i) += tai(a,i) 
+#
+      ENDPARDO a, i, i1, a1  
+#
+      PARDO i, a1, i1, i2  
+#
+               REQUEST VSpipi(a1,i2,i,i1) i1 
+# 
+               DO a 
+#
+                  GET                 T2old_aa(a,i1,a1,i2) 
+#
+                  tai(a,i)          = VSpipi(a1,i2,i,i1)*T2old_aa(a,i1,a1,i2) 
+                  tai(a,i)         *= -0.5 
+#
+                  PUT t1a_new(a,i) += tai(a,i) 
+#
+               ENDDO a 
+#
+      ENDPARDO i, a1, i1, i2  
+      
+      PARDO i1, a, a1, a2
+               REQUEST VSaaai(a2,a,a1,i1) i1
+               
+               DO i 
+                  GET  T2old_aa(a1,i,a2,i1) 
+#
+                  tai(a,i)  = VSaaai(a2,a,a1,i1)*t2old_aa(a1,i,a2,i1) 
+                  tai(a,i) *= -0.5 
+                  PUT t1a_new(a,i) += tai(a,i)
+               ENDDO i
+       ENDPARDO i1, a, a1, a2 
+#
+       PARDO i, i1, b, j   
+#
+            REQUEST Vpiqj(i,i1,b,j) j 
+#
+            DO a 
+#
+               GET                 T2old_ab(a,i1,b,j) 
+#
+               tai(a,i)          = Vpiqj(i,i1,b,j)*T2old_ab(a,i1,b,j) 
+               tai(a,i)         *= -1.0 
+#
+               PUT t1a_new(a,i) += tai(a,i) 
+#
+            ENDDO a 
+#
+       ENDPARDO i, i1, b, j
+       
+       PARDO a1, a, b, j
+            REQUEST Vaabj(a1,a,b,j) j
+            
+            DO i
+               GET T2old_ab(a1,i,b,j)   
+#
+               tai(a,i)  = Vaabj(a1,a,b,j)*t2old_ab(a1,i,b,j) 
+               PUT t1a_new(a,i) +=tai(a,i)
+           ENDDO i
+           
+       ENDPARDO a1, a, b, j 
+               
+               
+      ENDPROC T1ANEW 
+#     --------------
+#
+# ---------------------------------------------------------------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+# In the procedure T1BNEW all contributions to the singles amplitude t1a 
+# are computed. 
+#
+      PROC T1BNEW 
+#     -----------
+#
+      PARDO b, j, a, i  
+#
+               REQUEST Viabj(i,a,b,j) j  
+               GET t1a_old(a,i) 
+#
+               tbj(b,j)         = Viabj(i,a,b,j)*t1a_old(a,i) 
+#
+               PUT t1b_new(b,j) += tbj(b,j) 
+#
+      ENDPARDO b, j, a, i  
+#
+      PARDO b, j, b1, j1  
+#
+            REQUEST Vbbjj(b,b1,j1,j) j  
+            REQUEST Vjbbj(j1,b1,b,j) j  
+            GET     t1b_old(b1,j1) 
+#
+#
+            Tqqqq(j1,b1,b,j)  = Vbbjj(b,b1,j1,j)  
+            Tqqqq(j1,b1,b,j) -= Vjbbj(j1,b1,b,j)  
+#
+            tbj(b,j)         = Tqqqq(j1,b1,b,j)*t1b_old(b1,j1) 
+            tbj(b,j)         *= -1.0
+#
+            PUT t1b_new(b,j) += tbj(b,j) 
+#
+      ENDPARDO b, j, b1, j1  
+#
+      PARDO j, b1, j1, j2  
+#
+            REQUEST VSqjqj(b1,j2,j,j1) j1 
+#
+            DO b 
+#
+               GET                 T2old_bb(b,j1,b1,j2) 
+#
+               tbj(b,j)          = VSqjqj(b1,j2,j,j1)*T2old_bb(b,j1,b1,j2) 
+               tbj(b,j)         *= -0.5 
+#
+               PUT t1b_new(b,j) += tbj(b,j) 
+#
+            ENDDO b 
+#
+      ENDPARDO j, b1, j1, j2  
+      
+      PARDO j1, b, b1, b2
+               REQUEST VSbbbj(b2,b,b1,j1) j1
+               
+               DO j 
+                  GET  T2old_bb(b1,j,b2,j1) 
+#
+                  tbj(b,j)  = VSbbbj(b2,b,b1,j1)*t2old_bb(b1,j,b2,j1)  
+                  tbj(b,j) *= -0.5 
+                  PUT t1b_new(b,j) += tbj(b,j)
+               ENDDO j
+       ENDPARDO j1, b, b1, b2
+#
+      PARDO b, a, i, j1  
+#
+            GET T2old_ab(a,i,b,j1) 
+#
+            DO j 
+#
+               REQUEST             Vpiqj(a,i,j,j1) j 
+#
+               tbj(b,j)          = Vpiqj(a,i,j,j1)*T2old_ab(a,i,b,j1)  
+               tbj(b,j)         *= -1.0 
+#
+               PUT t1b_new(b,j) += tbj(b,j) 
+#
+            ENDDO j 
+#
+      ENDPARDO b, a, i, j1  
+      #
+      PARDO b1, b, a, i
+            REQUEST Vbbai(b1,b,a,i) i
+            
+            DO j
+               GET T2old_ab(a,i,b1,j)   
+#
+               tbj(b,j)  = Vbbai(b1,b,a,i)*T2old_ab(a,i,b1,j)
+               PUT t1b_new(b,j) +=tbj(b,j)
+           ENDDO j
+           
+       ENDPARDO b1, b, a, i
+#
+      ENDPROC T1BNEW 
+#     --------------
+#
+# ---------------------------------------------------------------------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+# 
+      PROC WminjAA
+#     ------------
+#
+      PARDO i2, i3, i1, i
+#
+           REQUEST VSpipi(i2,i,i3,i1) i3
+
+           DO a
+           DO a1
+#
+                GET T2old_aa(a,i2,a1,i3)
+#
+                Taiai(a,i,a1,i1)        = T2old_aa(a,i2,a1,i3)*VSpipi(i2,i,i3,i1)
+                Taiai(a,i,a1,i1)       *= 0.5
+                PREPARE T2new_aa(a,i,a1,i1) += Taiai(a,i,a1,i1)
+#
+           ENDDO a1
+           ENDDO a
+#
+      ENDPARDO i2, i3, i1, i
+      
+#
+      ENDPROC WminjAA
+#     --------------- 
+#
+# ---------------------------------------------------------------------------------------  
+# 
+# ---------------------------------------------------------------------------------------  
+#
+      PROC WminjBB
+#     ------------
+#
+      PARDO j2, j3, j1, j
+#
+           REQUEST VSqjqj(j2,j,j3,j1) j3
+
+           DO b
+           DO b1
+#
+                GET T2old_bb(b,j2,b1,j3)
+#
+                Tbjbj(b,j,b1,j1)        = T2old_bb(b,j2,b1,j3)*VSqjqj(j2,j,j3,j1)
+                Tbjbj(b,j,b1,j1)       *= 0.5
+                PREPARE T2new_bb(b,j,b1,j1) += Tbjbj(b,j,b1,j1)
+#
+           ENDDO b1
+           ENDDO b
+#
+      ENDPARDO j2, j3, j1, j
+#
+      ENDPROC WminjBB
+#     --------------- 
+#
+# ---------------------------------------------------------------------------------------  
+# 
+# ---------------------------------------------------------------------------------------  
+#
+      PROC WminjAB
+#     ------------
+#
+      PARDO i, i1, j, j1 
+#
+            REQUEST Vpiqj(i1,i,j1,j) j1 
+
+            DO a   
+            DO b  
+#
+               GET T2old_ab(a,i1,b,j1) 
+#
+               Taibj(a,i,b,j)         = T2old_ab(a,i1,b,j1)*Vpiqj(i1,i,j1,j)
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j) 
+#
+            ENDDO b 
+            ENDDO a  
+#
+      ENDPARDO i, i1, j, j1 
+#
+      ENDPROC WminjAB
+#     --------------- 
+# 
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+      PROC WMINJ 
+#
+           CALL WminjAA 
+           CALL WminjAB 
+           CALL WminjBB 
+#
+      ENDPROC WMINJ 
+# 
+# ----------------------------------------------------------------------------
+#
+# ----------------------------------------------------------------------------
+#
+# In PROCEDURE T2NEWAA the new amplitudes T2new_aa are computed. Contributions 
+# involving large two-particle intermediates are computed in the corresponding  
+# procedures where these intermediates(temp) are computed. 
+#
+# Contributions coming from P_(ij)P_(ab)t^e_i t^a_m <mb||ej> are computed 
+# elsewhere. 
+#
+# ----------------------------------------------------------------------------
+#
+      PROC T2NEWAA    
+#     ------------
+#
+      PARDO i2,i,a1,i1  
+#
+            REQUEST VSpipi(i2,i,a1,i1) i1
+#
+            DO a 
+#
+               GET                            t1a_old(a,i2)
+#
+               T1aiai(a,i,a1,i1)            = VSpipi(i2,i,a1,i1)*t1a_old(a,i2)
+               Taiai(a1,i,a,i1)             = T1aiai(a,i,a1,i1)
+               T1aiai(a,i,a1,i1)            *= -1.0
+#
+               PREPARE T2NEW_aa(a,i,a1,i1) += T1aiai(a,i,a1,i1)
+               PREPARE T2NEW_aa(a1,i,a,i1) += Taiai(a1,i,a,i1)
+#
+            ENDDO a 
+# 
+      ENDPARDO i2,i,a1,i1       
+      
+#
+      PARDO a, i1, a1, a2  
+#
+            REQUEST VSaaai(a,a2,a1,i1) i1
+#
+            DO i 
+#
+               GET                            t1a_old(a2,i)
+#
+               T1aiai(a,i,a1,i1)            = VSaaai(a,a2,a1,i1)*t1a_old(a2,i)
+               Taiai(a,i1,a1,i)             = T1aiai(a,i,a1,i1)
+               Taiai(a,i1,a1,i)            *= -1.0  
+#
+               PREPARE T2NEW_aa(a,i,a1,i1) += T1aiai(a,i,a1,i1)
+               PREPARE T2NEW_aa(a,i1,a1,i) += Taiai(a,i1,a1,i)
+#
+            ENDDO i 
+# 
+      ENDPARDO a, i1, a1, a2  
+#
+      ENDPROC T2NEWAA    
+#     ---------------
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# In PROCEDURE T2NEWBB the new amplitudes T2new_bb are computed. Contributions 
+# involving large two-particle intermediates are computed in the corresponding  
+# procedures where these intermediates(temp) are computed. Thus the 
+# intermediate Wminj is stored and its contribution computed here.  
+#
+# Contributions coming from P_(ij)P_(ab)t^e_i t^a_m <mb||ej> are computed 
+# elsewhere. 
+#
+# The new amplitudes T2new_bb are FIRST updated in this procedure and 
+# therefore created ate the begining of the procedure. 
+#
+      PROC T2NEWBB    
+#     ------------
+#
+      PARDO j2,j,b1,j1  
+#
+            REQUEST VSqjqj(j2,j,b1,j1) j1
+#
+            DO b 
+#
+               GET                            t1b_old(b,j2)
+#
+               T1bjbj(b,j,b1,j1)            = VSqjqj(j2,j,b1,j1)*t1b_old(b,j2)
+               Tbjbj(b1,j,b,j1)             = T1bjbj(b,j,b1,j1)
+               T1bjbj(b,j,b1,j1)           *= -1.0
+#
+               PREPARE T2NEW_bb(b,j,b1,j1) += T1bjbj(b,j,b1,j1)
+               PREPARE T2NEW_bb(b1,j,b,j1) += Tbjbj(b1,j,b,j1)
+#
+            ENDDO b 
+# 
+      ENDPARDO j2,j,b1,j1       
+      
+#
+      PARDO b, j1, b1, b2  
+#
+            REQUEST VSbbbj(b,b2,b1,j1) j1
+#
+            DO j 
+#
+               GET                            t1b_old(b2,j)
+#
+               T1bjbj(b,j,b1,j1)            = VSbbbj(b,b2,b1,j1)*t1b_old(b2,j)
+               Tbjbj(b,j1,b1,j)             = T1bjbj(b,j,b1,j1)
+               Tbjbj(b,j1,b1,j)            *= -1.0  
+#
+               PREPARE T2NEW_bb(b,j,b1,j1) += T1bjbj(b,j,b1,j1)
+               PREPARE T2NEW_bb(b,j1,b1,j) += Tbjbj(b,j1,b1,j)
+#
+            ENDDO j
+# 
+      ENDPARDO b, j1, b1, b2  
+#
+      ENDPROC T2NEWBB    
+#     ---------------
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# In PROCEDURE T2NEWAB the new amplitudes T2new_ab are computed. Contributions 
+# involving large two-particle intermediates are computed in the corresponding  
+# procedures where these intermediates(temp) are computed. Thus the 
+# intermediate Wminj is stored and its contribution computed here.  
+#
+# Contributions coming from P_(ij)P_(ab)t^e_i t^a_m <mb||ej> are computed 
+# elsewhere. 
+#
+      PROC T2NEWAB    
+#     ------------
+#
+
+      PARDO a, b, j, a1
+           REQUEST Vaabj(a,a1,b,j) a1
+           
+           DO i
+               GET t1a_old(a1,i)
+               Taibj(a,i,b,j) = Vaabj(a,a1,b,j)*t1a_old(a1,i)
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j)
+           ENDDO i
+           
+      ENDPARDO a, b, j, a1
+      
+      PARDO b, a, i, b1
+           REQUEST Vbbai(b,b1,a,i) b1
+           
+           DO j
+               GET t1b_old(b1,j)
+               Taibj(a,i,b,j) = Vbbai(b,b1,a,i)*t1b_old(b1,j)
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j)
+           ENDDO j
+           
+      ENDPARDO b, a, i, b1
+      
+      PARDO i, b, j, i1
+           REQUEST Vpiqj(i1,i,b,j) i1
+           
+           DO a
+               GET t1a_old(a,i1)
+               Taibj(a,i,b,j) = Vpiqj(i1,i,b,j)*t1a_old(a,i1)
+               Taibj(a,i,b,j) *= -1.0
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j)
+           ENDDO a
+           
+      ENDPARDO i, b, j, i1
+      
+      PARDO a, i, j, j1
+           REQUEST Vpiqj(a,i,j1,j) j1
+           
+           DO b
+               GET t1b_old(b,j1)
+               Taibj(a,i,b,j) = Vpiqj(a,i,j1,j)*t1b_old(b,j1)
+               Taibj(a,i,b,j) *= -1.0
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j)
+           ENDDO b
+           
+      ENDPARDO a, i, j, j1
+#
+      ENDPROC T2NEWAB    
+#     ---------------
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC AOLADDER  
+#
+#    ------------------------------------------------------------------------ 
+#
+#     First zero-out intermediate arrays
+#     ----------------------------------
+#
+      PARDO mu, nu, i, i1
+            Txixi(mu,i,nu,i1)           = 0.0
+            PREPARE TAO_aa(mu,i,nu,i1)  = Txixi(mu,i,nu,i1)
+            PREPARE T2AO_aa(mu,i,nu,i1) = Txixi(mu,i,nu,i1)
+      ENDPARDO mu, nu, i, i1
+#
+      PARDO mu, nu, j, j1
+            Txjxj(mu,j,nu,j1)           = 0.0
+            PREPARE TAO_bb(mu,j,nu,j1)  = Txjxj(mu,j,nu,j1)
+            PREPARE T2AO_bb(mu,j,nu,j1) = Txjxj(mu,j,nu,j1)
+      ENDPARDO mu, nu, j, j1
+#
+      PARDO mu, nu, i, j
+            Txixj(mu,i,nu,j)           = 0.0
+            PREPARE TAO_ab(mu,i,nu,j)  = Txixj(mu,i,nu,j)
+            PREPARE T2AO_ab(mu,i,nu,j) = Txixj(mu,i,nu,j)
+      ENDPARDO mu, nu, i, j
+      execute server_barrier
+#
+#     AA spin combination
+#     -------------------
+#
+      PARDO a, a1, i, i1
+#
+            GET                 T2old_aa(a1,i1,a,i)
+            GET                 T2old_aa(a,i1,a1,i)
+#
+            Taiai(a1,i1,a,i)  = T2old_aa(a1,i1,a,i)
+            T1aiai(a1,i1,a,i) = T2old_aa(a,i1,a1,i)
+            Taiai(a1,i1,a,i) -= T1aiai(a1,i1,a,i)
+#
+            DO mu
+#
+               Taixi(a1,i1,mu,i) = Taiai(a1,i1,a,i)*ca(mu,a)
+#
+               DO nu
+#
+                  Txixi(nu,i1,mu,i)           = Taixi(a1,i1,mu,i)*ca(nu,a1)
+                  PREPARE TAO_aa(nu,i1,mu,i) += Txixi(nu,i1,mu,i)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO a, a1, i, i1
+#
+#     BB spin combination
+#     -------------------
+#
+      PARDO b, b1, j, j1
+#
+            GET                 T2old_bb(b1,j1,b,j)
+            GET                 T2old_bb(b,j1,b1,j)
+#
+            Tbjbj(b1,j1,b,j)  = T2old_bb(b1,j1,b,j)
+            T1bjbj(b1,j1,b,j) = T2old_bb(b,j1,b1,j)
+            Tbjbj(b1,j1,b,j) -= T1bjbj(b1,j1,b,j)
+#
+            DO mu
+#
+               Tbjxj(b1,j1,mu,j) = Tbjbj(b1,j1,b,j)*cb(mu,b)
+#
+               DO nu
+#
+                  Txjxj(nu,j1,mu,j)           = Tbjxj(b1,j1,mu,j)*cb(nu,b1)
+                  PREPARE TAO_bb(nu,j1,mu,j) += Txjxj(nu,j1,mu,j)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO b, b1, j, j1
+#
+#     AB spin combination
+#     -------------------
+#
+      PARDO b, a, j, i
+#
+            GET                 T2old_ab(a,i,b,j)
+#
+            DO mu
+#
+               Taixj(a,i,mu,j) = T2old_ab(a,i,b,j)*cb(mu,b)
+#
+               DO nu
+#
+                  Txixj(nu,i,mu,j)           = Taixj(a,i,mu,j)*ca(nu,a)
+                  PREPARE TAO_ab(nu,i,mu,j) += Txixj(nu,i,mu,j)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO b, a, j, i
+# 
+     execute server_barrier   
+     execute sip_barrier   
+#
+#    Contract AOINT with half back transformed Amplitudes 
+#    ----------------------------------------------------    
+#
+     PARDO mu, nu 
+#
+           allocate L1xixi(mu,*,nu,*) 
+           allocate L1xjxj(mu,*,nu,*) 
+           allocate L1xixj(mu,*,nu,*) 
+#
+           DO lambda
+           DO sigma
+#
+              compute_integrals aoint(mu,lambda,nu,sigma)
+#
+              DO i
+              DO i1 
+#
+                 REQUEST TAO_aa(lambda,i,sigma,i1) i1 
+                 Yaa(mu,i,nu,i1) = aoint(mu,lambda,nu,sigma)*TAO_aa(lambda,i,sigma,i1)
+                 L1xixi(mu,i,nu,i1) += Yaa(mu,i,nu,i1)
+#
+              ENDDO i1 
+              ENDDO i
+#
+              DO j
+              DO j1 
+#
+                 REQUEST TAO_bb(lambda,j,sigma,j1) j1 
+                 Ybb(mu,j,nu,j1) = aoint(mu,lambda,nu,sigma)*TAO_bb(lambda,j,sigma,j1)
+                 L1xjxj(mu,j,nu,j1) += Ybb(mu,j,nu,j1)
+#
+              ENDDO j1  
+              ENDDO j
+#
+              DO i 
+              DO j
+#
+                 REQUEST TAO_ab(lambda,i,sigma,j) j 
+                 Yab(mu,i,nu,j)  = aoint(mu,lambda,nu,sigma)*TAO_ab(lambda,i,sigma,j)
+                 L1xixj(mu,i,nu,j) += Yab(mu,i,nu,j)
+#
+              ENDDO j
+              ENDDO i  
+#
+           ENDDO sigma
+           ENDDO lambda
+#
+           DO i 
+           DO i1 
+#
+              PREPARE T2AO_aa(mu,i,nu,i1) = L1xixi(mu,i,nu,i1)  
+#
+           ENDDO i1 
+           ENDDO i 
+#
+           DO j 
+           DO j1 
+#
+              PREPARE T2AO_bb(mu,j,nu,j1) = L1xjxj(mu,j,nu,j1)  
+#
+           ENDDO j1 
+           ENDDO j 
+#
+           DO i 
+           DO j 
+#
+              PREPARE T2AO_ab(mu,i,nu,j) = L1xixj(mu,i,nu,j)  
+#
+           ENDDO j 
+           ENDDO i 
+#
+           deallocate L1xixi(mu,*,nu,*) 
+           deallocate L1xjxj(mu,*,nu,*) 
+           deallocate L1xixj(mu,*,nu,*) 
+#
+     ENDPARDO  mu, nu 
+#
+     execute server_barrier  
+     execute sip_barrier  
+#
+#    Perform final transformation 
+#    ---------------------------- 
+#
+     PARDO mu, nu, i, i1  
+#
+           REQUEST T2AO_aa(mu,i,nu,i1) i1
+           Txixi(mu,i,nu,i1) = T2AO_aa(mu,i,nu,i1) 
+#
+           DO a
+#
+              TXaiai(a,i,nu,i1) = Txixi(mu,i,nu,i1)*ca(mu,a)
+#
+              DO a1  
+#
+                    TYaiai(a,i,a1,i1)  = TXaiai(a,i,nu,i1)*ca(nu,a1)
+                    TYaiai(a,i,a1,i1) *= 0.5  
+                    PREPARE T2new_aa(a,i,a1,i1) += TYaiai(a,i,a1,i1)
+#
+              ENDDO a1  
+#
+           ENDDO a
+#
+     ENDPARDO mu, nu, i, i1  
+#
+     PARDO mu, nu, j, j1  
+#
+          REQUEST T2AO_bb(mu,j,nu,j1) j1
+          Txjxj(mu,j,nu,j1) = T2AO_bb(mu,j,nu,j1) 
+#
+           DO b
+#
+              TXbjbj(b,j,nu,j1) = Txjxj(mu,j,nu,j1)*cb(mu,b)
+#
+              DO b1  
+#
+                    TYbjbj(b,j,b1,j1)  = TXbjbj(b,j,nu,j1)*cb(nu,b1)
+                    TYbjbj(b,j,b1,j1) *= 0.5                
+                    PREPARE T2new_bb(b,j,b1,j1) += TYbjbj(b,j,b1,j1)
+#
+              ENDDO b1  
+#
+           ENDDO b
+#
+     ENDPARDO mu, nu, j, j1  
+#
+     
+     PARDO mu, nu, i, j  
+#
+           REQUEST T2AO_ab(mu,i,nu,j) j
+#
+           DO a
+#
+              TXaibj(a,i,nu,j) = T2AO_ab(mu,i,nu,j)*ca(mu,a)
+#
+              DO b  
+#
+                 TYaibj(a,i,b,j)  = TXaibj(a,i,nu,j)*cb(nu,b)
+                 PREPARE T2new_ab(a,i,b,j) += TYaibj(a,i,b,j)
+#
+              ENDDO b  
+#
+           ENDDO a
+#
+     ENDPARDO mu, nu, i, j  
+#
+     execute sip_barrier
+     execute server_barrier
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC AOLADDER  
+#
+# SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS 
+#
+# In the procedures WMEBJAA, WMEBJBB, WMEBJAB, and WMEBJBA these  
+# intermediates are formed as temporary arrarys. The contribution to the 
+# outout arrays is computed directly from these temporary arrays so 
+# that the array is never stored.   
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+      PROC WMEBJAA 
+#     ------------
+#
+      PARDO i1, a1, a, i 
+#
+            REQUEST Viaai(i1,a1,a,i) i
+            REQUEST Vaaii(a,a1,i1,i) i
+#
+            Taiai(a1,i1,a,i)   = Vaaii(a,a1,i1,i) 
+            TYaiai(a1,i1,a,i)  = Viaai(i1,a1,a,i) 
+            TYaiai(a1,i1,a,i) -= Taiai(a1,i1,a,i)  
+#
+# Contributions to T2new_aa 
+# ------------------------- 
+#
+            DO i2 
+            DO a2 
+#
+               GET T2old_aa(a2,i2,a1,i1) 
+#
+               R1aiai(a2,i2,a,i) = T2old_aa(a2,i2,a1,i1)*TYaiai(a1,i1,a,i) 
+#
+               R2aiai(a2,i,a,i2) = R1aiai(a2,i2,a,i) 
+               R2aiai(a2,i,a,i2)*= -1.0  
+               R3aiai(a,i2,a2,i) = R2aiai(a2,i,a,i2)  
+               R4aiai(a,i,a2,i2) = R1aiai(a2,i2,a,i) 
+#
+               PREPARE T2new_aa(a2,i2,a,i) += R1aiai(a2,i2,a,i) 
+               PREPARE T2new_aa(a2,i,a,i2) += R2aiai(a2,i,a,i2) 
+               PREPARE T2new_aa(a,i2,a2,i) += R3aiai(a,i2,a2,i) 
+               PREPARE T2new_aa(a,i,a2,i2) += R4aiai(a,i,a2,i2) 
+#
+            ENDDO a2
+            ENDDO i2 
+#
+# Contributions to T2new_ab 
+# ------------------------- 
+#
+            Taiai(a,i,a1,i1) = TYaiai(a1,i1,a,i) 
+            DO b 
+            DO j 
+#
+               GET T2old_ab(a1,i1,b,j) 
+               R1aibj(a,i,b,j) = Taiai(a,i,a1,i1)*T2old_ab(a1,i1,b,j) 
+#
+               PREPARE T2new_ab(a,i,b,j) += R1aibj(a,i,b,j)
+#
+            ENDDO j 
+            ENDDO b 
+#
+      ENDPARDO i1, a1, a, i 
+#
+      ENDPROC WMEBJAA 
+#     ---------------
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+      PROC WMEBJBB 
+#     ------------
+#
+      PARDO j1, b1, b, j 
+#
+            REQUEST Vjbbj(j1,b1,b,j) j 
+            REQUEST Vbbjj(b,b1,j1,j) j 
+#
+            Tbjbj(b1,j1,b,j)   = Vbbjj(b,b1,j1,j) 
+            TYbjbj(b1,j1,b,j)  = Vjbbj(j1,b1,b,j) 
+            TYbjbj(b1,j1,b,j) -= Tbjbj(b1,j1,b,j)  
+
+#
+# Contributions to T2new_bb 
+# ------------------------- 
+#
+            DO j2 
+            DO b2 
+#
+               GET T2old_bb(b2,j2,b1,j1) 
+#
+               R1bjbj(b2,j2,b,j) = T2old_bb(b2,j2,b1,j1)*TYbjbj(b1,j1,b,j) 
+#
+               R2bjbj(b2,j,b,j2) = R1bjbj(b2,j2,b,j) 
+               R2bjbj(b2,j,b,j2)*= -1.0  
+               R3bjbj(b,j2,b2,j) = R1bjbj(b2,j2,b,j) 
+               R3bjbj(b,j2,b2,j)*= -1.0  
+               R4bjbj(b,j,b2,j2) = R1bjbj(b2,j2,b,j) 
+#
+               PREPARE T2new_bb(b2,j2,b,j) += R1bjbj(b2,j2,b,j) 
+               PREPARE T2new_bb(b2,j,b,j2) += R2bjbj(b2,j,b,j2) 
+               PREPARE T2new_bb(b,j2,b2,j) += R3bjbj(b,j2,b2,j) 
+               PREPARE T2new_bb(b,j,b2,j2) += R4bjbj(b,j,b2,j2) 
+#
+            ENDDO b2
+            ENDDO j2 
+#
+# Contributions to T2new_ab 
+# ------------------------- 
+#
+            DO a 
+            DO i 
+#
+               GET T2old_ab(a,i,b1,j1) 
+               R1aibj(a,i,b,j) = T2old_ab(a,i,b1,j1)*TYbjbj(b1,j1,b,j) 
+#
+               PREPARE T2new_ab(a,i,b,j) += R1aibj(a,i,b,j)
+#
+            ENDDO i 
+            ENDDO a 
+#
+      ENDPARDO j1, b1, b, j 
+#
+      ENDPROC WMEBJBB 
+#     ---------------
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+      PROC WMEBJAB 
+#     ------------
+#
+      PARDO i, a, b, j 
+#
+            REQUEST Viabj(i,a,b,j) j 
+            Tiabj(i,a,b,j) = Viabj(i,a,b,j) 
+
+#
+# Contribution to T2new_bb 
+# ------------------------ 
+#
+            DO b1 
+            DO j1 
+#
+               GET T2old_ab(a,i,b1,j1) 
+#
+               R1bjbj(b1,j1,b,j) = T2old_ab(a,i,b1,j1)*Tiabj(i,a,b,j) 
+#
+               R2bjbj(b1,j,b,j1) = R1bjbj(b1,j1,b,j) 
+               R2bjbj(b1,j,b,j1)*= -1.0  
+               R3bjbj(b,j1,b1,j) = R1bjbj(b1,j1,b,j) 
+               R3bjbj(b,j1,b1,j)*= -1.0  
+               R4bjbj(b,j,b1,j1) = R1bjbj(b1,j1,b,j) 
+#
+               PREPARE T2new_bb(b1,j1,b,j) += R1bjbj(b1,j1,b,j) 
+               PREPARE T2new_bb(b1,j,b,j1) += R2bjbj(b1,j,b,j1) 
+               PREPARE T2new_bb(b,j1,b1,j) += R3bjbj(b,j1,b1,j) 
+               PREPARE T2new_bb(b,j,b1,j1) += R4bjbj(b,j,b1,j1) 
+#
+            ENDDO j1 
+            ENDDO b1 
+#
+# Contribution to T2new_ab 
+# ------------------------ 
+#
+            DO i1 
+            DO a1 
+#
+               GET T2old_aa(a1,i1,a,i)
+#
+               R1aibj(a1,i1,b,j) = T2old_aa(a1,i1,a,i)*Tiabj(i,a,b,j)  
+#
+               PREPARE T2new_ab(a1,i1,b,j) += R1aibj(a1,i1,b,j) 
+#
+            ENDDO a1 
+            ENDDO i1 
+#
+      ENDPARDO i, a, b, j 
+#
+      ENDPROC WMEBJAB 
+#     ---------------
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+      PROC WMEBJBA  
+#     ------------
+#
+      PARDO j, b, a, i  
+# 
+            REQUEST Viabj(i,a,b,j) j 
+            Tjbai(j,b,a,i) = Viabj(i,a,b,j) 
+
+#
+# Contribution to T2new_aa 
+# ------------------------ 
+#
+            DO a1 
+            DO i1 
+#
+               GET T2old_ab(a1,i1,b,j) 
+#
+               R1aiai(a1,i1,a,i) =  T2old_ab(a1,i1,b,j)*Tjbai(j,b,a,i) 
+# 
+               R2aiai(a1,i,a,i1) =  R1aiai(a1,i1,a,i) 
+               R2aiai(a1,i,a,i1)*= -1.0  
+               R3aiai(a,i1,a1,i) =  R1aiai(a1,i1,a,i) 
+               R3aiai(a,i1,a1,i)*= -1.0  
+               R4aiai(a,i,a1,i1) =  R1aiai(a1,i1,a,i) 
+#
+               PREPARE T2new_aa(a1,i1,a,i) += R1aiai(a1,i1,a,i) 
+               PREPARE T2new_aa(a1,i,a,i1) += R2aiai(a1,i,a,i1) 
+               PREPARE T2new_aa(a,i1,a1,i) += R3aiai(a,i1,a1,i) 
+               PREPARE T2new_aa(a,i,a1,i1) += R4aiai(a,i,a1,i1) 
+#
+            ENDDO i1 
+            ENDDO a1 
+#
+# Contribution to T2new_ab 
+# ------------------------ 
+#
+            DO j1 
+            DO b1 
+#
+               GET T2old_bb(b1,j1,b,j)
+#
+               R1aibj(a,i,b1,j1) = T2old_bb(b1,j1,b,j)*Tjbai(j,b,a,i)  
+#
+               PREPARE T2new_ab(a,i,b1,j1) += R1aibj(a,i,b1,j1) 
+#
+            ENDDO b1 
+            ENDDO j1 
+#
+      ENDPARDO j, b, a, i 
+#
+      ENDPROC WMEBJBA  
+#     ---------------
+#
+# -------------------------------------------------------------------------------  
+#
+# -------------------------------------------------------------------------------  
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+# Compute contributions from 'Wmjbe'. 
+#
+#
+      PROC WMJBEab
+#     -------------
+#
+      PARDO i1, b1, b, i 
+#
+            REQUEST Vbbii(b,b1,i1,i) i 
+            Tiiqq(i1,i,b,b1) = Vbbii(b,b1,i1,i) 
+#
+#  Calculate contribution to the amplitudes 
+#  ----------------------------------------  
+#
+            DO a 
+            DO j 
+#
+               GET T2old_ab(a,i1,b1,j) 
+#
+               Taibj(a,i,b,j)  = T2old_ab(a,i1,b1,j)*Tiiqq(i1,i,b,b1) 
+               Taibj(a,i,b,j) *= -1.0  
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j) 
+#
+            ENDDO j  
+            ENDDO a  
+#
+      ENDPARDO i1, b1, b, i 
+#
+      ENDPROC WMJBEab
+#     ---------------
+#
+      PROC WMJBEba
+#     -------------
+#
+      PARDO j1, a1, a, j 
+#
+            REQUEST Vaajj(a,a1,j1,j) j 
+            Tjjpp(j1,j,a,a1) = Vaajj(a,a1,j1,j) 
+
+#
+#  Calculate contribution to the amplitudes 
+#  ----------------------------------------  
+#
+            DO b 
+            DO i 
+#
+               GET T2old_ab(a1,i,b,j1) 
+#
+               Taibj(a,i,b,j) = Tjjpp(j1,j,a,a1)*T2old_ab(a1,i,b,j1) 
+               Taibj(a,i,b,j) *= -1.0  
+               PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j) 
+#
+            ENDDO i  
+            ENDDO b  
+#
+      ENDPARDO j1, a1, a, j 
+#
+      ENDPROC WMJBEba
+#     ---------------
+#
+# SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS 
+#
+      PROC WMEBJ 
+# 
+           CALL WMEBJAA
+           CALL WMEBJBB
+           CALL WMEBJAB
+           CALL WMEBJBA
+           CALL WMJBEab
+           CALL WMJBEba 
+#
+      ENDPROC WMEBJ 
+#
+# SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC ENERGY_NEW 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     esuma   = 0.0 
+     ecorraa = 0.0 
+     PARDO a, a1, i, i1 
+#
+           REQUEST VSpipi(a,i,a1,i1) i1  
+           REQUEST T2safe_aa(a,i,a1,i1) i1
+#
+           etemp = VSpipi(a,i,a1,i1)*T2safe_aa(a,i,a1,i1) 
+           etemp = 0.25*etemp 
+           esuma += etemp 
+#
+     ENDPARDO a, a1, i, i1  
+#
+     ecorrbb = 0.0 
+     esumb   = 0.0 
+     PARDO b, b1, j, j1 
+#
+           REQUEST VSqjqj(b,j,b1,j1) j1  
+           REQUEST T2safe_bb(b,j,b1,j1) j1
+#
+           etemp = VSqjqj(b,j,b1,j1)*T2safe_bb(b,j,b1,j1) 
+           etemp = 0.25*etemp 
+#          execute print_scalar etemp 
+           esumb += etemp 
+#
+     ENDPARDO b, b1, j, j1 
+
+     ecorrab = 0.0 
+     esumab  = 0.0 
+     PARDO a, b, i, j 
+#
+           REQUEST Vpiqj(a,i,b,j) j  
+           REQUEST T2safe_ab(a,i,b,j) j
+#
+           etemp = T2safe_ab(a,i,b,j)*Vpiqj(a,i,b,j) 
+           esumab += etemp 
+#
+     ENDPARDO a, b, i, j 
+
+     execute sip_barrier 
+
+     collective ecorraa += esuma
+     execute print_scalar ecorraa 
+#
+     collective ecorrbb += esumb 
+     execute print_scalar ecorrbb 
+#
+     collective ecorrab += esumab
+     execute print_scalar ecorrab 
+#
+     ecorrT  = ecorraa + ecorrbb
+     ecorrT += ecorrab 
+     execute print_scalar ecorrT  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     ENDPROC ENERGY_NEW 
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     PROC T2NEW_ZERO
+#    --------------- 
+#
+#     Zero out new 1-particle amplitude arrays 
+#     ---------------------------------------- 
+#
+          PARDO a, i 
+                tai(a,i) = 0.0 
+                PUT t1a_new(a,i) = tai(a,i) 
+          ENDPARDO a, i 
+#
+          PARDO b, j 
+                tbj(b,j) = 0.0 
+                PUT t1b_new(b,j) = tbj(b,j) 
+          ENDPARDO b, j 
+#
+#     Zero out new 2-particle amplitude arrays 
+#     ---------------------------------------- 
+#
+          PARDO a, a1, i, i1 
+                Taiai(a,i,a1,i1) = 0.0
+                PREPARE T2new_aa(a,i,a1,i1) = Taiai(a,i,a1,i1) 
+          ENDPARDO a, a1, i, i1 
+#
+          PARDO b, b1, j, j1 
+                Tbjbj(b,j,b1,j1) = 0.0
+                PREPARE T2new_bb(b,j,b1,j1) = Tbjbj(b,j,b1,j1) 
+          ENDPARDO b, b1, j, j1 
+#
+          PARDO a, b, i, j 
+                Taibj(a,i,b,j) = 0.0
+                PREPARE T2new_ab(a,i,b,j) = Taibj(a,i,b,j) 
+          ENDPARDO a, b, i, j 
+# 
+     ENDPROC T2NEW_ZERO
+# 
+#    ------------------------------------------------------------------------ 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+#    ---------------
+     PROC ADD_DIAGT1
+     
+     PARDO a, i
+       GET t1a_old(a,i)
+       t1ai(a,i) = t1a_old(a,i)
+       t1ai(a,i) *= -1.0
+       execute energy_reg_product t1ai
+       PUT t1a_new(a,i) += t1ai(a,i)
+     ENDPARDO a, i 
+     
+     PARDO b, j
+     	GET t1b_old(b,j)
+     	t1bj(b,j) = t1b_old(b,j)
+     	t1bj(b,j) *= -1.0
+     	execute energy_reg_product t1bj
+     	PUT t1b_new(b,j) += t1bj(b,j)
+     ENDPARDO b, j
+     
+     execute sip_barrier t1a_new
+     
+     ENDPROC ADD_DIAGT1
+#    ------------------
+#    ---------------
+     PROC ADD_DIAGT2
+     
+     PARDO a, i, a1, i1
+       GET T2old_aa(a,i,a1,i1)
+       Taiai(a,i,a1,i1) = T2old_aa(a,i,a1,i1)
+       Taiai(a,i,a1,i1) *= -1.0
+       execute energy_reg_product Taiai
+       PREPARE T2new_aa(a,i,a1,i1) += Taiai(a,i,a1,i1)
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	GET T2old_bb(b,j,b1,j1)
+     	Tbjbj(b,j,b1,j1) = T2old_bb(b,j,b1,j1)
+     	Tbjbj(b,j,b1,j1) *= -1.0
+     	execute energy_reg_product Tbjbj
+     	PREPARE T2new_bb(b,j,b1,j1) += Tbjbj(b,j,b1,j1) 
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	GET T2old_ab(a,i,b,j)
+     	Taibj(a,i,b,j) = T2old_ab(a,i,b,j)
+     	Taibj(a,i,b,j) *= -1.0
+     	execute energy_reg_product Taibj
+     	PREPARE T2new_ab(a,i,b,j) += Taibj(a,i,b,j)
+     ENDPARDO a, i, b, j
+     
+     execute server_barrier T2new_aa
+     
+     ENDPROC ADD_DIAGT2
+#    ------------------
+#    ---------------
+     PROC CG_INIT
+     
+# Save T amplitudes in a safe place
+     PARDO a, i, a1, i1
+     	GET T2old_aa(a,i,a1,i1)
+        PREPARE T2safe_aa(a,i,a1,i1) = T2old_aa(a,i,a1,i1)
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	GET T2old_bb(b,j,b1,j1)
+        PREPARE T2safe_bb(b,j,b1,j1) = T2old_bb(b,j,b1,j1)
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	GET T2old_ab(a,i,b,j)
+        PREPARE T2safe_ab(a,i,b,j) = T2old_ab(a,i,b,j)
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i     
+     	GET t1a_old(a,i)
+     	PUT t1a_safe(a,i) = t1a_old(a,i)
+     ENDPARDO a, i
+     
+     PARDO b,j     
+     	GET t1b_old(b,j)
+     	PUT t1b_safe(b,j) = t1b_old(b,j)
+     ENDPARDO b, j      
+     
+     execute sip_barrier      
+     execute server_barrier   
+     
+# Move denominator free residual to new vector and denominator weight z residual
+
+     PARDO a, i, a1, i1
+     	REQUEST T2new_aa(a,i,a1,i1) i1
+     	Taiai(a,i,a1,i1) = T2new_aa(a,i,a1,i1)
+     	REQUEST VSpipi(a,i,a1,i1) i1
+     	Taiai(a,i,a1,i1) += VSpipi(a,i,a1,i1)
+     	PREPARE R2_aa(a,i,a1,i1) = Taiai(a,i,a1,i1)
+     	execute energy_reg_denominator Taiai
+        Taiai(a,i,a1,i1) *= -1.0
+        PUT T2old_aa(a,i,a1,i1) = Taiai(a,i,a1,i1)
+        PREPARE Z2_aa(a,i,a1,i1) = Taiai(a,i,a1,i1)
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	REQUEST T2new_bb(b,j,b1,j1) j1
+     	Tbjbj(b,j,b1,j1) = T2new_bb(b,j,b1,j1)
+     	REQUEST VSqjqj(b,j,b1,j1) j1
+     	Tbjbj(b,j,b1,j1) += VSqjqj(b,j,b1,j1)
+     	PREPARE R2_bb(b,j,b1,j1) = Tbjbj(b,j,b1,j1)
+        execute energy_reg_denominator Tbjbj
+        Tbjbj(b,j,b1,j1) *= -1.0
+        PUT T2old_bb(b,j,b1,j1) = Tbjbj(b,j,b1,j1)
+        PREPARE Z2_bb(b,j,b1,j1) = Tbjbj(b,j,b1,j1)
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	REQUEST T2new_ab(a,i,b,j) j
+     	Taibj(a,i,b,j) = T2new_ab(a,i,b,j)
+     	REQUEST Vpiqj(a,i,b,j) j
+     	Taibj(a,i,b,j) += Vpiqj(a,i,b,j)
+     	PREPARE R2_ab(a,i,b,j) = Taibj(a,i,b,j)
+        execute energy_reg_denominator Taibj
+        Taibj(a,i,b,j) *= -1.0
+        PUT T2old_ab(a,i,b,j) = Taibj(a,i,b,j)
+        PREPARE Z2_ab(a,i,b,j) = Taibj(a,i,b,j)
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i     
+     	GET t1a_new(a,i)
+     	t1ai(a,i) = t1a_new(a,i)
+     	PUT r1a(a,i) = t1ai(a,i)
+     	execute energy_reg_denominator t1ai
+     	t1ai(a,i) *= -1.0
+     	PUT t1a_old(a,i) = t1ai(a,i)
+     	PUT z1a(a,i) = t1ai(a,i)
+     ENDPARDO a, i
+     
+     PARDO b,j     
+     	GET t1b_new(b,j)
+     	t1bj(b,j) = t1b_new(b,j)
+     	PUT r1b(b,j) = t1bj(b,j)
+     	execute energy_reg_denominator t1bj
+     	t1bj(b,j) *= -1.0
+     	PUT t1b_old(b,j) = t1bj(b,j)
+     	PUT z1b(b,j) = t1bj(b,j)
+     ENDPARDO b, j
+     
+     execute sip_barrier    
+     execute server_barrier
+     
+# Calculate gamma
+
+     gamma = 0.0
+     gsum = 0.0
+     PARDO a, i, a1, i1
+     	REQUEST R2_aa(a,i,a1,i1) i1
+     	GET T2old_aa(a,i,a1,i1)
+     	gtemp = R2_aa(a,i,a1,i1)*T2old_aa(a,i,a1,i1)
+     	gtemp = 0.25*gtemp
+     	gsum += gtemp
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	REQUEST R2_bb(b,j,b1,j1) j1
+     	GET T2old_bb(b,j,b1,j1)
+     	gtemp = R2_bb(b,j,b1,j1)*T2old_bb(b,j,b1,j1)
+     	gtemp = 0.25*gtemp
+     	gsum += gtemp
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	REQUEST R2_ab(a,i,b,j) j
+     	GET T2old_ab(a,i,b,j)
+     	gtemp = R2_ab(a,i,b,j)*T2old_ab(a,i,b,j)
+     	gsum += gtemp
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET r1a(a,i)
+     	GET t1a_old(a,i)
+     	gtemp = r1a(a,i)*t1a_old(a,i)
+     	gsum += gtemp
+     ENDPARDO a,i
+     
+     PARDO b, j
+     	GET r1b(b,j)
+     	GET t1b_old(b,j)
+     	gtemp = r1b(b,j)*t1b_old(b,j)
+     	gsum += gtemp
+     ENDPARDO b, j
+     
+     execute sip_barrier
+     collective gamma+=gsum
+     
+     ENDPROC CG_INIT
+#    ------------------     
+#    -------------
+     PROC CONJ_GRAD
+     
+# Construct alpha
+# alpha(n) = gamma(n)/d^T C
+ 
+     aaccum = 0.0
+     asum   = 0.0
+     PARDO a, i, a1, i1
+     	GET T2old_aa(a,i,a1,i1)
+     	REQUEST T2new_aa(a,i,a1,i1) i1
+     	atemp = T2old_aa(a,i,a1,i1)*T2new_aa(a,i,a1,i1)
+     	atemp = 0.25*atemp
+     	asum += atemp
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	GET T2old_bb(b,j,b1,j1)
+     	REQUEST T2new_bb(b,j,b1,j1) j1
+     	atemp = T2old_bb(b,j,b1,j1)*T2new_bb(b,j,b1,j1)
+     	atemp = 0.25*atemp
+     	asum += atemp
+     ENDPARDO b, j, b1, j1     
+      
+     PARDO a, i, b, j
+     	GET T2old_ab(a,i,b,j)
+     	REQUEST T2new_ab(a,i,b,j) j
+     	atemp = T2old_ab(a,i,b,j)*T2new_ab(a,i,b,j)
+     	asum += atemp
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET t1a_old(a,i)
+     	GET t1a_new(a,i)
+     	atemp = t1a_old(a,i)*t1a_new(a,i)
+     	asum += atemp
+     ENDPARDO a,i     
+     
+     PARDO b, j
+     	GET t1b_old(b,j)
+     	GET t1b_new(b,j)
+     	atemp = t1b_old(b,j)*t1b_new(b,j)
+     	asum += atemp
+     ENDPARDO b, j
+     
+     execute sip_barrier
+     collective aaccum+=asum
+     
+     alpha = gamma / aaccum
+     alpha *= -1.0
+     
+# Calculate new T
+     PARDO a, i, a1, i1
+     	GET T2old_aa(a,i,a1,i1)
+     	Taiai(a,i,a1,i1) = alpha*T2old_aa(a,i,a1,i1)
+     	PREPARE T2safe_aa(a,i,a1,i1) += Taiai(a,i,a1,i1)          
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	GET T2old_bb(b,j,b1,j1)
+     	Tbjbj(b,j,b1,j1) = alpha*T2old_bb(b,j,b1,j1)   
+     	PREPARE T2safe_bb(b,j,b1,j1) += Tbjbj(b,j,b1,j1) 
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	GET T2old_ab(a,i,b,j)
+     	Taibj(a,i,b,j) = alpha*T2old_ab(a,i,b,j) 
+     	PREPARE T2safe_ab(a,i,b,j) += Taibj(a,i,b,j)          
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET t1a_old(a,i)
+     	t1ai(a,i) = alpha*t1a_old(a,i) 
+     	PUT t1a_safe(a,i) += t1ai(a,i)  
+     ENDPARDO a, i
+     
+     PARDO b, j
+     	GET t1b_old(b,j)
+     	t1bj(b,j) = alpha*t1b_old(b,j)  
+     	PUT t1b_safe(b,j) += t1bj(b,j)      
+     ENDPARDO b, j
+     
+     execute sip_barrier
+     execute server_barrier
+
+# Calculate new R
+
+     PARDO a, i, a1, i1
+     	REQUEST T2new_aa(a,i,a1,i1) i1
+     	Taiai(a,i,a1,i1) = alpha*T2new_aa(a,i,a1,i1)
+     	PREPARE R2_aa(a,i,a1,i1) += Taiai(a,i,a1,i1)        
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	REQUEST T2new_bb(b,j,b1,j1) j1
+     	Tbjbj(b,j,b1,j1) = alpha*T2new_bb(b,j,b1,j1) 
+     	PREPARE R2_bb(b,j,b1,j1) += Tbjbj(b,j,b1,j1)          
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	REQUEST T2new_ab(a,i,b,j) j
+     	Taibj(a,i,b,j) = alpha*T2new_ab(a,i,b,j) 
+     	PREPARE R2_ab(a,i,b,j) += Taibj(a,i,b,j)          
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET t1a_new(a,i)
+     	t1ai(a,i) = alpha*t1a_new(a,i) 
+     	PUT r1a(a,i) += t1ai(a,i)          
+     ENDPARDO a, i
+     
+     PARDO b, j
+     	GET t1b_new(b,j)
+     	t1bj(b,j) = alpha*t1b_new(b,j)  
+     	PUT r1b(b,j) += t1bj(b,j)          
+     ENDPARDO b, j
+ 
+     execute sip_barrier
+     execute server_barrier
+
+# Form new Z
+# Denominator weighting
+
+     PARDO a, i, a1, i1
+     	REQUEST R2_aa(a,i,a1,i1) i1
+     	Taiai(a,i,a1,i1) = R2_aa(a,i,a1,i1)
+     	Taiai(a,i,a1,i1) *= -1.0
+     	execute energy_reg_denominator Taiai
+     	PREPARE Z2_aa(a,i,a1,i1) = Taiai(a,i,a1,i1)      
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	REQUEST R2_bb(b,j,b1,j1) j1
+     	Tbjbj(b,j,b1,j1) = R2_bb(b,j,b1,j1)
+     	Tbjbj(b,j,b1,j1) *= -1.0
+     	execute energy_reg_denominator Tbjbj
+     	PREPARE Z2_bb(b,j,b1,j1) = Tbjbj(b,j,b1,j1)         
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	REQUEST R2_ab(a,i,b,j) j
+     	Taibj(a,i,b,j) = R2_ab(a,i,b,j)
+     	Taibj(a,i,b,j) *= -1.0
+     	execute energy_reg_denominator Taibj
+     	PREPARE Z2_ab(a,i,b,j) = Taibj(a,i,b,j)          
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET r1a(a,i)
+     	t1ai(a,i) = r1a(a,i)
+     	t1ai(a,i) *= -1.0
+     	execute energy_reg_denominator t1ai
+     	PUT z1a(a,i) = t1ai(a,i)          
+     ENDPARDO a, i
+     
+     PARDO b, j
+     	GET r1b(b,j)
+     	t1bj(b,j) = r1b(b,j)
+     	t1bj(b,j) *= -1.0
+     	execute energy_reg_denominator t1bj
+     	PUT z1b(b,j) = t1bj(b,j)        
+     ENDPARDO b, j
+     
+     execute sip_barrier
+     execute server_barrier
+
+# Form beta
+     baccum=0.0
+     bsum = 0.0
+     PARDO a, i, a1, i1
+     	REQUEST R2_aa(a,i,a1,i1) i1
+     	REQUEST Z2_aa(a,i,a1,i1) i1
+     	btemp = R2_aa(a,i,a1,i1)*Z2_aa(a,i,a1,i1)
+     	btemp = 0.25*btemp
+     	bsum += btemp
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	REQUEST R2_bb(b,j,b1,j1) j1
+     	REQUEST Z2_bb(b,j,b1,j1) j1
+     	btemp = R2_bb(b,j,b1,j1)*Z2_bb(b,j,b1,j1)
+     	btemp = 0.25*btemp
+     	bsum += btemp
+     ENDPARDO b, j b1, j1
+     
+     PARDO a, i, b, j
+     	REQUEST R2_ab(a,i,b,j) j
+     	REQUEST Z2_ab(a,i,b,j) j
+     	btemp = R2_ab(a,i,b,j)*Z2_ab(a,i,b,j)
+     	bsum += btemp
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET r1a(a,i)
+     	GET z1a(a,i)
+     	btemp = r1a(a,i)*z1a(a,i)
+     	bsum += btemp
+     ENDPARDO a,i     
+     
+     PARDO b, j
+     	GET r1b(b,j)
+     	GET z1b(b,j)
+     	btemp = r1b(b,j)*z1b(b,j)
+     	bsum += btemp
+     ENDPARDO b, j 
+     
+     execute sip_barrier
+     collective baccum+=bsum
+     
+     beta = baccum / gamma       
+# Form new gamma
+     gamma *= beta
+# Calculate new D     
+     PARDO a, i, a1, i1
+        GET T2old_aa(a,i,a1,i1)
+        Taiai(a,i,a1,i1) = beta*T2old_aa(a,i,a1,i1)
+        REQUEST Z2_aa(a,i,a1,i1) i1
+        Taiai(a,i,a1,i1) += Z2_aa(a,i,a1,i1)
+        PUT T2old_aa(a,i,a1,i1)=Taiai(a,i,a1,i1)        
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+        GET T2old_bb(b,j,b1,j1)
+        Tbjbj(b,j,b1,j1) = beta*T2old_bb(b,j,b1,j1)
+        REQUEST Z2_bb(b,j,b1,j1) j1
+        Tbjbj(b,j,b1,j1) += Z2_bb(b,j,b1,j1)
+        PUT T2old_bb(b,j,b1,j1)=Tbjbj(b,j,b1,j1)        
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+        GET T2old_ab(a,i,b,j)
+        Taibj(a,i,b,j) = beta*T2old_ab(a,i,b,j)
+        REQUEST Z2_ab(a,i,b,j) j
+        Taibj(a,i,b,j) += Z2_ab(a,i,b,j)
+        PUT T2old_ab(a,i,b,j) = Taibj(a,i,b,j)          
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET t1a_old(a,i)
+     	t1ai(a,i) = beta*t1a_old(a,i)
+     	GET z1a(a,i)
+     	t1ai(a,i) += z1a(a,i)
+     	PUT t1a_old(a,i)=t1ai(a,i)          
+     ENDPARDO a, i
+     
+     PARDO b, j
+     	GET t1b_old(b,j)
+     	t1bj(b,j) = beta*t1b_old(b,j)
+     	GET z1b(b,j)
+     	t1bj(b,j) += z1b(b,j)
+     	PUT t1b_old(b,j)=t1bj(b,j)       
+     ENDPARDO b, j
+     
+     execute sip_barrier     
+     
+     ENDPROC CONJ_GRAD     
+#    -----------------
+#    ---------------
+     PROC CHECK_CONV
+     
+     rnorm2 = 0.0
+     rsum  = 0.0     
+     execute sip_barrier
+     PARDO a, i, a1, i1
+     	REQUEST Z2_aa(a,i,a1,i1) i1
+     	rtemp = Z2_aa(a,i,a1,i1)*Z2_aa(a,i,a1,i1)
+     	rtemp = 0.25*rtemp
+     	rsum += rtemp
+     ENDPARDO a, i, a1, i1
+     
+     PARDO b, j, b1, j1
+     	REQUEST Z2_bb(b,j,b1,j1) j1
+     	rtemp = Z2_bb(b,j,b1,j1)*Z2_bb(b,j,b1,j1)
+     	rtemp = 0.25*rtemp
+     	rsum += rtemp
+     ENDPARDO b, j, b1, j1
+     
+     PARDO a, i, b, j
+     	REQUEST Z2_ab(a,i,b,j) j
+     	rtemp = Z2_ab(a,i,b,j)*Z2_ab(a,i,b,j)
+     	rsum += rtemp
+     ENDPARDO a, i, b, j
+     
+     PARDO a, i
+     	GET z1a(a,i)
+     	rtemp = z1a(a,i)*z1a(a,i)
+     	rsum += rtemp
+     ENDPARDO a,i    
+     
+     PARDO b, j
+     	GET z1b(b,j)
+     	rtemp = z1b(b,j)*z1b(b,j)
+     	rsum += rtemp
+     ENDPARDO b, j
+     
+     execute sip_barrier
+     collective rnorm2+=rsum 
+     
+     half=0.5
+     execute square_root rnorm2 half
+     execute print_scalar rnorm2
+     
+     
+     ENDPROC CHECK_CONV
+#    ------------------         
+# ---------------------------------------------------------------------------------
+#
+# ---------------------------------------------------------------------------------
+# 
+# BEGIN MAIN PROGRAM 
+# ------------------ 
+#
+      ecrit = cc_conv  
+#
+# Read transformed integrals from lists 
+# ------------------------------------- 
+#
+      CALL READ_2EL 
+#
+      CREATE T2old_aa 
+      CREATE T2old_bb 
+      CREATE T2old_ab 
+#
+      CREATE t1a_old 
+      CREATE t1a_new 
+      CREATE t1b_old 
+      CREATE t1b_new 
+      CREATE t1a_safe
+      CREATE t1b_safe
+      CREATE r1a
+      CREATE r1b
+      CREATE z1a
+      CREATE z1b
+#
+      EXECUTE SIP_BARRIER  
+#
+# Get initial second-order guess 
+# ------------------------------ 
+      CALL IGUESS_UHF
+      EXECUTE SIP_BARRIER  
+      EXECUTE SERVER_BARRIER  
+#
+# Start iterations
+# ---------------- 
+      DO KITER 
+      
+         CALL T2NEW_ZERO
+      
+         EXECUTE SIP_BARRIER
+         EXECUTE SERVER_BARRIER   
+#
+#        Calculate new one-particle amplitudes 
+#        ------------------------------------- 
+#
+         CALL T1ANEW 
+         CALL T1BNEW   
+#
+#        Calculate new two-particle amplitudes 
+#        ------------------------------------- 
+#
+         CALL T2NEWAA  
+         CALL T2NEWBB  
+         CALL T2NEWAB  
+         EXECUTE SIP_BARRIER   
+         EXECUTE SERVER_BARRIER 
+#
+         CALL WMINJ 
+         CALL AOLADDER 
+         CALL WMEBJ 
+#
+#        Wait for all to finish 
+#        ---------------------- 
+         EXECUTE SIP_BARRIER   
+         EXECUTE SERVER_BARRIER  
+         
+         # Add in eps(ijab)*t(ijab) or eps(ijab)*r(ijab) term
+         CALL ADD_DIAGT1
+         CALL ADD_DIAGT2
+         
+         if kiter == 1          
+         	CALL CG_INIT                  	
+         else
+	     	CALL CONJ_GRAD
+	     endif
+	     	     
+         CALL CHECK_CONV    
+         
+         EXECUTE SIP_BARRIER   
+          EXECUTE SERVER_BARRIER   
+         CALL ENERGY_NEW 
+         EXECUTE SIP_BARRIER  
+         EXECUTE SERVER_BARRIER   
+#
+#        Reset eold --> enew 
+#        ------------------- 
+#
+         eold = ecorrT
+         
+         if rnorm2 < ecrit
+         	exit
+         endif 
+#
+      ENDDO KITER 
+#
+      totenerg  = ecorrT  
+      totenerg += scfeneg  
+      execute print_scalar totenerg  
+#
+# Write amplitudes to file
+# ------------------------
+#
+      CALL WRITE_2EL   
+#
+      execute blocks_to_list                t1a_safe
+      execute blocks_to_list                t1b_safe
+      execute blocks_to_list                T2safe_aa
+      execute blocks_to_list                T2safe_ab
+      execute blocks_to_list                T2safe_bb
+      execute server_barrier
+      execute sip_barrier
+      execute write_blocks_to_list
+      execute sip_barrier
+#
+                           ENDSIAL LINCCSD_UHF_SV2_CG    
+#
+# EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE 
+#
+#

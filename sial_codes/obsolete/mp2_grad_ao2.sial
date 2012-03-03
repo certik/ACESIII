@@ -1,0 +1,2830 @@
+                           SIAL MBPT2_GRAD_AO2      
+#
+# This SIAL program computes the second-order correction to the density
+# and the second-order correction to the energy-weighted density matrix. 
+# They are written to file to be used in the final gradient construction. 
+#
+# BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+#
+# Declare indeces 
+# --------------- 
+#
+      index kiter    = 1, 100   
+#
+      aoindex mu     = 1, norb
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt
+#
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      mobindex q = bbocc, ebvirt
+      mobindex q1= bbocc, ebvirt
+      mobindex q2= bbocc, ebvirt
+      mobindex q3= bbocc, ebvirt
+# 
+# Arrays used in transformation for AO2 algorithm
+# -----------------------------------------------
+#
+      temp Txixi(mu,i1,lambda,i)
+      temp T1xixi(mu,i1,lambda,i)
+      temp Txxii(mu,nu,i1,i)
+      temp Tixxi(i1,nu,lambda,i)
+      temp Txipi(mu,i,p,i1)
+      temp Tpipi(p1,i,p,i1)
+      temp T1pipi(p1,i,p,i1)
+      temp T2pipi(p1,i,p,i1)
+      temp Tixai(i,mu,a,i1)
+      temp Txaii(mu,a,i,i1)
+      temp Tiaai(i,a1,a,i1)
+      temp Taaii(a,a1,i,i1)
+      temp Txaai(mu,a1,a,i)
+      temp Taaai(a2,a,a1,i)
+      temp T1aaai(a2,a,a1,i)
+      temp Txxai(mu,nu,a,i)
+#
+      distributed Vxixi(mu,i1,lambda,i)
+      distributed Vxxii(mu,nu,i1,i)
+      distributed Viixx(i1,i,mu,nu)
+      distributed Vixxi(i1,nu,lambda,i)
+      distributed Vxipi(mu,i,p,i1)
+      distributed Vixai(i,mu,a,i1)
+      distributed Vxaii(mu,a,i,i1)
+#
+#     Permanent 
+#     --------- 
+      distributed Viaai(i,a1,a,i1)
+      distributed Vaaii(a,a1,i,i1)
+      distributed VSpipi(p1,i,p,i1)
+#
+      temp Txjxj(mu,j1,lambda,j)
+      temp T1xjxj(mu,j1,lambda,j)
+      temp Txxjj(mu,nu,j1,j)
+      temp Tjjxx(j1,nu,lambda,j)
+      temp Tjxxj(j1,nu,lambda,j)
+      temp Txjqj(mu,j,q,j1)
+      temp Tqjqj(q1,j,q,j1)
+      temp T1qjqj(q1,j,q,j1)
+      temp T2qjqj(q1,j,q,j1)
+      temp Tjxbj(j,mu,b,j1)
+      temp Txbjj(mu,b,j,j1)
+      temp Tjbbj(j,b1,b,j1)
+      temp Tbbjj(b,b1,j,j1)
+      temp Txbbj(mu,b1,b,j)
+      temp Tbbbj(b2,b,b1,j)
+      temp T1bbbj(b2,b,b1,j)
+      temp Txxbj(mu,nu,b,j)
+#
+      distributed Vxjxj(mu,j1,lambda,j)
+      distributed Vxxjj(mu,nu,j1,j)
+      distributed Vjjxx(j1,nu,lambda,j)
+      distributed Vjxxj(j1,nu,lambda,j)
+      distributed Vxjqj(mu,j,q,j1)
+      distributed Vjxbj(j,mu,b,j1)
+      distributed Vxbjj(mu,b,j,j1)
+#
+#     Permanent 
+#     --------- 
+      distributed Vjbbj(j,b1,b,j1)
+      distributed Vbbjj(b,b1,j,j1)
+      distributed VSqjqj(q1,j,q,j1)
+#
+      temp Txixj(mu,i,nu,j)
+      temp Txiqj(mu,i,q,j)
+      temp Tpiqj(p,i,q,j)
+      temp T1piqj(p,i,q,j)
+      temp T2piqj(p,i,q,j)
+      temp Tiixx(i,i1,mu,nu)
+      temp Tiixb(i,i1,mu,b)
+      temp Tiibb(i,i1,b1,b)
+      temp Txajj(mu,a,j,j1)
+      temp Taajj(a,a1,j,j1)
+      temp Txabj(mu,a,b,j)
+      temp Tixxj(i,mu,nu,j)
+      temp Tixbj(i,mu,b,j)
+      temp Tiabj(i,a,b,j)
+      temp Taabj(a,a1,b,j)
+#
+      distributed Vxixj(mu,i,nu,j)
+      distributed Vxiqj(mu,i,q,j)
+      distributed Vpiqj(p,i,q,j)
+      distributed Viixb(i,i1,mu,b)
+      distributed Viibb(i,i1,b1,b)
+      distributed Vxajj(mu,a,j,j1)
+      distributed Vixxj(i,mu,nu,j)
+      distributed Vixbj(i,mu,b,j)
+#
+#     Permanent 
+#     --------- 
+      distributed Viabj(i,a,b,j)
+      distributed Vaajj(a,a1,j,j1)
+#
+      temp Txbii(mu,b,i,i1)
+      temp Tbbii(b,b1,i,i1)
+      temp Tjbii(j,b,i,i1)
+      temp Txbai(mu,b,a,i)
+      temp Tbbai(b,b1,a,i)
+#
+      distributed Vxbii(mu,b,i,i1)
+#
+#     Permanent 
+#     --------- 
+      distributed Vbbii(b,b1,i,i1)
+#
+# End Arrays used in transformation for AO2 algorithm
+# --------------------------------------------------- 
+#
+# Declare one-particle density arrays 
+# ----------------------------------- 
+#
+      distributed Pij_aa(i,i1) 
+      distributed Pij_bb(j,j1) 
+      distributed Pab_aa(a,a1) 
+      distributed Pab_bb(b,b1) 
+      distributed Lai_aa(a,i) 
+      distributed Lai_bb(b,j) 
+      distributed Painew_aa(a,i)
+      distributed Paiold_aa(a,i) 
+      distributed Painew_bb(b,j)
+      distributed Paiold_bb(b,j) 
+      distributed Wab_aa(a,a1) 
+      distributed Wab_bb(b,b1) 
+      distributed Wij_aa(i,i1) 
+      distributed Wij_bb(j,j1) 
+      distributed Wai_aa(a,i) 
+      distributed Wai_bb(b,j) 
+      distributed P2_ao(mu,nu) 
+      distributed P2A_ao(mu,nu) 
+      distributed P2B_ao(mu,nu) 
+      distributed W2_ao(mu,nu) 
+      distributed Paa_ao(mu,nu) 
+      distributed Pbb_ao(mu,nu) 
+      distributed Whfa(mu,nu) 
+      distributed Whfb(mu,nu) 
+      distributed Dhfa(mu,nu) 
+      distributed Dhfb(mu,nu) 
+      distributed Dhf(mu,nu) 
+      distributed Lxi(mu,i) 
+      distributed Lxj(nu,j) 
+      distributed Yxi(mu,i) 
+      distributed Yxj(nu,j) 
+#
+# Declare temporary arrays 
+# ------------------------ 
+#
+      temp Txxxx(mu,nu,lambda,sigma) 
+      temp T1xxxx(mu,nu,lambda,sigma) 
+      temp Txxxi(mu,nu,lambda,i) 
+      temp T1xxxi(mu,nu,lambda,i) 
+      temp Txxxj(mu,nu,lambda,j) 
+      temp T1xxxj(mu,nu,lambda,j) 
+      temp Txixx(mu,i,nu,lambda) 
+      temp Txjxx(mu,j,nu,lambda) 
+      temp gaa(mu,i,nu,lambda) 
+      temp gab(mu,i,nu,lambda) 
+      temp gbb(mu,i,nu,lambda) 
+      temp Tii(i,i1) 
+      temp T1ii(i,i1) 
+      temp Tjj(j,j1) 
+      temp T1jj(j,j1) 
+      temp Taa(a,a1) 
+      temp Tbb(b,b1) 
+      temp Tai(a,i) 
+      temp Tbj(b,j) 
+      temp Tiiaa(i,i1,a,a1) 
+      temp T1iiaa(i,i1,a,a1) 
+      temp Tjjbb(j,j1,b,b1) 
+      temp T1jjbb(j,j1,b,b1) 
+      temp Txi(mu,i) 
+      temp Ixi(mu,i) 
+      temp I1xi(mu,i) 
+      temp Jxi(mu,i) 
+      temp Kxi(mu,i) 
+      temp Txj(mu,j) 
+      temp Ixj(mu,j) 
+      temp I1xj(mu,j) 
+      temp Jxj(mu,j) 
+      temp Kxj(mu,j) 
+      temp Ixx(mu,nu) 
+      temp I1xx(mu,nu) 
+      temp Jxx(mu,nu) 
+      temp J1xx(mu,nu) 
+      temp Kxx(mu,nu) 
+      temp K1xx(mu,nu) 
+      temp Ixa(mu,a) 
+      temp Jxa(mu,a) 
+      temp Ixb(mu,b) 
+      temp Jxb(mu,b) 
+      temp Kxa(mu,a) 
+      temp Kxb(mu,b) 
+      temp Tpq(mu,nu)  
+      temp Txx(mu,nu)  
+#
+# Declare served arrays 
+# --------------------- 
+#
+      served AOINT(mu,nu,lambda,sigma) 
+      served dx1(mu,nu,lambda,sigma)
+      served dy1(mu,nu,lambda,sigma)
+      served dz1(mu,nu,lambda,sigma)
+      served dx2(mu,nu,lambda,sigma)
+      served dy2(mu,nu,lambda,sigma)
+      served dz2(mu,nu,lambda,sigma)
+      served dx3(mu,nu,lambda,sigma)
+      served dy3(mu,nu,lambda,sigma)
+      served dz3(mu,nu,lambda,sigma)
+      served dx4(mu,nu,lambda,sigma)
+      served dy4(mu,nu,lambda,sigma)
+      served dz4(mu,nu,lambda,sigma)
+#
+# Declare Local arrays 
+# -------------------- 
+#
+      local Xa(lambda,i,sigma,mu) 
+      local Xb(lambda,j,sigma,mu) 
+      local D2(mu,lambda,nu,sigma) 
+#
+# Declare scalars 
+# --------------- 
+#
+      scalar etemp
+      scalar esum
+      scalar ecorraa
+      scalar ecorrbb
+      scalar ecorrab
+      scalar ecorrT
+      scalar enew 
+      scalar eold 
+      scalar ecrit 
+      scalar ediff 
+      scalar mp2_energy
+#
+# BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_XXII
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxixi
+     CREATE Vxxii
+     CREATE Vixxi
+     CREATE Vxjxj
+     CREATE Vxxjj
+     CREATE Vjxxj
+     CREATE Vxixj
+     CREATE Vixxj
+     execute sip_barrier
+#
+     PARDO mu, nu, lambda, sigma
+#
+              compute_integrals AOINT(mu,nu,lambda,sigma)
+#
+              DO i
+#
+                 Txxxi(mu,nu,lambda,i) = AOINT(mu,nu,lambda,sigma)*ca(sigma,i)
+#
+                 DO i1
+                    Txixi(mu,i1,lambda,i)      = Txxxi(mu,nu,lambda,i)*ca(nu,i1)
+                    put Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i)
+                 ENDDO i1
+#
+                 DO i1
+                    Txxii(mu,nu,i1,i)      = Txxxi(mu,nu,lambda,i)*ca(lambda,i1)
+                    put Vxxii(mu,nu,i1,i) += Txxii(mu,nu,i1,i)
+                 ENDDO i1
+#
+                 DO i1
+                    Tixxi(i1,nu,lambda,i)      = Txxxi(mu,nu,lambda,i)*ca(mu,i1)
+                    put Vixxi(i1,nu,lambda,i) += Tixxi(i1,nu,lambda,i)
+                 ENDDO i1
+#
+              ENDDO i
+#
+              DO j
+#
+                 Txxxj(mu,nu,lambda,j) = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+#
+                 DO j1
+                    Txjxj(mu,j1,lambda,j)      = Txxxj(mu,nu,lambda,j)*cb(nu,j1)
+                    put Vxjxj(mu,j1,lambda,j) += Txjxj(mu,j1,lambda,j)
+                 ENDDO j1
+#
+                 DO j1
+                    Txxjj(mu,nu,j1,j)      = Txxxj(mu,nu,lambda,j)*cb(lambda,j1)
+                    put Vxxjj(mu,nu,j1,j) += Txxjj(mu,nu,j1,j)
+                 ENDDO j1
+#
+                 DO j1
+                    Tjxxj(j1,nu,lambda,j)      = Txxxj(mu,nu,lambda,j)*cb(mu,j1)
+                    put Vjxxj(j1,nu,lambda,j) += Tjxxj(j1,nu,lambda,j)
+                 ENDDO j1
+#
+              ENDDO j
+#
+              DO j
+#
+                 Txxxj(mu,nu,lambda,j) = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+#
+                 DO i
+                    Txixj(mu,i,lambda,j)      = Txxxj(mu,nu,lambda,j)*ca(nu,i)
+                    put Vxixj(mu,i,lambda,j) += Txixj(mu,i,lambda,j)
+                 ENDDO i
+#
+                 DO i
+                    Tixxj(i,nu,lambda,j)      = Txxxj(mu,nu,lambda,j)*ca(mu,i)
+                    put Vixxj(i,nu,lambda,j) += Tixxj(i,nu,lambda,j)
+                 ENDDO i
+#
+              ENDDO j
+#
+     ENDPARDO mu, nu, lambda, sigma
+     execute sip_barrier
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_XXII
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_PIPI
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxipi
+     CREATE VSpipi
+     execute sip_barrier
+     PARDO mu, nu, i, i1
+#
+           GET Vxixi(mu,i,nu,i1)
+#
+           DO p
+              Txipi(mu,i,p,i1) = Vxixi(mu,i,nu,i1)*ca(nu,p)
+              PUT Vxipi(mu,i,p,i1) += Txipi(mu,i,p,i1)
+           ENDDO p
+#
+     ENDPARDO mu, nu, i, i1
+     execute sip_barrier
+     DELETE Vxixi
+#
+     PARDO mu, p, i, i1
+#
+           GET Vxipi(mu,i,p,i1)
+           GET Vxipi(mu,i1,p,i)
+#
+           DO p1
+              Tpipi(p1,i,p,i1)       = Vxipi(mu,i,p,i1)*ca(mu,p1)
+              T1pipi(p1,i,p,i1)      = Vxipi(mu,i1,p,i)*ca(mu,p1)
+              Tpipi(p1,i,p,i1)      -= T1pipi(p1,i,p,i1)  
+              PUT VSpipi(p1,i,p,i1) += Tpipi(p1,i,p,i1) 
+           ENDDO p1
+#
+     ENDPARDO mu, p, i, i1
+#
+     execute sip_barrier
+     DELETE Vxipi
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_PIPI
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_AAII
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxaii
+     CREATE Vaaii
+     execute sip_barrier
+     PARDO mu, nu, i, i1
+#
+           GET Vxxii(mu,nu,i,i1)
+#
+           DO a
+              Txaii(mu,a,i,i1) = Vxxii(mu,nu,i,i1)*ca(nu,a)
+              PUT Vxaii(mu,a,i,i1) += Txaii(mu,a,i,i1)
+           ENDDO a
+#
+     ENDPARDO mu, nu, i, i1
+     execute sip_barrier
+#
+     PARDO mu, a, i, i1
+#
+           GET Vxaii(mu,a,i,i1)
+#
+           DO a1
+              Taaii(a1,a,i,i1) = Vxaii(mu,a,i,i1)*ca(mu,a1)
+              PUT Vaaii(a1,a,i,i1) += Taaii(a1,a,i,i1)
+           ENDDO a1
+#
+     ENDPARDO mu, a, i, i1
+#
+     execute sip_barrier
+     DELETE Vxaii
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_AAII
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_IAAI
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vixai
+     CREATE Viaai
+     execute sip_barrier
+     PARDO mu, nu, i, i1
+#
+           GET Vixxi(i,mu,nu,i1)
+#
+           DO a
+              Tixai(i,mu,a,i1) = Vixxi(i,mu,nu,i1)*ca(nu,a)
+              PUT Vixai(i,mu,a,i1) += Tixai(i,mu,a,i1)
+           ENDDO a
+#
+     ENDPARDO mu, nu, i, i1
+     execute sip_barrier
+     DELETE Vixxi
+#
+     PARDO mu, a, i, i1
+#
+           GET Vixai(i,mu,a,i1)
+#
+           DO a1
+              Tiaai(i,a1,a,i1) = Vixai(i,mu,a,i1)*ca(mu,a1)
+              PUT Viaai(i,a1,a,i1) += Tiaai(i,a1,a,i1)
+           ENDDO a1
+#
+     ENDPARDO mu, a, i, i1
+#
+     execute sip_barrier
+     DELETE Vixai
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_IAAI
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_QJQJ
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxjqj
+     CREATE VSqjqj
+     execute sip_barrier
+     PARDO mu, nu, j, j1
+#
+           GET Vxjxj(mu,j,nu,j1)
+#
+           DO q
+              Txjqj(mu,j,q,j1) = Vxjxj(mu,j,nu,j1)*cb(nu,q)
+              PUT Vxjqj(mu,j,q,j1) += Txjqj(mu,j,q,j1)
+           ENDDO q
+#
+     ENDPARDO mu, nu, j, j1
+     execute sip_barrier
+     DELETE Vxjxj
+#
+     PARDO mu, q, j, j1
+#
+           GET Vxjqj(mu,j,q,j1)
+           GET Vxjqj(mu,j1,q,j)
+#
+           DO q1
+              Tqjqj(q1,j,q,j1)       = Vxjqj(mu,j,q,j1)*cb(mu,q1)
+              T1qjqj(q1,j,q,j1)      = Vxjqj(mu,j1,q,j)*cb(mu,q1)
+              Tqjqj(q1,j,q,j1)      -= T1qjqj(q1,j,q,j1) 
+              PUT VSqjqj(q1,j,q,j1) += Tqjqj(q1,j,q,j1)
+           ENDDO q1
+#
+     ENDPARDO mu, q, j, j1
+#
+     execute sip_barrier
+     DELETE Vxjqj
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_QJQJ
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_BBJJ
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxbjj
+     CREATE Vbbjj
+     execute sip_barrier
+     PARDO mu, nu, j, j1
+#
+           GET Vxxjj(mu,nu,j,j1)
+#
+           DO b
+              Txbjj(mu,b,j,j1) = Vxxjj(mu,nu,j,j1)*cb(nu,b)
+              PUT Vxbjj(mu,b,j,j1) += Txbjj(mu,b,j,j1)
+           ENDDO b
+#
+     ENDPARDO mu, nu, j, j1
+     execute sip_barrier
+#
+     PARDO mu, b, j, j1
+#
+           GET Vxbjj(mu,b,j,j1)
+#
+           DO b1
+              Tbbjj(b1,b,j,j1) = Vxbjj(mu,b,j,j1)*cb(mu,b1)
+              PUT Vbbjj(b1,b,j,j1) += Tbbjj(b1,b,j,j1)
+           ENDDO b1
+#
+     ENDPARDO mu, b, j, j1
+#
+     execute sip_barrier
+     DELETE Vxbjj
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_BBJJ
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_JBBJ
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vjxbj
+     CREATE Vjbbj
+     execute sip_barrier
+     PARDO mu, nu, j, j1
+#
+           GET Vjxxj(j,mu,nu,j1)
+#
+           DO b
+              Tjxbj(j,mu,b,j1) = Vjxxj(j,mu,nu,j1)*cb(nu,b)
+              PUT Vjxbj(j,mu,b,j1) += Tjxbj(j,mu,b,j1)
+           ENDDO b
+#
+     ENDPARDO mu, nu, j, j1
+     execute sip_barrier
+     DELETE Vjxxj
+#
+     PARDO mu, b, j, j1
+#
+           GET Vjxbj(j,mu,b,j1)
+#
+           DO b1
+              Tjbbj(j,b1,b,j1) = Vjxbj(j,mu,b,j1)*cb(mu,b1)
+              PUT Vjbbj(j,b1,b,j1) += Tjbbj(j,b1,b,j1)
+           ENDDO b1
+#
+     ENDPARDO mu, b, j, j1
+#
+     execute sip_barrier
+     DELETE Vjxbj
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_JBBJ
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_BBII
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxbii
+     CREATE Vbbii
+     execute sip_barrier
+     PARDO mu, nu, i, i1
+#
+           GET Vxxii(mu,nu,i,i1)
+#
+           DO b
+              Txbii(mu,b,i,i1) = Vxxii(mu,nu,i,i1)*cb(nu,b)
+              PUT Vxbii(mu,b,i,i1) += Txbii(mu,b,i,i1)
+           ENDDO b
+#
+     ENDPARDO mu, nu, i, i1
+     execute sip_barrier
+     DELETE Vxxii
+#
+     PARDO mu, b, i, i1
+#
+           GET Vxbii(mu,b,i,i1)
+#
+           DO b1
+#
+              Tbbii(b1,b,i,i1) = Vxbii(mu,b,i,i1)*cb(mu,b1)
+              PUT Vbbii(b1,b,i,i1) += Tbbii(b1,b,i,i1)
+#
+           ENDDO b1
+#
+     ENDPARDO mu, b, i, i1
+     execute sip_barrier
+     DELETE Vxbii
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_BBII
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_AAJJ
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxajj
+     CREATE Vaajj
+     execute sip_barrier
+     PARDO mu, nu, j, j1
+#
+           GET Vxxjj(mu,nu,j,j1)
+#
+           DO a
+              Txajj(mu,a,j,j1) = Vxxjj(mu,nu,j,j1)*ca(nu,a)
+              PUT Vxajj(mu,a,j,j1) += Txajj(mu,a,j,j1)
+           ENDDO a
+#
+     ENDPARDO mu, nu, j, j1
+     execute sip_barrier
+     DELETE Vxxjj
+#
+     PARDO mu, a, j, j1
+#
+           GET Vxajj(mu,a,j,j1)
+#
+           DO a1
+              Taajj(a1,a,j,j1) = Vxajj(mu,a,j,j1)*ca(mu,a1)
+              PUT Vaajj(a1,a,j,j1) += Taajj(a1,a,j,j1)
+           ENDDO a1
+#
+     ENDPARDO mu, a, j, j1
+#
+     execute sip_barrier
+     DELETE Vxajj
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_AAJJ
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_IABJ
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vixbj
+     CREATE Viabj
+     execute sip_barrier
+     PARDO mu, nu, i, j
+#
+           GET Vixxj(i,mu,nu,j)
+#
+           DO b
+              Tixbj(i,mu,b,j) = Vixxj(i,mu,nu,j)*cb(nu,b)
+              PUT Vixbj(i,mu,b,j) += Tixbj(i,mu,b,j)
+           ENDDO b
+#
+     ENDPARDO mu, nu, i, j
+     execute sip_barrier
+     DELETE Vixxj
+#
+     PARDO mu, b, i, j
+#
+           GET Vixbj(i,mu,b,j)
+#
+           DO a
+              Tiabj(i,a,b,j) = Vixbj(i,mu,b,j)*ca(mu,a)
+              PUT Viabj(i,a,b,j) += Tiabj(i,a,b,j)
+           ENDDO a
+#
+     ENDPARDO mu, b, i, j
+#
+     execute sip_barrier
+     DELETE Vixbj
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_IABJ
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_IIBB
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Viixb
+     CREATE Viibb
+     execute sip_barrier
+     PARDO mu, nu, i, i1
+#
+           GET Viixx(i,i1,mu,nu)
+#
+           DO b
+              Tiixb(i,i1,mu,b) = Viixx(i,i1,mu,nu)*cb(nu,b)
+              PUT Viixb(i,i1,mu,b) += Tiixb(i,i1,mu,b)
+           ENDDO b
+#
+     ENDPARDO mu, nu, i, i1
+     execute sip_barrier
+     DELETE Viixx
+#
+     PARDO mu, b, i, i1
+#
+           GET Viixb(i,i1,mu,b)
+#
+           DO b1
+              Tiibb(i,i1,b1,b) = Viixb(i,i1,mu,b)*cb(mu,b1)
+              PUT Viibb(i,i1,b1,b) += Tiibb(i,i1,b1,b)
+           ENDDO b1
+#
+     ENDPARDO mu, b, i, i1
+#
+     execute sip_barrier
+     DELETE Viixb
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_IIBB
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_PIQJ
+#
+#    ------------------------------------------------------------------------
+#
+     CREATE Vxiqj
+     CREATE Vpiqj
+     execute sip_barrier
+     PARDO mu, nu, i, j
+#
+           GET Vxixj(mu,i,nu,j)
+#
+           DO q
+              Txiqj(mu,i,q,j) = Vxixj(mu,i,nu,j)*cb(nu,q)
+              PUT Vxiqj(mu,i,q,j) += Txiqj(mu,i,q,j)
+           ENDDO q
+#
+     ENDPARDO mu, nu, i, j
+     execute sip_barrier
+     DELETE Vxixj
+#
+     PARDO mu, q, i, j
+#
+           GET Vxiqj(mu,i,q,j)
+#
+           DO p
+#
+              Tpiqj(p,i,q,j) = Vxiqj(mu,i,q,j)*ca(mu,p)
+              PUT Vpiqj(p,i,q,j) += Tpiqj(p,i,q,j)
+#
+           ENDDO p
+#
+     ENDPARDO mu, q, i, j
+     execute sip_barrier
+     DELETE Vxiqj
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_PIQJ
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_PPPP
+#
+#    ------------------------------------------------------------------------
+#
+          CALL TRAN_XXII
+          CALL TRAN_PIPI
+          CALL TRAN_AAII
+          CALL TRAN_IAAI
+#
+          CALL TRAN_QJQJ
+          CALL TRAN_BBJJ
+          CALL TRAN_JBBJ
+#
+          CALL TRAN_PIQJ
+          CALL TRAN_AAJJ
+          CALL TRAN_IABJ
+#
+          CALL TRAN_BBII
+#
+#    ------------------------------------------------------------------------
+#
+     ENDPROC TRAN_PPPP
+#
+#    ------------------------------------------------------------------------
+#
+#    ------------------------------------------------------------------------
+#
+     PROC TRAN_UHF 
+# 
+         CALL TRAN_PPPP  
+#
+     ENDPROC TRAN_UHF 
+# 
+#    ------------------------------------------------------------------------ 
+#
+# -----------------------------------------------------------------------------
+#
+      PROC WHFDENS
+#     ------------
+#
+      PARDO mu, nu, i 
+#
+            Ixi(nu,i) = 0.0  
+#
+            DO i1 
+#
+               I1xi(nu,i) = ca(nu,i1)*fock_a(i,i1) 
+               Ixi(nu,i) -= I1xi(nu,i) 
+#
+            ENDDO i1  
+#
+            Tpq(mu,nu)       = ca(mu,i)*Ixi(nu,i)
+            PUT Whfa(mu,nu) += Tpq(mu,nu)
+#
+      ENDPARDO mu, nu, i  
+#
+      PARDO mu, nu, j
+#
+            Ixj(nu,j) = 0.0  
+#
+            DO j1 
+#
+               I1xj(nu,j) = cb(nu,j1)*fock_b(j,j1) 
+               Ixj(nu,j) -= I1xj(nu,j) 
+#
+            ENDDO j1  
+#
+            Tpq(mu,nu)       = cb(mu,j)*Ixj(nu,j)
+            PUT Whfb(mu,nu) += Tpq(mu,nu)
+#
+      ENDPARDO mu, nu, j
+      execute sip_barrier 
+#
+      ENDPROC WHFDENS
+#     --------------
+# -----------------------------------------------------------------------------
+#
+      PROC HFDENS
+#     -----------
+#
+      PARDO mu, nu, i
+#
+            Txi(nu,i)        = ca(nu,i)
+            Tpq(mu,nu)       = ca(mu,i)*Txi(nu,i)
+            PUT Dhfa(mu,nu) += Tpq(mu,nu)
+#
+      ENDPARDO mu, nu, i
+#
+      PARDO mu, nu, j
+#
+            Txj(nu,j)        = cb(nu,j)
+            Tpq(mu,nu)       = cb(mu,j)*Txj(nu,j)
+            PUT Dhfb(mu,nu) += Tpq(mu,nu)
+#
+      ENDPARDO mu, nu, j
+#
+      ENDPROC HFDENS
+#     --------------
+#
+      PROC D1TRANS
+#     ------------
+#
+# Contract with the derivative integrals
+# --------------------------------------
+#
+      PARDO mu, nu
+            GET P2A_ao(mu,nu)
+            GET P2B_ao(mu,nu)
+            GET DHFA(mu,nu)
+            GET DHFB(mu,nu)
+            Tpq(mu,nu)  = DHFA(mu,nu)
+            Tpq(mu,nu) += DHFB(mu,nu)
+            Tpq(mu,nu) += P2A_ao(mu,nu)
+            Tpq(mu,nu) += P2B_ao(mu,nu)
+            EXECUTE HCONT1 Tpq(mu,nu)
+      ENDPARDO mu, nu
+#
+# -----------------------------------------------------------------------------
+#
+      ENDPROC D1TRANS
+#     ---------------
+#
+# -----------------------------------------------------------------------------
+#
+      PROC S1TRANS
+#     ------------
+#
+# Contract with the derivative integrals
+# --------------------------------------
+#
+      PARDO mu, nu
+            GET W2_ao(mu,nu)
+            GET WHFa(mu,nu)
+            GET WHFb(mu,nu)
+            Tpq(mu,nu)  = W2_ao(mu,nu)
+            Tpq(mu,nu) += WHFa(mu,nu)
+            Tpq(mu,nu) += WHFb(mu,nu)
+            EXECUTE SCONT1 Tpq(mu,nu)
+      ENDPARDO mu, nu
+#
+# -----------------------------------------------------------------------------
+#
+      ENDPROC S1TRANS
+#     ---------------
+#
+# -----------------------------------------------------------------------------
+#
+      PROC D2TRANS
+#     ------------
+#
+        PARDO mu, nu, lambda
+#
+              allocate D2(mu,lambda,nu,*)
+#
+              DO i1
+#
+                 Txxxi(mu,lambda,nu,i1) = 0.0
+#
+                 DO i
+#
+                    GET Vxixi(mu,i,nu,i1)
+#
+                    T1xxxi(mu,lambda,nu,i1) = Vxixi(mu,i,nu,i1)*ca(lambda,i)
+                    Txxxi(mu,lambda,nu,i1) += T1xxxi(mu,lambda,nu,i1)
+#
+                 ENDDO i
+#
+                 DO sigma
+#
+                    Txxxx(mu,lambda,nu,sigma) = Txxxi(mu,lambda,nu,i1)*ca(sigma,i1)
+                    D2(mu,lambda,nu,sigma)   += Txxxx(mu,lambda,nu,sigma)
+#
+                 ENDDO sigma
+#
+              ENDDO i1
+#
+              DO j1
+#
+                 Txxxj(mu,lambda,nu,j1) = 0.0
+#
+                 DO j
+#
+                    GET Vxjxj(mu,j,nu,j1)
+                    T1xxxj(mu,lambda,nu,j1) = Vxjxj(mu,j,nu,j1)*cb(lambda,j)
+                    Txxxj(mu,lambda,nu,j1) += T1xxxj(mu,lambda,nu,j1)
+#
+                 ENDDO j
+#
+                 DO sigma
+#
+                    Txxxx(mu,lambda,nu,sigma) = Txxxj(mu,lambda,nu,j1)*cb(sigma,j1)
+                    D2(mu,lambda,nu,sigma)   += Txxxx(mu,lambda,nu,sigma)
+#
+                 ENDDO sigma
+#
+              ENDDO j1
+#
+              DO j
+#
+                 Txxxj(mu,lambda,nu,j) = 0.0
+#
+                 DO i
+#
+                    GET Vxixj(mu,i,nu,j)
+                    T1xxxj(mu,lambda,nu,j) = Vxixj(mu,i,nu,j)*ca(lambda,i)
+                    Txxxj(mu,lambda,nu,j) += T1xxxj(mu,lambda,nu,j)
+#
+                    ENDDO i
+#
+                    DO sigma
+#
+                    Txxxx(mu,lambda,nu,sigma) = Txxxj(mu,lambda,nu,j)*cb(sigma,j)
+                    Txxxx(mu,lambda,nu,sigma)*= 2.0
+                    D2(mu,lambda,nu,sigma)   += Txxxx(mu,lambda,nu,sigma)
+#
+                 ENDDO sigma
+#
+              ENDDO j
+#
+              DO sigma
+#
+#                Get 1-particle pieces
+#                ---------------------
+#
+                 GET DHFa(mu,lambda)
+                 GET DHFa(nu,sigma)
+                 GET DHFa(mu,sigma)
+                 GET DHFa(nu,lambda)
+#
+                 GET DHFb(mu,lambda)
+                 GET DHFb(nu,sigma)
+                 GET DHFb(mu,sigma)
+                 GET DHFb(nu,lambda)
+#
+                 GET P2A_ao(mu,lambda)
+                 GET P2A_ao(nu,sigma)
+                 GET P2A_ao(mu,sigma)
+                 GET P2A_ao(nu,lambda)
+#
+                 GET P2B_ao(mu,lambda)
+                 GET P2B_ao(nu,sigma)
+                 GET P2B_ao(mu,sigma)
+                 GET P2B_ao(nu,lambda)
+#
+#                HF only
+#                -------
+                 Txx(mu,lambda)             = DHFa(mu,lambda)
+                 Txxxx(mu,lambda,nu,sigma)  = Txx(mu,lambda)^DHFa(nu,sigma)
+#
+                 Txx(mu,lambda)             = DHFb(mu,lambda)
+                 T1xxxx(mu,lambda,nu,sigma) = Txx(mu,lambda)^DHFb(nu,sigma)
+                 Txxxx(mu,lambda,nu,sigma) += T1xxxx(mu,lambda,nu,sigma)
+#
+                 Txx(mu,lambda)             = DHFa(mu,lambda)
+                 T1xxxx(mu,lambda,nu,sigma) = Txx(mu,lambda)^DHFb(nu,sigma)
+                 T1xxxx(mu,lambda,nu,sigma)*= 2.0
+                 Txxxx(mu,lambda,nu,sigma) += T1xxxx(mu,lambda,nu,sigma)
+#
+                 Txx(mu,sigma)              = DHFa(mu,sigma)
+                 T1xxxx(mu,lambda,nu,sigma) = Txx(mu,sigma)^DHFa(nu,lambda)
+                 Txxxx(mu,lambda,nu,sigma) -= T1xxxx(mu,lambda,nu,sigma)
+#
+                 Txx(mu,sigma)              = DHFb(mu,sigma)
+                 T1xxxx(mu,lambda,nu,sigma) = Txx(mu,sigma)^DHFb(nu,lambda)
+                 Txxxx(mu,lambda,nu,sigma) -= T1xxxx(mu,lambda,nu,sigma)
+#
+                 Txxxx(mu,lambda,nu,sigma) *= 0.5
+#
+#                Correlation
+#                -----------
+                 T1xxxx(mu,lambda,nu,sigma) = P2A_ao(mu,lambda)^DHFA(nu,sigma)
+                 Txxxx(mu,lambda,nu,sigma) += T1xxxx(mu,lambda,nu,sigma)
+#
+                 T1xxxx(mu,lambda,nu,sigma) = P2B_ao(mu,lambda)^DHFB(nu,sigma)
+                 Txxxx(mu,lambda,nu,sigma) += T1xxxx(mu,lambda,nu,sigma)
+#
+                 T1xxxx(mu,lambda,nu,sigma) = P2A_ao(mu,lambda)^DHFB(nu,sigma)
+                 Txxxx(mu,lambda,nu,sigma) += T1xxxx(mu,lambda,nu,sigma)
+#
+                 T1xxxx(mu,lambda,nu,sigma) = P2B_ao(mu,lambda)^DHFA(nu,sigma)
+                 Txxxx(mu,lambda,nu,sigma) += T1xxxx(mu,lambda,nu,sigma)
+
+                 T1xxxx(mu,lambda,nu,sigma) = P2A_ao(mu,sigma)^DHFA(nu,lambda)
+                 T1xxxx(mu,lambda,nu,sigma)*= 0.5  
+                 Txxxx(mu,lambda,nu,sigma) -= T1xxxx(mu,lambda,nu,sigma)
+#
+                 T1xxxx(mu,lambda,nu,sigma) = P2A_ao(nu,lambda)^DHFA(mu,sigma)
+                 T1xxxx(mu,lambda,nu,sigma)*= 0.5  
+                 Txxxx(mu,lambda,nu,sigma) -= T1xxxx(mu,lambda,nu,sigma)
+#
+                 T1xxxx(mu,lambda,nu,sigma) = P2B_ao(mu,sigma)^DHFB(nu,lambda)
+                 T1xxxx(mu,lambda,nu,sigma)*= 0.5  
+                 Txxxx(mu,lambda,nu,sigma) -= T1xxxx(mu,lambda,nu,sigma)
+#
+                 T1xxxx(mu,lambda,nu,sigma) = P2B_ao(nu,lambda)^DHFB(mu,sigma)
+                 T1xxxx(mu,lambda,nu,sigma)*= 0.5  
+                 Txxxx(mu,lambda,nu,sigma) -= T1xxxx(mu,lambda,nu,sigma)
+#
+#                The nonseparable part
+#                ----------------------
+                 Txxxx(mu,lambda,nu,sigma) += D2(mu,lambda,nu,sigma)
+#
+#                Set up integrals
+#                ----------------
+                 execute der_int_setup dx1(mu,lambda,nu,sigma)
+                 execute der_int_setup dx2(mu,lambda,nu,sigma)
+                 execute der_int_setup dx3(mu,lambda,nu,sigma)
+                 execute der_int_setup dx4(mu,lambda,nu,sigma)
+                 execute der_int_setup dy1(mu,lambda,nu,sigma)
+                 execute der_int_setup dy2(mu,lambda,nu,sigma)
+                 execute der_int_setup dy3(mu,lambda,nu,sigma)
+                 execute der_int_setup dy4(mu,lambda,nu,sigma)
+                 execute der_int_setup dz1(mu,lambda,nu,sigma)
+                 execute der_int_setup dz2(mu,lambda,nu,sigma)
+                 execute der_int_setup dz3(mu,lambda,nu,sigma)
+                 execute der_int_setup dz4(mu,lambda,nu,sigma)
+#
+#                Compute integral block
+#                ----------------------
+                 execute compute_derivative_integrals
+#
+#                Contract density with integral derivatives
+#                ------------------------------------------
+                 execute DCONT2 Txxxx(mu,lambda,nu,sigma)
+#
+              ENDDO sigma
+#
+              deallocate D2(mu,lambda,nu,*)
+#
+        ENDPARDO mu, nu, lambda
+#
+      ENDPROC D2TRANS
+#     ---------------
+#
+# -----------------------------------------------------------------------------
+#
+# --------------------------------------------------------------------------- 
+#
+# The following procedure computes the contribution to Lai which 
+# depends on the VVVO integrals directly. 
+#
+      PROC LAIAO1
+#     -----------
+#
+#     First half backtransform vvoo integrals
+#     ---------------------------------------
+#
+#     AAAA spin case
+#     --------------
+#
+      create Vxixi 
+      create Vxixj 
+      create Vxjxj 
+      execute sip_barrier 
+      PARDO a, a1, i, i1
+#
+            GET VSpipi(a,i,a1,i1)
+            Tpipi(a,i,a1,i1) = VSpipi(a,i,a1,i1)
+            execute energy_denominator Tpipi(a,i,a1,i1)
+#
+            DO mu
+#
+               Txipi(mu,i,a1,i1) = Tpipi(a,i,a1,i1)*ca(mu,a)
+#
+               DO nu
+#
+                  Txixi(mu,i,nu,i1) = Txipi(mu,i,a1,i1)*ca(nu,a1)
+                  PUT Vxixi(mu,i,nu,i1) += Txixi(mu,i,nu,i1)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO a, a1, i, i1
+#
+#     BBBB spin case
+#     --------------
+#
+      PARDO b, b1, j, j1
+#
+            GET VSqjqj(b,j,b1,j1)
+            Tqjqj(b,j,b1,j1) = VSqjqj(b,j,b1,j1)
+            execute energy_denominator Tqjqj(b,j,b1,j1)
+#
+            DO mu
+#
+               Txjqj(mu,j,b1,j1) = Tqjqj(b,j,b1,j1)*cb(mu,b)
+#
+               DO nu
+#
+                  Txjxj(mu,j,nu,j1) = Txjqj(mu,j,b1,j1)*cb(nu,b1)
+                  PUT Vxjxj(mu,j,nu,j1) += Txjxj(mu,j,nu,j1)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO b, b1, j, j1
+#
+#     AABB spin case
+#     --------------
+#
+      PARDO a, b, i, j
+#
+            GET Vpiqj(a,i,b,j)
+            Tpiqj(a,i,b,j) = Vpiqj(a,i,b,j)
+            execute energy_denominator Tpiqj(a,i,b,j)
+#
+            DO mu
+#
+               Txiqj(mu,i,b,j) = Tpiqj(a,i,b,j)*ca(mu,a)
+#
+               DO nu
+#
+                  Txixj(mu,i,nu,j) = Txiqj(mu,i,b,j)*cb(nu,b)
+                  PUT Vxixj(mu,i,nu,j) += Txixj(mu,i,nu,j)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO a, b, i, j
+      create Lxi 
+      create Lxj 
+      execute sip_barrier
+#
+#     Perform intermediate contraction to get contribution to Lxi and Lxj 
+#     -------------------------------------------------------------------
+#
+      PARDO mu, lambda, sigma
+#
+            allocate xa(lambda,*,sigma,mu)
+            allocate xb(lambda,*,sigma,mu)
+#
+#           Form Xa 
+#           ------- 
+#
+            DO i
+#
+               DO i1
+#
+                  GET Vxixi(lambda,i,sigma,i1)
+                  GET Vxixi(sigma,i,lambda,i1)
+                  Txixi(lambda,i,sigma,i1)  = Vxixi(lambda,i,sigma,i1) 
+                  T1xixi(lambda,i,sigma,i1) = Vxixi(sigma,i,lambda,i1) 
+                  Txixi(lambda,i,sigma,i1) -= T1xixi(lambda,i,sigma,i1)  
+#
+                  Txixx(lambda,i,sigma,mu)  = Txixi(lambda,i,sigma,i1)*ca(mu,i1)
+                  Txixx(lambda,i,sigma,mu) *= 0.5
+                  xa(lambda,i,sigma,mu)    += Txixx(lambda,i,sigma,mu)
+#
+               ENDDO i1
+#
+               DO j
+#
+                  GET Vxixj(sigma,i,lambda,j)
+                  Txixx(lambda,i,sigma,mu) = Vxixj(sigma,i,lambda,j)*cb(mu,j)
+                  xa(lambda,i,sigma,mu)   -= Txixx(lambda,i,sigma,mu) 
+#
+               ENDDO j
+#
+            ENDDO i
+#
+#           Form Xb 
+#           ------- 
+#
+            DO j
+#
+               DO j1
+#
+                  GET Vxjxj(lambda,j,sigma,j1)
+                  GET Vxjxj(sigma,j,lambda,j1)
+                  Txjxj(lambda,j,sigma,j1)  = Vxjxj(lambda,j,sigma,j1) 
+                  T1xjxj(lambda,j,sigma,j1) = Vxjxj(sigma,j,lambda,j1) 
+                  Txjxj(lambda,j,sigma,j1) -= T1xjxj(lambda,j,sigma,j1)  
+#
+                  Txjxx(lambda,j,sigma,mu)  = Txjxj(lambda,j,sigma,j1)*cb(mu,j1)
+                  Txjxx(lambda,j,sigma,mu) *= 0.5
+                  xb(lambda,j,sigma,mu)    += Txjxx(lambda,j,sigma,mu)
+#
+               ENDDO j1
+#
+               DO i
+#
+                  GET Vxixj(lambda,i,sigma,j)
+                  Txjxx(lambda,j,sigma,mu) = Vxixj(lambda,i,sigma,j)*ca(mu,i)
+                  xb(lambda,j,sigma,mu)   -= Txjxx(lambda,j,sigma,mu) 
+#
+               ENDDO i
+#
+            ENDDO j
+#
+            DO nu
+#
+               compute_integrals aoint(mu,lambda,nu,sigma)
+#
+#              Finish Lxi 
+#              ---------- 
+#
+               DO i
+#
+                  Ixi(nu,i) = xa(lambda,i,sigma,mu)*aoint(mu,lambda,nu,sigma)
+                  PUT Lxi(nu,i) += Ixi(nu,i)
+#
+               ENDDO i
+#
+#              Finish Lxj 
+#              ---------- 
+#
+               DO j
+#
+                  Ixj(nu,j) = xb(lambda,j,sigma,mu)*aoint(mu,lambda,nu,sigma)
+                  PUT Lxj(nu,j) += Ixj(nu,j)
+#
+               ENDDO j
+#
+#              Start third-term 
+#              ---------------- 
+#
+               GET Paa_ao(sigma,nu) 
+               GET Pbb_ao(sigma,nu) 
+               GET Paa_ao(sigma,mu) 
+               GET Pbb_ao(sigma,mu) 
+#
+               I1xx(sigma,nu)  = Paa_ao(sigma,nu) 
+               I1xx(sigma,nu) += Pbb_ao(sigma,nu) 
+               Ixx(mu,lambda)  = aoint(mu,lambda,nu,sigma)*I1xx(sigma,nu)   
+               I1xx(nu,lambda) = aoint(mu,lambda,nu,sigma)*Paa_ao(sigma,mu) 
+#
+               DO i 
+#
+                  Ixi(lambda,i)   = Ixx(mu,lambda)*ca(mu,i) 
+                  I1xi(lambda,i)  = I1xx(nu,lambda)*ca(nu,i) 
+                  Ixi(lambda,i)  -= I1xi(lambda,i) 
+#
+                  PUT Yxi(lambda,i) += Ixi(lambda,i) 
+#
+               ENDDO i 
+#
+               I1xx(sigma,nu)  = Pbb_ao(sigma,nu) 
+               I1xx(sigma,nu) += Paa_ao(sigma,nu) 
+               Ixx(mu,lambda)  = aoint(mu,lambda,nu,sigma)*I1xx(sigma,nu)   
+               I1xx(nu,lambda) = aoint(mu,lambda,nu,sigma)*Pbb_ao(sigma,mu) 
+#
+               DO j 
+#
+                  Ixj(lambda,j)   = Ixx(mu,lambda)*cb(mu,j) 
+                  I1xj(lambda,j)  = I1xx(nu,lambda)*cb(nu,j) 
+                  Ixj(lambda,j)  -= I1xj(lambda,j) 
+#
+                  PUT Yxj(lambda,j) += Ixj(lambda,j) 
+#
+               ENDDO j 
+#
+            ENDDO nu
+#
+            deallocate xa(lambda,*,sigma,mu)
+            deallocate xb(lambda,*,sigma,mu)
+#
+      ENDPARDO mu, lambda, sigma
+      execute sip_barrier
+#
+      PARDO lambda, a, i 
+#
+            GET Yxi(lambda,i) 
+            Tai(a,i)  = ca(lambda,a)*Yxi(lambda,i)  
+            Tai(a,i) *= -1.0  
+            PUT Lai_aa(a,i) += tai(a,i)
+#
+      ENDPARDO lambda, a, i 
+#
+      PARDO lambda, b, j 
+#
+            GET Yxj(lambda,j) 
+            Tbj(b,j)  = cb(lambda,b)*Yxj(lambda,j)  
+            Tbj(b,j) *= -1.0  
+            PUT Lai_bb(b,j) += tbj(b,j)
+#
+      ENDPARDO lambda, b, j 
+#
+#     Perform final transformation to get contribution to Lai
+#     -------------------------------------------------------
+#
+      PARDO a, i, nu
+#
+           GET Lxi(nu,i)
+           tai(a,i) = Lxi(nu,i)*ca(nu,a)
+           PUT Lai_aa(a,i) += tai(a,i)
+#
+      ENDPARDO a, i, nu
+#
+      PARDO b, j, nu
+#
+           GET Lxj(nu,j)
+           tbj(b,j) = Lxj(nu,j)*cb(nu,b)
+           PUT Lai_bb(b,j) += tbj(b,j)
+#
+      ENDPARDO b, j, nu
+#
+#     Done direct contribution of Lai and Lbj 
+#     ---------------------------------------
+#
+      ENDPROC LAIAO1
+#     --------------
+#
+# --------------------------------------------------------------------------- 
+#
+############################################################################## 
+#
+#                         START OF MAIN PROGRAM 
+#
+############################################################################## 
+#
+# Transform integrals
+# ------------------- 
+#
+      execute sip_barrier 
+      CALL TRAN_UHF 
+#
+# Create one-particle arrays 
+# -------------------------- 
+#
+      CREATE Pij_aa 
+      CREATE Pij_bb 
+      CREATE Pab_aa 
+      CREATE Pab_bb 
+      CREATE Lai_aa 
+      CREATE Lai_bb 
+      CREATE Painew_aa  
+      CREATE Paiold_aa 
+      CREATE Painew_bb  
+      CREATE Paiold_bb 
+      CREATE Wab_aa  
+      CREATE Wab_bb  
+      CREATE Wij_aa  
+      CREATE Wij_bb  
+      CREATE Wai_aa  
+      CREATE Wai_bb  
+      CREATE P2_ao   
+      CREATE P2A_ao   
+      CREATE P2B_ao   
+      CREATE W2_ao   
+      CREATE Paa_ao   
+      CREATE Pbb_ao   
+      CREATE Yxi    
+      CREATE Yxj    
+      CREATE WHFa     
+      CREATE WHFb     
+      CREATE DHFa     
+      CREATE DHFb     
+      CREATE DHF     
+      execute sip_barrier 
+#
+#     Compute the HF contribution to the weighted density matrix 
+#     ---------------------------------------------------------- 
+#
+      call WHFDENS
+      execute sip_barrier 
+#
+# First compute the occupied-occupied block of the density correction
+# ------------------------------------------------------------------- 
+#
+#     AAAA/AAAA piece 
+#     --------------- 
+      PARDO a, i, a1, i2 
+#
+            GET VSpipi(a,i,a1,i2) 
+            Tpipi(a,i,a1,i2) = VSpipi(a,i,a1,i2) 
+            execute energy_denominator Tpipi(a,i,a1,i2) 
+#
+            DO i1 
+#
+               GET VSpipi(a,i1,a1,i2) 
+               T1pipi(a,i1,a1,i2) = VSpipi(a,i1,a1,i2) 
+               execute energy_denominator T1pipi(a,i1,a1,i2) 
+#
+               Tii(i,i1)         = Tpipi(a,i,a1,i2)*T1pipi(a,i1,a1,i2) 
+               Tii(i,i1)        *= -0.5 
+               PUT Pij_aa(i,i1) += Tii(i,i1) 
+#
+            ENDDO i1 
+#
+      ENDPARDO a, i, a1, i2 
+#
+#     AABB/AABB piece 
+#     --------------- 
+      PARDO a, i, b, j 
+#
+            GET Vpiqj(a,i,b,j) 
+            Tpiqj(a,i,b,j) = Vpiqj(a,i,b,j) 
+            execute energy_denominator Tpiqj(a,i,b,j) 
+#
+            DO i1 
+#
+               GET Vpiqj(a,i1,b,j) 
+               T1piqj(a,i1,b,j) = Vpiqj(a,i1,b,j) 
+               execute energy_denominator T1piqj(a,i1,b,j) 
+#
+               Tii(i,i1)         = Tpiqj(a,i,b,j)*T1piqj(a,i1,b,j) 
+               Tii(i,i1)        *= -1.0 
+               PUT Pij_aa(i,i1) += Tii(i,i1) 
+#
+            ENDDO i1 
+#
+      ENDPARDO a, i, b, j 
+#
+#     BBBB/BBBB piece 
+#     --------------- 
+      PARDO b, j, b1, j2 
+#
+            GET VSqjqj(b,j,b1,j2) 
+            Tqjqj(b,j,b1,j2) = VSqjqj(b,j,b1,j2) 
+            execute energy_denominator Tqjqj(b,j,b1,j2) 
+#
+            DO j1 
+#
+               GET VSqjqj(b,j1,b1,j2) 
+               T1qjqj(b,j1,b1,j2) = VSqjqj(b,j1,b1,j2) 
+               execute energy_denominator T1qjqj(b,j1,b1,j2) 
+#
+               Tjj(j,j1)         = Tqjqj(b,j,b1,j2)*T1qjqj(b,j1,b1,j2) 
+               Tjj(j,j1)        *= -0.5 
+               PUT Pij_bb(j,j1) += Tjj(j,j1) 
+#
+            ENDDO j1 
+#
+      ENDPARDO b, j, b1, j2 
+#
+#     BBAA/BBAA piece 
+#     --------------- 
+      PARDO b, j, a, i 
+#
+            GET Vpiqj(a,i,b,j) 
+            Tpiqj(a,i,b,j) = Vpiqj(a,i,b,j) 
+            execute energy_denominator Tpiqj(a,i,b,j) 
+#
+            DO j1 
+#
+               GET Vpiqj(a,i,b,j1) 
+               T1piqj(a,i,b,j1) = Vpiqj(a,i,b,j1) 
+               execute energy_denominator T1piqj(a,i,b,j1) 
+#
+               Tjj(j,j1)         = Tpiqj(a,i,b,j)*T1piqj(a,i,b,j1) 
+               Tjj(j,j1)        *= -1.0 
+               PUT Pij_bb(j,j1) += Tjj(j,j1) 
+#
+            ENDDO j1 
+#
+      ENDPARDO b, j, a, i 
+#
+# Done compute the occupied-occupied block of the density correction
+# ------------------------------------------------------------------- 
+#
+# Compute the virtual-virtual block of the density correction
+# ------------------------------------------------------------------- 
+#
+#     AAAA/AAAA piece 
+#     --------------- 
+#
+      PARDO a, a2, i, i1  
+#
+            GET VSpipi(a,i,a2,i1) 
+            Tpipi(a,i,a2,i1) = VSpipi(a,i,a2,i1) 
+            execute energy_denominator Tpipi(a,i,a2,i1) 
+#
+            DO a1 
+#
+               GET VSpipi(a1,i,a2,i1) 
+               T1pipi(a1,i,a2,i1) = VSpipi(a1,i,a2,i1)
+               execute energy_denominator T1pipi(a1,i,a2,i1) 
+#
+               Taa(a,a1) = Tpipi(a,i,a2,i1)*T1pipi(a1,i,a2,i1)
+               Taa(a,a1) *= 0.5 
+               PUT Pab_aa(a,a1) += Taa(a,a1) 
+#
+            ENDDO a1 
+#
+      ENDPARDO a, a2, i, i1  
+#
+#     AABB/AABB piece 
+#     --------------- 
+#
+      PARDO a, b, i, j  
+#
+            GET Vpiqj(a,i,b,j) 
+            Tpiqj(a,i,b,j) = Vpiqj(a,i,b,j) 
+            execute energy_denominator Tpiqj(a,i,b,j) 
+#
+            DO a1  
+#
+               GET Vpiqj(a1,i,b,j) 
+               T1piqj(a1,i,b,j) = Vpiqj(a1,i,b,j)
+               execute energy_denominator T1piqj(a1,i,b,j) 
+#
+               Taa(a,a1) = Tpiqj(a,i,b,j)*T1piqj(a1,i,b,j)
+               PUT Pab_aa(a,a1) += Taa(a,a1) 
+#
+            ENDDO a1  
+#
+      ENDPARDO a, b, i, j  
+#
+#     BBBB/BBBB piece 
+#     --------------- 
+#
+      PARDO b, b2, j, j1  
+#
+            GET VSqjqj(b,j,b2,j1) 
+            Tqjqj(b,j,b2,j1) = VSqjqj(b,j,b2,j1) 
+            execute energy_denominator Tqjqj(b,j,b2,j1) 
+#
+            DO b1 
+#
+               GET VSqjqj(b1,j,b2,j1) 
+               T1qjqj(b1,j,b2,j1) = VSqjqj(b1,j,b2,j1)
+               execute energy_denominator T1qjqj(b1,j,b2,j1) 
+#
+               Tbb(b,b1) = Tqjqj(b,j,b2,j1)*T1qjqj(b1,j,b2,j1)
+               Tbb(b,b1) *= 0.5 
+               PUT Pab_bb(b,b1) += Tbb(b,b1) 
+#
+            ENDDO b1 
+#
+      ENDPARDO b, b2, j, j1  
+#
+#     BBAA/BBAA piece 
+#     --------------- 
+#
+      PARDO b, a, j, i  
+#
+            GET Vpiqj(a,i,b,j) 
+            Tpiqj(a,i,b,j) = Vpiqj(a,i,b,j) 
+            execute energy_denominator Tpiqj(a,i,b,j) 
+#
+            DO b1 
+#
+               GET Vpiqj(a,i,b1,j) 
+               T1piqj(a,i,b1,j) = Vpiqj(a,i,b1,j)
+               execute energy_denominator T1piqj(a,i,b1,j) 
+#
+               Tbb(b,b1) = Tpiqj(a,i,b,j)*T1piqj(a,i,b1,j)
+               PUT Pab_bb(b,b1) += Tbb(b,b1) 
+#
+            ENDDO b1 
+#
+      ENDPARDO b, a, j, i  
+#
+# End compute the virtual-virtual block of the density correction
+# ------------------------------------------------------------------- 
+      execute sip_barrier 
+#
+# Backtransform Pab to be used in the 'direct' contribution to Lai 
+# ---------------------------------------------------------------- 
+#
+#     Transform Pab_aa 
+#     ---------------- 
+      PARDO a, a1  
+#
+            GET Pab_aa(a,a1)  
+#
+            DO mu 
+#
+               Ixa(mu,a1) = Pab_aa(a,a1)*ca(mu,a) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)         = Ixa(mu,a1)*ca(nu,a1) 
+                  PUT Paa_ao(mu,nu) += Ixx(mu,nu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO a, a1  
+#
+#     Transform Pab_bb 
+#     ---------------- 
+      PARDO b, b1  
+#
+            GET Pab_bb(b,b1)  
+#
+            DO mu 
+#
+               Ixb(mu,b1) = Pab_bb(b,b1)*cb(mu,b) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)         = Ixb(mu,b1)*cb(nu,b1) 
+                  PUT Pbb_ao(mu,nu) += Ixx(mu,nu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO b, b1  
+      execute sip_barrier 
+#
+# Compute the right-hand side of Eq. 10 --> Lai_aa  
+# ------------------------------------------------  
+#
+#     Compte the 'direct' contributions 
+#     --------------------------------- 
+      CALL LAIAO1
+#
+#     Second-term 
+#     ----------- 
+#
+      PARDO a, a1, i1, i2 
+#
+            GET VSpipi(a,i1,a1,i2) 
+            Tpipi(a,i1,a1,i2) = VSpipi(a,i1,a1,i2) 
+            execute energy_denominator Tpipi(a,i1,a1,i2) 
+#
+            DO i 
+# 
+               GET VSpipi(a1,i2,i,i1) 
+               Tai(a,i)         = Tpipi(a,i1,a1,i2)*VSpipi(a1,i2,i,i1) 
+               Tai(a,i)        *= 0.5 
+               PUT Lai_aa(a,i) += Tai(a,i) 
+#
+            ENDDO i 
+#
+      ENDPARDO a, a1, i1, i2 
+#
+      PARDO a, b, i1, j 
+#
+            GET Vpiqj(a,i1,b,j) 
+            Tpiqj(a,i1,b,j) = Vpiqj(a,i1,b,j) 
+            execute energy_denominator Tpiqj(a,i1,b,j) 
+#
+            DO i 
+# 
+               GET Vpiqj(i,i1,b,j) 
+               Tai(a,i)         = Tpiqj(a,i1,b,j)*Vpiqj(i,i1,b,j) 
+               PUT Lai_aa(a,i) += Tai(a,i) 
+#
+            ENDDO i 
+#
+      ENDPARDO a, b, i1, j 
+#
+#     Fourth-term 
+#     ----------- 
+#
+      PARDO i, i1, i2, a 
+#
+            GET Pij_aa(i1,i2) 
+            GET VSpipi(a,i,i1,i2) 
+# 
+            Tai(a,i)         = VSpipi(a,i,i1,i2)*Pij_aa(i1,i2)  
+            Tai(a,i)        *= -1.0  
+            PUT Lai_aa(a,i) += Tai(a,i) 
+#
+      ENDPARDO i, i1, i2, a 
+#
+      PARDO i, j, j1, a 
+#
+            GET Pij_bb(j,j1) 
+            GET Vpiqj(a,i,j,j1) 
+# 
+            Tai(a,i)         = Vpiqj(a,i,j,j1)*Pij_bb(j,j1)  
+            Tai(a,i)        *= -1.0  
+            PUT Lai_aa(a,i) += Tai(a,i) 
+#
+      ENDPARDO i, j, j1, a 
+#
+# Compute the right-hand side of Eq. 10 --> Lai_bb  
+# ------------------------------------------------  
+#
+#     Second-term 
+#     ----------- 
+#
+      PARDO b, b1, j1, j2 
+#
+            GET VSqjqj(b,j1,b1,j2) 
+            Tqjqj(b,j1,b1,j2) = VSqjqj(b,j1,b1,j2) 
+            execute energy_denominator Tqjqj(b,j1,b1,j2) 
+#
+            DO j 
+# 
+               GET VSqjqj(b1,j2,j,j1) 
+               Tbj(b,j)         = Tqjqj(b,j1,b1,j2)*VSqjqj(b1,j2,j,j1) 
+               Tbj(b,j)        *= 0.5 
+               PUT Lai_bb(b,j) += Tbj(b,j) 
+#
+            ENDDO j 
+#
+      ENDPARDO b, b1, j1, j2 
+#
+      PARDO a, b, i, j1 
+#
+            GET Vpiqj(a,i,b,j1) 
+            Tpiqj(a,i,b,j1) = Vpiqj(a,i,b,j1) 
+            execute energy_denominator Tpiqj(a,i,b,j1) 
+#
+            DO j 
+# 
+               GET Vpiqj(a,i,j,j1) 
+               Tbj(b,j)         = Tpiqj(a,i,b,j1)*Vpiqj(a,i,j,j1) 
+               PUT Lai_bb(b,j) += Tbj(b,j) 
+#
+            ENDDO j 
+#
+      ENDPARDO a, b, i, j1 
+#
+#     Fourth-term 
+#     ----------- 
+#
+      PARDO j, j1, j2, b 
+#
+            GET Pij_bb(j1,j2) 
+            GET VSqjqj(b,j,j1,j2) 
+# 
+            Tbj(b,j)         = VSqjqj(b,j,j1,j2)*Pij_bb(j1,j2)  
+            Tbj(b,j)        *= -1.0  
+            PUT Lai_bb(b,j) += Tbj(b,j) 
+#
+      ENDPARDO j, j1, j2, b 
+#
+      PARDO j, i, i1, b 
+#
+            GET Pij_aa(i,i1) 
+            GET Vpiqj(i,i1,b,j) 
+# 
+            Tbj(b,j)         = Vpiqj(i,i1,b,j)*Pij_aa(i,i1)  
+            Tbj(b,j)        *= -1.0  
+            PUT Lai_bb(b,j) += Tbj(b,j) 
+#
+      ENDPARDO j, i, i1, b 
+#
+# Done compute the right-hand side of Eq. 10 --> Lai_bb  
+# -----------------------------------------------------  
+      execute sip_barrier 
+#
+# Compute the occupied-virtual block of correlated density
+# -------------------------------------------------------- 
+#
+# Get initial guess 
+# ----------------- 
+#
+      eold = 0.0 
+      esum = 0.0 
+      ecrit = 0.0000000001 
+      PARDO a, i 
+#
+            GET Lai_aa(a,i) 
+            Tai(a,i) = Lai_aa(a,i)
+            Tai(a,i) *= -1.0  
+            execute energy_denominator Tai(a,i) 
+            etemp = Tai(a,i)*Tai(a,i) 
+            esum += etemp 
+            PUT Paiold_aa(a,i) = Tai(a,i) 
+#
+      ENDPARDO a, i 
+#
+      PARDO b, j 
+#
+            GET Lai_bb(b,j) 
+            Tbj(b,j) = Lai_bb(b,j)
+            Tbj(b,j) *= -1.0  
+            execute energy_denominator Tbj(b,j) 
+            etemp = Tbj(b,j)*Tbj(b,j) 
+            esum += etemp 
+            PUT Paiold_bb(b,j) = Tbj(b,j) 
+#
+      ENDPARDO b, j 
+      execute sip_barrier 
+      collective eold += esum  
+#
+#     Start iterations 
+#     ---------------- 
+#
+      DO kiter 
+#
+         PARDO a, i 
+#
+               GET Lai_aa(a,i) 
+               Tai(a,i) = Lai_aa(a,i)
+               Tai(a,i) *= -1.0  
+               execute energy_denominator Tai(a,i) 
+               PUT Painew_aa(a,i) += Tai(a,i) 
+#
+         ENDPARDO a, i 
+#
+         PARDO b, j 
+#
+               GET Lai_bb(b,j) 
+               Tbj(b,j) = Lai_bb(b,j)
+               Tbj(b,j) *= -1.0  
+               execute energy_denominator Tbj(b,j) 
+               PUT Painew_bb(b,j) += Tbj(b,j) 
+#
+         ENDPARDO b, j 
+#
+         PARDO a, a1, i, i1 
+#
+               GET VSpipi(a,i,a1,i1) 
+               GET Vaaii(a,a1,i1,i) 
+               GET Viaai(i,a,a1,i1) 
+               GET Paiold_aa(a1,i1) 
+#
+               Tpipi(a,i,a1,i1)  = VSpipi(a,i,a1,i1) 
+               T1pipi(a,i,a1,i1) = Vaaii(a,a1,i1,i)  
+               T2pipi(a,i,a1,i1) = Viaai(i,a,a1,i1) 
+#
+               Tpipi(a,i,a1,i1) -= T1pipi(a,i,a1,i1)  
+               Tpipi(a,i,a1,i1) += T2pipi(a,i,a1,i1)  
+#
+               Tai(a,i)  = Tpipi(a,i,a1,i1)*Paiold_aa(a1,i1) 
+               execute energy_denominator Tai(a,i) 
+               PUT Painew_aa(a,i) += Tai(a,i) 
+#
+         ENDPARDO a, a1, i, i1 
+#
+         PARDO a, b, i, j 
+#
+               GET Vpiqj(a,i,b,j) 
+               GET Viabj(i,a,b,j) 
+               GET Paiold_bb(b,j) 
+               GET Paiold_aa(a,i) 
+#
+               Tpiqj(a,i,b,j)     = Vpiqj(a,i,b,j) 
+               T2piqj(a,i,b,j)    = Viabj(i,a,b,j) 
+#
+               Tpiqj(a,i,b,j)    += T2piqj(a,i,b,j)  
+#
+               Tai(a,i)           = Tpiqj(a,i,b,j)*Paiold_bb(b,j) 
+               execute energy_denominator Tai(a,i) 
+               PUT Painew_aa(a,i) += Tai(a,i) 
+#
+               Tpiqj(a,i,b,j)      = Vpiqj(a,i,b,j) 
+               T2piqj(a,i,b,j)     = Viabj(i,a,b,j) 
+#
+               Tpiqj(a,i,b,j)     += T2piqj(a,i,b,j)  
+#
+               Tbj(b,j)            = Tpiqj(a,i,b,j)*Paiold_aa(a,i) 
+               execute energy_denominator Tbj(b,j) 
+               PUT Painew_bb(b,j) += Tbj(b,j) 
+#
+         ENDPARDO a, b, i, j 
+#
+         PARDO b, b1, j, j1 
+#
+               GET VSqjqj(b,j,b1,j1) 
+               GET Vbbjj(b,b1,j1,j) 
+               GET Vjbbj(j,b,b1,j1) 
+               GET Paiold_bb(b1,j1) 
+#
+               Tqjqj(b,j,b1,j1)  = VSqjqj(b,j,b1,j1) 
+               T1qjqj(b,j,b1,j1) = Vbbjj(b,b1,j1,j)  
+               T2qjqj(b,j,b1,j1) = Vjbbj(j,b,b1,j1) 
+#
+               Tqjqj(b,j,b1,j1) -= T1qjqj(b,j,b1,j1)  
+               Tqjqj(b,j,b1,j1) += T2qjqj(b,j,b1,j1)  
+#
+               Tbj(b,j)  = Tqjqj(b,j,b1,j1)*Paiold_bb(b1,j1) 
+               execute energy_denominator Tbj(b,j) 
+               PUT Painew_bb(b,j) += Tbj(b,j) 
+#
+         ENDPARDO b, b1, j, j1 
+         execute sip_barrier 
+#
+#        UPDATE density 
+#        -------------- 
+#
+         esum = 0.0 
+         enew = 0.0 
+         PARDO a, i 
+#
+               GET Painew_aa(a,i)  
+               PUT Paiold_aa(a,i) = Painew_aa(a,i)  
+               etemp = Painew_aa(a,i)*Painew_aa(a,i) 
+               esum += etemp 
+               Tai(a,i) = 0.0 
+               PUT Painew_aa(a,i) = Tai(a,i) 
+#
+         ENDPARDO a, i 
+#
+         PARDO b, j 
+#
+               GET Painew_bb(b,j)  
+               PUT Paiold_bb(b,j) = Painew_bb(b,j)  
+               etemp = Painew_bb(b,j)*Painew_bb(b,j) 
+               esum += etemp 
+               Tbj(b,j) = 0.0 
+               PUT Painew_bb(b,j) = Tbj(b,j) 
+#
+         ENDPARDO b, j 
+         execute sip_barrier 
+         collective enew += esum  
+#
+#        Check on convergence
+#        --------------------
+#
+         IF enew < eold
+            ediff = eold - enew
+            IF ediff < ecrit
+               exit # kiter
+            ENDIF
+         ENDIF
+#
+         IF enew > eold
+            ediff = enew - eold
+            IF ediff < ecrit
+               exit # kiter
+            ENDIF
+         ENDIF
+#
+#        Reset eold --> enew
+#        -------------------
+#
+         eold = enew 
+#
+      ENDDO kiter 
+#
+#        PARDO i, i1  
+#
+#              GET Pij_aa(i,i1)  
+#              execute dump_block Pij_aa(i,i1) 
+#
+#        ENDPARDO i, i1  
+#
+#        PARDO j, j1  
+#
+#              GET Pij_bb(j,j1)  
+#              execute dump_block Pij_bb(j,j1) 
+#
+#        ENDPARDO j, j1  
+#
+#        PARDO a, a1  
+#
+#              GET Pab_aa(a,a1)  
+#              execute dump_block Pab_aa(a,a1) 
+#
+#        ENDPARDO a, a1  
+#
+#        PARDO b, b1  
+#
+#              GET Pab_bb(b,b1)  
+#              execute dump_block Pab_bb(b,b1) 
+#
+#        ENDPARDO b, b1  
+#
+#        PARDO a, i 
+#
+#              GET Paiold_aa(a,i)  
+#              execute dump_block Paiold_aa(a,i) 
+#
+#        ENDPARDO a, i 
+#
+#        PARDO b, j 
+#
+#              GET Paiold_bb(b,j)  
+#              execute dump_block Paiold_bb(b,j) 
+#
+#        ENDPARDO b, j 
+#
+# Done compute the occupied-virtual block of correlated density
+# ------------------------------------------------------------- 
+#
+# Compute the second-order corrections to the energy weighted
+# density matrix. 
+# ----------------------------------------------------------- 
+#
+#      Compute Wab_aa 
+#      --------------  
+#
+       PARDO a, a1, a2  
+#
+             GET Pab_aa(a2,a1) 
+             Taa(a,a1)         = Pab_aa(a2,a1)*Fock_a(a2,a)  
+             Taa(a,a1)        *= -1.0  
+             PUT Wab_aa(a,a1) += Taa(a,a1) 
+#
+       ENDPARDO a, a1, a2  
+#
+       PARDO a1, a2, i, i1 
+#
+             GET VSpipi(a1,i,a2,i1) 
+             Tpipi(a1,i,a2,i1) = VSpipi(a1,i,a2,i1) 
+             execute energy_denominator Tpipi(a1,i,a2,i1) 
+#
+             DO a
+#
+                GET VSpipi(a,i1,a2,i) 
+#
+                Taa(a,a1)         = VSpipi(a,i1,a2,i)*Tpipi(a1,i,a2,i1)
+                Taa(a,a1)        *= 0.5  
+                PUT Wab_aa(a,a1) += Taa(a,a1) 
+#
+             ENDDO a
+#
+       ENDPARDO a1, a2, i, i1 
+#
+       PARDO a1, b, i, j 
+#
+             GET Vpiqj(a1,i,b,j) 
+             Tpiqj(a1,i,b,j) = Vpiqj(a1,i,b,j) 
+             execute energy_denominator Tpiqj(a1,i,b,j) 
+#
+             DO a
+#
+                GET Vpiqj(a,i,b,j) 
+#
+                Taa(a,a1)         = Vpiqj(a,i,b,j)*Tpiqj(a1,i,b,j)
+                Taa(a,a1)        *= -1.0   
+                PUT Wab_aa(a,a1) += Taa(a,a1) 
+#
+             ENDDO a
+#
+       ENDPARDO a1, b, i, j 
+#
+#      Done compute Wab_aa 
+#      -------------------  
+#
+#      Compute Wab_bb 
+#      --------------  
+#
+       PARDO b, b1, b2  
+#
+             GET Pab_bb(b2,b1) 
+             Tbb(b,b1)         = Pab_bb(b2,b1)*Fock_b(b2,b)  
+             Tbb(b,b1)        *= -1.0  
+             PUT Wab_bb(b,b1) += Tbb(b,b1) 
+#
+       ENDPARDO b, b1, b2  
+#
+       PARDO b1, b2, j, j1 
+#
+             GET VSqjqj(b1,j,b2,j1) 
+             Tqjqj(b1,j,b2,j1) = VSqjqj(b1,j,b2,j1) 
+             execute energy_denominator Tqjqj(b1,j,b2,j1) 
+#
+             DO b
+#
+                GET VSqjqj(b,j1,b2,j) 
+#
+                Tbb(b,b1)         = VSqjqj(b,j1,b2,j)*Tqjqj(b1,j,b2,j1)
+                Tbb(b,b1)        *= 0.5  
+                PUT Wab_bb(b,b1) += Tbb(b,b1) 
+#
+             ENDDO b
+#
+       ENDPARDO b1, b2, j, j1 
+#
+       PARDO a, b1, i, j 
+#
+             GET Vpiqj(a,i,b1,j) 
+             Tpiqj(a,i,b1,j) = Vpiqj(a,i,b1,j) 
+             execute energy_denominator Tpiqj(a,i,b1,j) 
+#
+             DO b
+#
+                GET Vpiqj(a,i,b,j) 
+#
+                Tbb(b,b1)         = Vpiqj(a,i,b,j)*Tpiqj(a,i,b1,j)
+                Tbb(b,b1)        *= -1.0   
+                PUT Wab_bb(b,b1) += Tbb(b,b1) 
+#
+             ENDDO b
+#
+       ENDPARDO a, b1, i, j 
+# 
+#        PARDO a, a1  
+#
+#              GET Wab_aa(a,a1)  
+#              execute dump_block Wab_aa(a,a1) 
+#
+#        ENDPARDO a, a1  
+#
+#        PARDO b, b1  
+#
+#              GET Wab_bb(b,b1)  
+#              execute dump_block Wab_bb(b,b1) 
+#
+#        ENDPARDO b, b1  
+#
+#      Done compute Wab_bb 
+#      -------------------  
+#
+#      Compute Wij_aa 
+#      --------------  
+#
+#      Second-term in Eq. 12 
+#      --------------------- 
+       PARDO i, i1, i2  
+#
+             GET Pij_aa(i2,i1) 
+#
+             T1ii(i,i1)        = Pij_aa(i2,i1)*Fock_a(i2,i)  
+             T1ii(i,i1)       *= -1.0  
+             PUT Wij_aa(i,i1) += T1ii(i,i1) 
+#
+       ENDPARDO i, i1, i2  
+#
+#      Fourth-term in Eq. 12 
+#      --------------------- 
+       PARDO a, a1, i1, i2 
+#
+             GET VSpipi(a,i1,a1,i2) 
+             Tpipi(a,i1,a1,i2) = VSpipi(a,i1,a1,i2) 
+             execute energy_denominator Tpipi(a,i1,a1,i2) 
+#
+             DO i 
+#
+                GET VSpipi(a,i2,a1,i) 
+#
+                Tii(i,i1)         = VSpipi(a,i2,a1,i)*Tpipi(a,i1,a1,i2)
+                Tii(i,i1)        *= 0.5 
+                PUT Wij_aa(i,i1) += Tii(i,i1) 
+#
+             ENDDO i 
+#
+       ENDPARDO a, a1, i1, i2 
+#
+       PARDO a, b, i1, j 
+#
+             GET Vpiqj(a,i1,b,j) 
+             Tpiqj(a,i1,b,j) = Vpiqj(a,i1,b,j) 
+             execute energy_denominator Tpiqj(a,i1,b,j) 
+#
+             DO i 
+#
+                GET Vpiqj(a,i,b,j) 
+#
+                Tii(i,i1)         = Vpiqj(a,i,b,j)*Tpiqj(a,i1,b,j)
+                Tii(i,i1)        *= -1.0  
+                PUT Wij_aa(i,i1) += Tii(i,i1) 
+#
+             ENDDO i 
+#
+       ENDPARDO a, b, i1, j 
+#
+#      Third-term in Eq. 12 
+#      -------------------- 
+#
+#      occupied-occupied contribution 
+#      ------------------------------ 
+#
+       PARDO i, i1, i2, i3 
+#
+             GET VSpipi(i,i1,i2,i3) 
+             GET Pij_aa(i2,i3) 
+#
+             Tii(i,i1)         = VSpipi(i,i1,i2,i3)*Pij_aa(i2,i3) 
+             Tii(i,i1)        *= -1.0  
+             PUT Wij_aa(i,i1) += Tii(i,i1) 
+#
+       ENDPARDO i, i1, i2, i3 
+#
+       PARDO i, i1, j, j1 
+#
+             GET Vpiqj(i,i1,j,j1) 
+             GET Pij_bb(j,j1) 
+#
+             Tii(i,i1)         = Vpiqj(i,i1,j,j1)*Pij_bb(j,j1) 
+             Tii(i,i1)        *= -1.0  
+             PUT Wij_aa(i,i1) += Tii(i,i1) 
+#
+       ENDPARDO i, i1, j, j1 
+#
+#      virtual-virtual contribution 
+#      ---------------------------- 
+       PARDO i, i1, a, a1 
+#
+             GET Vaaii(a,a1,i,i1) 
+             GET Viaai(i,a1,a,i1) 
+             GET Pab_aa(a,a1) 
+#
+             Tiiaa(i,i1,a,a1)  = Vaaii(a,a1,i,i1) 
+             T1iiaa(i,i1,a,a1) = Viaai(i,a1,a,i1) 
+             Tiiaa(i,i1,a,a1) -= T1iiaa(i,i1,a,a1)  
+#
+             Tii(i,i1)         = Tiiaa(i,i1,a,a1)*Pab_aa(a,a1) 
+             Tii(i,i1)        *= -1.0  
+             PUT Wij_aa(i,i1) += Tii(i,i1) 
+#
+       ENDPARDO i, i1, a, a1 
+#
+       PARDO i, i1, b, b1 
+#
+             GET Vbbii(b,b1,i,i1) 
+             GET Pab_bb(b,b1) 
+#
+             Tii(i,i1)         = Vbbii(b,b1,i,i1)*Pab_bb(b,b1) 
+             Tii(i,i1)        *= -1.0  
+             PUT Wij_aa(i,i1) += Tii(i,i1) 
+#
+       ENDPARDO i, i1, b, b1 
+#
+#      virtual-occupied contribution --> Needs checked VFL  
+#      ----------------------------- 
+       PARDO i, i1, i2, a 
+#
+             GET VSpipi(i,i1,a,i2) 
+             GET Paiold_aa(a,i2) 
+#
+             Tii(i,i1) = VSpipi(i,i1,a,i2)*Paiold_aa(a,i2)  
+             Tii(i,i1)        *= -1.0  
+             PUT Wij_aa(i,i1) += Tii(i,i1) 
+             T1ii(i1,i)        = Tii(i,i1)  
+             PUT Wij_aa(i1,i) += T1ii(i1,i) 
+#
+       ENDPARDO i, i1, i2, a 
+#
+       PARDO i, i1, j, b 
+#
+             GET Vpiqj(i,i1,b,j) 
+             GET Paiold_bb(b,j) 
+#
+             Tii(i,i1)         = Vpiqj(i,i1,b,j)*Paiold_bb(b,j)  
+             Tii(i,i1)        *= -1.0  
+             PUT Wij_aa(i,i1) += Tii(i,i1) 
+             T1ii(i1,i)        = Tii(i,i1)  
+             PUT Wij_aa(i1,i) += T1ii(i1,i) 
+#
+       ENDPARDO i, i1, j, b 
+#
+#      Compute Wij_bb 
+#      --------------  
+#
+#      Second-term in Eq. 12 
+#      --------------------- 
+       PARDO j, j1, j2  
+#
+             GET Pij_bb(j2,j1) 
+#
+             T1jj(j2,j1)      = Pij_bb(j2,j1) 
+             Tjj(j,j1)        = T1jj(j2,j1)*Fock_b(j2,j)  
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+       ENDPARDO j, j1, j2  
+#
+#      Fourth-term in Eq. 12 
+#      --------------------- 
+       PARDO b, b1, j1, j2 
+#
+             GET VSqjqj(b,j1,b1,j2) 
+             Tqjqj(b,j1,b1,j2) = VSqjqj(b,j1,b1,j2) 
+             execute energy_denominator Tqjqj(b,j1,b1,j2) 
+#
+             DO j 
+#
+                GET VSqjqj(b,j2,b1,j) 
+#
+                Tjj(j,j1)         = VSqjqj(b,j2,b1,j)*Tqjqj(b,j1,b1,j2)
+                Tjj(j,j1)        *= 0.5 
+                PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+             ENDDO j 
+#
+       ENDPARDO b, b1, j1, j2 
+#
+       PARDO a, b, i, j1 
+#
+             GET Vpiqj(a,i,b,j1) 
+             Tpiqj(a,i,b,j1) = Vpiqj(a,i,b,j1) 
+             execute energy_denominator Tpiqj(a,i,b,j1) 
+#
+             DO j 
+#
+                GET Vpiqj(a,i,b,j) 
+#
+                Tjj(j,j1)         = Vpiqj(a,i,b,j)*Tpiqj(a,i,b,j1)
+                Tjj(j,j1)        *= -1.0  
+                PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+             ENDDO j 
+#
+       ENDPARDO a, b, i, j1 
+#
+#      Third-term in Eq. 12 
+#      -------------------- 
+#
+#      occupied-occupied contribution 
+#      ------------------------------ 
+       PARDO j, j1, j2, j3 
+#
+             GET VSqjqj(j,j1,j2,j3) 
+             GET Pij_bb(j2,j3) 
+#
+             Tjj(j,j1)         = VSqjqj(j,j1,j2,j3)*Pij_bb(j2,j3) 
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+       ENDPARDO j, j1, j2, j3 
+#
+       PARDO i, i1, j, j1 
+#
+             GET Vpiqj(i,i1,j,j1) 
+             GET Pij_aa(i,i1) 
+#
+             Tjj(j,j1)         = Vpiqj(i,i1,j,j1)*Pij_aa(i,i1) 
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+       ENDPARDO i, i1, j, j1 
+#
+#      virtual-virtual contribution 
+#      ---------------------------- 
+       PARDO j, j1, b, b1 
+#
+             GET Vbbjj(b,b1,j,j1) 
+             GET Vjbbj(j,b1,b,j1) 
+             GET Pab_bb(b,b1) 
+#
+             Tjjbb(j,j1,b,b1)  = Vbbjj(b,b1,j,j1) 
+             T1jjbb(j,j1,b,b1) = Vjbbj(j,b1,b,j1) 
+             Tjjbb(j,j1,b,b1) -= T1jjbb(j,j1,b,b1)  
+#
+             Tjj(j,j1)         = Tjjbb(j,j1,b,b1)*Pab_bb(b,b1) 
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+       ENDPARDO j, j1, b, b1 
+#
+       PARDO j, j1, a, a1 
+#
+             GET Vaajj(a,a1,j,j1) 
+             GET Pab_aa(a,a1) 
+#
+             Tjj(j,j1)         = Vaajj(a,a1,j,j1)*Pab_aa(a,a1) 
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+#
+       ENDPARDO j, j1, a, a1 
+#
+#      virtual-occupied contribution --> Needs checked VFL  
+#      ----------------------------- 
+       PARDO j, j1, j2, b 
+#
+             GET VSqjqj(j,j1,b,j2) 
+             GET Paiold_bb(b,j2) 
+#
+             Tjj(j,j1)         = VSqjqj(j,j1,b,j2)*Paiold_bb(b,j2)  
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+             T1jj(j1,j)        = Tjj(j,j1)  
+             PUT Wij_bb(j1,j) += T1jj(j1,j) 
+#
+       ENDPARDO j, j1, j2, b 
+#
+       PARDO j, j1, i, a 
+#
+             GET Vpiqj(a,i,j,j1) 
+             GET Paiold_aa(a,i) 
+#
+             Tjj(j,j1)         = Vpiqj(a,i,j,j1)*Paiold_aa(a,i)  
+             Tjj(j,j1)        *= -1.0  
+             PUT Wij_bb(j,j1) += Tjj(j,j1) 
+             T1jj(j1,j)        = Tjj(j,j1)  
+             PUT Wij_bb(j1,j) += T1jj(j1,j) 
+#
+       ENDPARDO j, j1, i, a 
+#
+#
+#        PARDO i, i1  
+#
+#              GET Wij_aa(i,i1)  
+#              execute dump_block Wij_aa(i,i1) 
+#
+#        ENDPARDO i, i1  
+#
+#        PARDO j, j1  
+#
+#              GET Wij_bb(j,j1)  
+#              execute dump_block Wij_bb(j,j1) 
+#
+#        ENDPARDO j, j1  
+#
+#      Compute Wai_aa 
+#      --------------  
+       PARDO a, i, i1 
+#
+             GET Paiold_aa(a,i1) 
+             Tai(a,i)         = Paiold_aa(a,i1)*Fock_a(i1,i)  
+             Tai(a,i)        *= -1.0  
+             PUT Wai_aa(a,i) += Tai(a,i) 
+#
+       ENDPARDO a, i, i1 
+#
+       PARDO a, a1, i1, i2 
+#
+             GET VSpipi(a1,i1,a,i2) 
+             Tpipi(a1,i1,a,i2) = VSpipi(a1,i1,a,i2) 
+             execute energy_denominator Tpipi(a1,i1,a,i2) 
+#
+             DO i 
+#
+                GET VSpipi(a1,i2,i,i1)
+#
+                Tai(a,i)         = Tpipi(a1,i1,a,i2)*VSpipi(a1,i2,i,i1)  
+                Tai(a,i)        *= 0.5 
+                PUT Wai_aa(a,i) += Tai(a,i) 
+#
+             ENDDO i 
+#
+       ENDPARDO a, a1, i1, i2 
+#
+       PARDO a, b, j, i2 
+#
+             GET Vpiqj(a,i2,b,j) 
+             Tpiqj(a,i2,b,j) = Vpiqj(a,i2,b,j) 
+             execute energy_denominator Tpiqj(a,i2,b,j) 
+#
+             DO i 
+#
+                GET Vpiqj(i,i2,b,j) 
+#
+                Tai(a,i)         = Tpiqj(a,i2,b,j)*Vpiqj(i,i2,b,j)  
+                Tai(a,i)        *= -1.0  
+                PUT Wai_aa(a,i) += Tai(a,i) 
+#
+             ENDDO i 
+#
+       ENDPARDO a, b, j, i2 
+#
+#      Compute Wai_bb 
+#      --------------  
+       PARDO b, j, j1 
+#
+             GET Paiold_bb(b,j1) 
+             Tbj(b,j)         = Paiold_bb(b,j1)*Fock_b(j1,j)  
+             Tbj(b,j)        *= -1.0  
+             PUT Wai_bb(b,j) += Tbj(b,j) 
+#
+       ENDPARDO b, j, j1 
+#
+       PARDO b, b1, j1, j2 
+#
+             GET VSqjqj(b1,j1,b,j2) 
+             Tqjqj(b1,j1,b,j2) = VSqjqj(b1,j1,b,j2) 
+             execute energy_denominator Tqjqj(b1,j1,b,j2) 
+#
+             DO j 
+#
+                GET VSqjqj(b1,j2,j,j1)
+#
+                Tbj(b,j)         = Tqjqj(b1,j1,b,j2)*VSqjqj(b1,j2,j,j1)  
+                Tbj(b,j)        *= 0.5 
+                PUT Wai_bb(b,j) += Tbj(b,j) 
+#
+             ENDDO j 
+#
+       ENDPARDO b, b1, j1, j2 
+#
+       PARDO a, b, i, j2 
+#
+             GET Vpiqj(a,i,b,j2) 
+             Tpiqj(a,i,b,j2) = Vpiqj(a,i,b,j2) 
+             execute energy_denominator Tpiqj(a,i,b,j2) 
+#
+             DO j 
+#
+                GET Vpiqj(a,i,j,j2) 
+#
+                Tbj(b,j)         = Tpiqj(a,i,b,j2)*Vpiqj(a,i,j,j2)  
+                Tbj(b,j)        *= -1.0  
+                PUT Wai_bb(b,j) += Tbj(b,j) 
+#
+             ENDDO j 
+#
+       ENDPARDO a, b, i, j2 
+#
+#        PARDO a, i 
+#
+#              GET Wai_aa(a,i)  
+#              execute dump_block Wai_aa(a,i) 
+#
+#        ENDPARDO a, i 
+#
+#        PARDO b, j 
+#
+#              GET Wai_bb(b,j)  
+#              execute dump_block Wai_bb(b,j) 
+#
+#        ENDPARDO b, j 
+#
+# Done compute the second-order corrections to the energy 
+# weighted density matrix. 
+# ----------------------------------------------------------- 
+      execute sip_barrier 
+      delete VSpipi 
+      delete VSqjqj 
+      delete Vpiqj 
+      delete Vaaii 
+      delete Viaai 
+      delete Vbbjj 
+      delete Vjbbj 
+      delete Viabj 
+      delete Vaajj 
+      delete Vbbii 
+#
+# Backtransform Ppq --> P2_ao Wpq --> W2_ao  
+# -----------------------------------------  
+#
+#     Transform Pij_aa 
+#     ---------------- 
+      PARDO i, i1  
+#
+            GET Pij_aa(i,i1)  
+            GET Wij_aa(i,i1)  
+#
+            DO mu 
+#
+               Ixi(mu,i1) = Pij_aa(i,i1)*ca(mu,i) 
+               Jxi(mu,i1) = Wij_aa(i,i1)*ca(mu,i) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)         = Ixi(mu,i1)*ca(nu,i1) 
+                  Jxx(mu,nu)         = Jxi(mu,i1)*ca(nu,i1) 
+                  PUT P2A_ao(mu,nu) += Ixx(mu,nu) 
+                  PUT W2_ao(mu,nu)  += Jxx(mu,nu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO i, i1  
+#
+#     Transform Pij_bb 
+#     ---------------- 
+      PARDO j, j1  
+#
+            GET Pij_bb(j,j1)  
+            GET Wij_bb(j,j1)  
+#
+            DO mu 
+#
+               Ixj(mu,j1) = Pij_bb(j,j1)*cb(mu,j) 
+               Jxj(mu,j1) = Wij_bb(j,j1)*cb(mu,j) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)         = Ixj(mu,j1)*cb(nu,j1) 
+                  Jxx(mu,nu)         = Jxj(mu,j1)*cb(nu,j1) 
+                  PUT P2B_ao(mu,nu) += Ixx(mu,nu) 
+                  PUT W2_ao(mu,nu)  += Jxx(mu,nu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO j, j1  
+#
+#     Transform Pab_aa 
+#     ---------------- 
+      PARDO a, a1  
+#
+            GET Pab_aa(a,a1)  
+            GET Wab_aa(a,a1)  
+#
+            DO mu 
+#
+               Ixa(mu,a1) = Pab_aa(a,a1)*ca(mu,a) 
+               Jxa(mu,a1) = Wab_aa(a,a1)*ca(mu,a) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)         = Ixa(mu,a1)*ca(nu,a1) 
+                  Jxx(mu,nu)         = Jxa(mu,a1)*ca(nu,a1) 
+                  PUT P2A_ao(mu,nu) += Ixx(mu,nu) 
+                  PUT W2_ao(mu,nu)  += Jxx(mu,nu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO a, a1  
+#
+#     Transform Pab_bb 
+#     ---------------- 
+      PARDO b, b1  
+#
+            GET Pab_bb(b,b1)  
+            GET Wab_bb(b,b1)  
+#
+            DO mu 
+#
+               Ixb(mu,b1) = Pab_bb(b,b1)*cb(mu,b) 
+               Jxb(mu,b1) = Wab_bb(b,b1)*cb(mu,b) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)         = Ixb(mu,b1)*cb(nu,b1) 
+                  Jxx(mu,nu)         = Jxb(mu,b1)*cb(nu,b1) 
+                  PUT P2B_ao(mu,nu) += Ixx(mu,nu) 
+                  PUT W2_ao(mu,nu)  += Jxx(mu,nu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO b, b1  
+#
+#     Transform Pai_aa 
+#     ---------------- 
+      PARDO a, i  
+#
+            GET Paiold_aa(a,i)  
+            GET Wai_aa(a,i)  
+#
+            DO mu 
+#
+               Ixi(mu,i) = Paiold_aa(a,i)*ca(mu,a) 
+               Jxi(mu,i) = Wai_aa(a,i)*ca(mu,a) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)  = Ixi(mu,i)*ca(nu,i) 
+                  Jxx(mu,nu)  = Jxi(mu,i)*ca(nu,i) 
+                  I1xx(nu,mu) = Ixx(mu,nu) 
+                  J1xx(nu,mu) = Jxx(mu,nu) 
+# 
+                  PUT P2A_ao(mu,nu) += Ixx(mu,nu) 
+                  PUT W2_ao(mu,nu)  += Jxx(mu,nu) 
+                  PUT P2A_ao(nu,mu) += I1xx(nu,mu) 
+                  PUT W2_ao(nu,mu)  += J1xx(nu,mu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO a, i  
+#
+#     Transform Pai_bb 
+#     ---------------- 
+      PARDO b, j  
+#
+            GET Paiold_bb(b,j)  
+            GET Wai_bb(b,j)  
+            GET Lai_bb(b,j)  
+#
+            DO mu 
+#
+               Ixj(mu,j) = Paiold_bb(b,j)*cb(mu,b) 
+               Jxj(mu,j) = Wai_bb(b,j)*cb(mu,b) 
+#
+               DO nu 
+#
+                  Ixx(mu,nu)  = Ixj(mu,j)*cb(nu,j) 
+                  Jxx(mu,nu)  = Jxj(mu,j)*cb(nu,j) 
+                  I1xx(nu,mu) = Ixx(mu,nu) 
+                  J1xx(nu,mu) = Jxx(mu,nu) 
+# 
+                  PUT P2B_ao(mu,nu) += Ixx(mu,nu) 
+                  PUT W2_ao(mu,nu)  += Jxx(mu,nu) 
+                  PUT P2B_ao(nu,mu) += I1xx(nu,mu) 
+                  PUT W2_ao(nu,mu)  += J1xx(nu,mu) 
+#
+               ENDDO nu 
+#
+            ENDDO mu 
+#
+      ENDPARDO b, j  
+#
+# Done backtransform Ppq --> P2_ao Wpq --> W2_ao  
+# ----------------------------------------------  
+      execute sip_barrier 
+      delete Paiold_bb  
+      delete Wai_bb  
+      delete Lai_bb  
+      delete Paiold_aa  
+      delete Wai_aa  
+      delete Lai_aa  
+      execute sip_barrier 
+#
+# Form the HF density
+# -------------------
+#
+      CALL HFDENS
+      execute sip_barrier
+#
+# Contract the density with the AO basis core Hamiltonian
+# -------------------------------------------------------
+#
+      CALL D1TRANS
+      CALL S1TRANS
+#
+# Contract the 'two-particle' contributions
+# -----------------------------------------
+#
+      CALL D2TRANS
+#
+                           ENDSIAL MBPT2_GRAD_AO2      
+#
+###############################################################################

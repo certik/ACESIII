@@ -1,0 +1,14 @@
+#ifndef _SZFILES_DAT_
+#define _SZFILES_DAT_
+c szfiles.dat : begin
+
+c This defines the standard internal file names of the list files used by
+c the ACES I/O subsystem.
+
+#include "lists.h"
+
+      character*8 szFiles(_MAX_IO_LUNS)
+      data szFiles /'MOINTS','GAMLAM','MOABCD','DERINT','DERGAM'/
+
+c szfiles.dat : end
+#endif /* _SZFILES_DAT_ */

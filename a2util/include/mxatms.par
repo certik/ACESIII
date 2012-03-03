@@ -1,0 +1,6 @@
+C MXATMS     : Maximum number of atoms currently allowed
+C MAXCNTVS   : Maximum number of connectivites per center
+C MAXREDUNCO : Maximum number of redundant coordinates.
+C
+      INTEGER MXATMS, MAXCNTVS, MAXREDUNCO
+      PARAMETER (MXATMS=200, MAXCNTVS = 10, MAXREDUNCO = 3*MXATMS)

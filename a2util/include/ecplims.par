@@ -1,0 +1,44 @@
+#ifndef _ECPLIMS_PAR_
+#define _ECPLIMS_PAR_
+C
+C These parameters gathered from ecp and initialized to be 
+C consitent with the baslims.par and mxatms.par. 10/07, Ajith Perera
+C
+C ndi4 is the maximum number of basis fuunctions
+C
+      integer ndi4
+      parameter (ndi4 = 1000)
+C
+C ndi19 is the maximum number of shells
+C
+      integer ndi9
+      parameter (ndi9 = 200)
+C
+C ndi10 is the maximum number of atoms
+C
+      integer ndi10
+      parameter (ndi10 = 96)
+C 
+C ndi13 and ndico are maximum number of shell and contracted functions 
+C for a given shell
+C 
+      integer ndi13, ndico
+C
+      parameter (ndi13 = 72)
+      parameter (ndico = 72)
+C
+C ndi14 is the maximum number of symmetry opertions (why so big??)
+C
+      integer ndi14
+      parameter (ndi14 = 120)
+C
+C ndilmx is the maximum angualr momentum + 1
+C
+      integer ndilmx
+      parameter (ndilmx = 8)
+
+      parameter (nh4=4*(ndilmx-1)-3)
+      parameter (maxjco = 10)
+C
+#endif /* _ECPLIMS_PAR_ */
+C

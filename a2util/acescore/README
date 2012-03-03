@@ -1,0 +1,85 @@
+This directory contains the core files to access and interact with the ACES
+environment. Subsystems are described below.
+
+--------------
+ACES SUBSYSTEM
+--------------
+
+files required/created:
+   (see other subsystems)
+
+main routines:
+   ACES_INIT - initializes the ACES environment
+   ACES_FIN  - finalizes   the ACES environment
+
+calling order:
+   call aces_init(iCore,iUHF,bAllocMem)
+   ...
+   call aces_fin
+
+---------------------
+JOB ARCHIVE SUBSYSTEM
+---------------------
+
+files required/created:
+   JOBARC - the unformatted, direct access file containing all the ACES records
+   JAINDX - the unformatted file containing the record statistics (jobarc.com)
+
+main routines:
+   ACES_JA_INIT - initializes the job archive environment
+   ACES_JA_FIN  - finalizes   the job archive environment
+   GETREC - retrieves a record from the job archive
+   PUTREC - stores    a record to   the job archive
+
+calling order:
+   call aces_ja_init
+   call getrec/putrec(...)
+   call aces_ja_fin
+
+-------------
+I/O SUBSYSTEM
+-------------
+
+files required/created:
+   MOINTS, GAMLAM, MOABCD, DERINT, DERGAM - the unformatted, direct access
+      files containing double precision arrays (each contains up to 100 list
+      families of 10 array groups)
+
+main routines:
+   ACES_IO_INIT - initializes the I/O environment
+   ACES_IO_FIN  - finalizes   the I/O environment
+   GETLST - retrieves columns from an array in a storage file
+   PUTLST - stores    columns to   an array in a storage file
+
+calling order:
+   call aces_io_init(iCore,i0,iMem,bInitCache)
+   call getlst/putlst(...)
+   call aces_io_fin
+
+---------------
+CACHE SUBSYSTEM
+---------------
+
+files required/created:
+   none
+
+main routines:
+   ACES_CACHE_INIT - initializes the cache for list processing
+
+calling order:
+   call aces_cache_init(iCore,i0,iMem)
+   call getlst/putlst(...)
+
+---------------
+CHEMICAL SYSTEM
+---------------
+
+files required/created:
+   none
+
+related routines:
+   ACES_INIT_CHEMSYS - initializes various common blocks
+
+calling order:
+   call aces_init_chemsys
+

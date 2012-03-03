@@ -1,0 +1,33 @@
+
+These routines perform operations on two types of lists.  One is a
+generic list (list_* routines) and one is a string integer list (sl_*
+routines).
+
+The list routines work on a string containing a comma-separated list.
+They break it down and return the elements of the list one at a time.
+
+The string integer list routines perform operations on a string containing
+a list of numbers.  A list is of the format "1,3-4,7,9,12-13".  There
+are no spaces allowed, and the list may only contain positive integers
+(or zero).
+
+The following routines return the next element in the list as a string
+(list_XXX_ele), an integer (list_XXX_int), or a real (list_XXX_num).
+
+For example:
+    str='abc,123,34.5'
+    ptr=0
+    call list_next_ele(str,ptr,ele,err)     => ele='abc'
+    call list_next_int(str,ptr,int,err)     => int=123
+    call list_next_int(str,ptr,int,err)     => int=0,err=1,ptr=unchanged
+    call list_next_num(str,ptr,num,err)     => num=34.5
+    call list_next_ele(str,ptr,ele,err)     => ele='',err=-1
+
+There is a potential problem with many of the subroutines.  The value of
+err could be different from zero if a value from previous call is passed
+in even though the result should be 0.  Err must be set to 0 at the
+beginning of each subroutine, or use a different variable in the main
+program.
+
+Some problems have been fixed.  SI, 4/98
+

@@ -1,0 +1,37 @@
+   Installation process for ACESIII, version 3.0 and higher.
+
+The installation process for versions 3.0 and higher of ACESIII has been changed to make it simpler to install.  ACESIII has now been unbundled from ACESII. To install the program, perform the following steps.
+
+1. Place the tarball within the file system in which you'd like to install the program.  Extract the files.  The toplevel directory will be ACESIII.
+2. Go into the ACESIII directory, and edit the file GNUmakefile.chssi. 
+3. This makefile is divided into a number of sections, each of which are used to set up the variables used in the building process.  You may be able to use one of the preset sections.  For example, if you run on an AIX system, you need to do nothing.  If you are on a Cray XT3 or XT5, simply add a section that sets the variable XT3=1.  You may have to make slight modifications, such as setting the LIB_DIRS path to use the appropriate one for your compiler libraries.  If you have a totally different type of system, copy one of the other sections, and modify the variable values to the appropriate ones.  
+4. The makefile variables in GNUmakefile.chssi that must be set are as follows:
+
+CPP	name of the C++ compiler.
+CC	name of the C compiler.
+FC	name of the Fortran compiler.
+CPPFLAGS	Flags to use in compiling C++ files.
+CFLAGS		Flags to use in compiling C files.
+FFLAGS		Flags to use in compiling Fortran files.
+LFLAGS		Loader flags.
+LIBS 		String of libraries to use in linking xaces3.
+LIB_DIRS	Library search path.
+SIAL_COMPILER_LIBS	String of libraries to use in linking the SIAL compiler.
+INCLUDE_DIRS		Path for include files.
+SERIAL_CPP		C++ compiler to use in compiling the SIAL compiler main.
+MACHNAME		Machine name to identify appropriate makefile section.
+
+5. Once GNUmakefile.chssi is set up, type the following commands.
+
+gmake clean
+gmake
+
+6. The sequence of the build process is as follows:
+
+a. Individual sub-directory libraries and object files.
+b. main sub-directory - links the xaces3 executable.
+c. sial_compiler sub-directory - links the sial compiler.
+d. sial_codes sub-directory - compiles individual SIAL programs into .sio files.
+e. tests sub-directory - Builds the test directory and a runscript.  A suite of validation tests may be executed by running the file "runscript".  (For this to work, the Makefile in the tests sub-directory requires modification to generate an appropriate script for your particular batch system).
+
+

@@ -1,0 +1,417 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+      SIAL MP2_N6_UHF  
+#
+# Make index definitions 
+#
+      aoindex mu     = 1, norb 
+      aoindex nu     = 1, norb 
+      aoindex lambda = 1, norb 
+      aoindex sigma  = 1, norb 
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt 
+#
+      mobindex j = bbocc, ebocc
+      mobindex j1= bbocc, ebocc
+      mobindex j2= bbocc, ebocc
+      mobindex j3= bbocc, ebocc
+#
+      mobindex b = bbvirt, ebvirt
+      mobindex b1= bbvirt, ebvirt
+      mobindex b2= bbvirt, ebvirt
+      mobindex b3= bbvirt, ebvirt 
+#
+      moaindex p = baocc, eavirt  
+      moaindex p1= baocc, eavirt  
+      moaindex p2= baocc, eavirt  
+      moaindex p3= baocc, eavirt  
+#
+      mobindex q = bbocc, ebvirt  
+      mobindex q1= bbocc, ebvirt  
+      mobindex q2= bbocc, ebvirt  
+      mobindex q3= bbocc, ebvirt  
+#
+# Declare ditributed arrays which are used 
+# 
+      distributed Vxixi(mu,i,nu,i1) 
+      distributed Vxjxj(mu,j,nu,j1) 
+      distributed Vxixj(mu,i,nu,j) 
+      distributed Vpipi(a,i,a1,i1) 
+      distributed Vqjqj(b,j,q1,j1) 
+      distributed Vpiqj(a,i,b,j) 
+      distributed Vxipi(mu,i,a,i1) 
+      distributed Vxjqj(mu,j,b,j1) 
+      distributed Vxiqj(mu,i,b,j1) 
+#
+# Declare Temporary arrays which are used 
+# 
+      temp Txxxi(mu,nu,lambda,i) 
+      temp Txxxj(mu,nu,lambda,j) 
+      temp Txipi(mu,i,a,i1) 
+      temp Txjqj(mu,j,b,j1) 
+      temp Txiqj(mu,i,b,j1) 
+      temp Txixi(mu,i,nu,i1) 
+      temp Txjxj(mu,j,nu,j1) 
+      temp Txixj(mu,i,nu,j) 
+      temp Tpipi(a,i,a1,i1) 
+      temp Tqjqj(b,j,b1,j1) 
+      temp Tpiqj(a,i,b,j) 
+# 
+      temp Vblock(i,i1,i2,i3) 
+      temp Taiai(a,i,a1,i1) 
+      temp T1aiai(a,i,a1,i1) 
+      temp Tbjbj(b,j,b1,j1) 
+      temp T1bjbj(b,j,b1,j1) 
+      temp Taibj(a,i,b,j) 
+#
+# Declare served arrays 
+# 
+      temp AOINT(mu,nu,lambda,sigma)
+#
+# Declare Scalars 
+#
+     scalar etemp 
+     scalar esum 
+     scalar ecorraa 
+     scalar ecorrbb 
+     scalar ecorrab 
+     scalar mp2_energy 
+#
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XXOO 
+#
+#    ------------------------------------------------------------------------ 
+#
+     CREATE Vxixi
+     CREATE Vxjxj
+     CREATE Vxixj
+     execute sip_barrier Vblock
+#
+     PARDO mu, nu, lambda, sigma 
+#
+              compute_integrals AOINT(mu,nu,lambda,sigma)
+#
+              DO i
+#
+                 Txxxi(mu,nu,lambda,i) = AOINT(mu,nu,lambda,sigma)*ca(sigma,i)
+#
+                 DO i1
+                    Txixi(mu,i1,lambda,i) = Txxxi(mu,nu,lambda,i)*ca(nu,i1)
+                    put Vxixi(mu,i1,lambda,i) += Txixi(mu,i1,lambda,i)
+                 ENDDO i1
+#
+              ENDDO i
+#
+              DO j
+#
+                 Txxxj(mu,nu,lambda,j) = AOINT(mu,nu,lambda,sigma)*cb(sigma,j)
+#
+                 DO j1
+                    Txjxj(mu,j1,lambda,j) = Txxxj(mu,nu,lambda,j)*cb(nu,j1)
+                    put Vxjxj(mu,j1,lambda,j) += Txjxj(mu,j1,lambda,j)
+                 ENDDO j1
+#
+                 DO i
+                    Txixj(mu,i,lambda,j) = Txxxj(mu,nu,lambda,j)*ca(nu,i)
+                    put Vxixj(mu,i,lambda,j) += Txixj(mu,i,lambda,j)
+                 ENDDO i
+#
+              ENDDO j
+#
+     ENDPARDO mu, nu, lambda, sigma 
+#
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XXOO 
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XIXI  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     CREATE Vxipi 
+     CREATE Vpipi 
+     execute sip_barrier Vblock 
+
+     PARDO mu, nu 
+#
+           DO i 
+           DO i1 
+#
+              GET Vxixi(mu,i,nu,i1) 
+#
+              DO a 
+                 Txipi(mu,i,a,i1) = Vxixi(mu,i,nu,i1)*ca(nu,a) 
+                 PUT Vxipi(mu,i,a,i1) += Txipi(mu,i,a,i1) 
+              ENDDO a 
+#
+           ENDDO i1 
+           ENDDO i 
+# 
+     ENDPARDO mu, nu 
+#
+     execute sip_barrier Vblock 
+     DELETE Vxixi 
+# 
+     PARDO mu, a 
+#
+           DO i 
+           DO i1 
+#
+              GET Vxipi(mu,i,a,i1) 
+#
+              DO a1 
+                 Tpipi(a1,i,a,i1) = Vxipi(mu,i,a,i1)*ca(mu,a1) 
+                 PUT Vpipi(a1,i,a,i1) += Tpipi(a1,i,a,i1)
+              ENDDO a1                  
+#
+           ENDDO i1 
+           ENDDO i 
+# 
+     ENDPARDO mu, a 
+#
+     execute sip_barrier Vblock 
+     DELETE Vxipi 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XIXI  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XJXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     CREATE Vxjqj 
+     execute sip_barrier Vblock 
+     PARDO mu, nu 
+#
+           DO j 
+           DO j1 
+#
+              GET Vxjxj(mu,j,nu,j1) 
+#
+              DO b 
+                 Txjqj(mu,j,b,j1) = Vxjxj(mu,j,nu,j1)*cb(nu,b) 
+                 PUT Vxjqj(mu,j,b,j1) += Txjqj(mu,j,b,j1) 
+              ENDDO b 
+#
+           ENDDO j1 
+           ENDDO j 
+# 
+     ENDPARDO mu, nu 
+#
+     CREATE Vqjqj 
+     execute sip_barrier Vblock 
+     DELETE Vxjxj 
+# 
+     PARDO mu, b 
+#
+           DO j 
+           DO j1 
+#
+              GET Vxjqj(mu,j,b,j1) 
+#
+              DO b1 
+                 Tqjqj(b1,j,b,j1) = Vxjqj(mu,j,b,j1)*cb(mu,b1) 
+                 PUT Vqjqj(b1,j,b,j1) += Tqjqj(b1,j,b,j1)
+              ENDDO b1                  
+#
+           ENDDO j1 
+           ENDDO j 
+# 
+     ENDPARDO mu, b 
+#
+     execute sip_barrier Vblock 
+     DELETE Vxjqj 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XJXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC TRAN_XIXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     CREATE Vxiqj 
+     execute sip_barrier Vblock 
+     PARDO mu, nu 
+#
+           DO i 
+           DO j 
+#
+              GET Vxixj(mu,i,nu,j) 
+#
+              DO b 
+                 Txiqj(mu,i,b,j) = Vxixj(mu,i,nu,j)*cb(nu,b) 
+                 PUT Vxiqj(mu,i,b,j) += Txiqj(mu,i,b,j) 
+              ENDDO b 
+#
+           ENDDO j 
+           ENDDO i 
+# 
+     ENDPARDO mu, nu 
+#
+     CREATE Vpiqj 
+     execute sip_barrier Vblock 
+     DELETE Vxixj 
+# 
+     PARDO mu, b 
+#
+           DO i 
+           DO j 
+#
+              GET Vxiqj(mu,i,b,j) 
+#
+              DO a 
+                 Tpiqj(a,i,b,j) = Vxiqj(mu,i,b,j)*ca(mu,a) 
+                 PUT Vpiqj(a,i,b,j) += Tpiqj(a,i,b,j)
+              ENDDO a                  
+#
+           ENDDO j 
+           ENDDO i 
+# 
+     ENDPARDO mu, b 
+#
+     execute sip_barrier Vblock 
+     DELETE Vxiqj 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     ENDPROC TRAN_XIXJ  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     PROC MP2_UHF 
+# 
+#    ------------------------------------------------------------------------ 
+#
+     esum    = 0.0 
+     ecorraa = 0.0 
+     PARDO a, a1, i, i1 
+#
+           GET Vpipi(a,i,a1,i1) 
+           GET Vpipi(a,i1,a1,i) 
+#
+           Taiai(a,i,a1,i1)   = Vpipi(a,i1,a1,i)
+           T1aiai(a,i,a1,i1)  = Vpipi(a,i,a1,i1) 
+           T1aiai(a,i,a1,i1) -= Taiai(a,i,a1,i1) 
+#
+           execute energy_denominator T1aiai 
+#
+           etemp = T1aiai(a,i,a1,i1)*Vpipi(a,i,a1,i1) 
+           etemp = 0.5*etemp 
+#          execute print_scalar etemp 
+           esum += etemp 
+#
+     ENDPARDO a, a1, i, i1  
+#
+     execute sip_barrier Vblock 
+     collective ecorraa += esum 
+     execute print_scalar ecorraa 
+#
+     ecorrbb = 0.0 
+     esum    = 0.0 
+     PARDO b, b1, j, j1 
+#
+           GET Vqjqj(b,j,b1,j1) 
+           GET Vqjqj(b,j1,b1,j) 
+#
+           Tbjbj(b,j,b1,j1)  = Vqjqj(b,j1,b1,j)
+           Tbjbj(b,j,b1,j1) -= Vqjqj(b,j,b1,j1) 
+#
+           execute energy_denominator Tbjbj 
+#
+           etemp = Tbjbj(b,j,b1,j1)*Vqjqj(b,j,b1,j1) 
+           etemp = -0.5*etemp 
+#          execute print_scalar etemp 
+           esum += etemp 
+#
+     ENDPARDO b, b1, j, j1 
+     execute sip_barrier Vblock 
+     collective ecorrbb += esum 
+     execute print_scalar ecorrbb 
+#
+     ecorrab = 0.0 
+     esum    = 0.0 
+     PARDO a, b, i, j 
+#
+           GET Vpiqj(a,i,b,j) 
+#
+           Taibj(a,i,b,j) = Vpiqj(a,i,b,j)
+#
+           execute energy_denominator Taibj 
+#
+           etemp = Taibj(a,i,b,j)*Vpiqj(a,i,b,j) 
+           esum += etemp 
+#
+     ENDPARDO a, b, i, j 
+     execute sip_barrier
+     collective ecorrab += esum 
+     execute print_scalar ecorrab 
+#
+     mp2_energy  = ecorraa 
+     mp2_energy += ecorrbb 
+     mp2_energy += ecorrab 
+     totenerg   = mp2_energy + scfeneg
+     execute print_scalar mp2_energy  
+# 
+#    ------------------------------------------------------------------------ 
+# 
+     ENDPROC MP2_UHF 
+# 
+#    ------------------------------------------------------------------------ 
+#
+# ************************************************************************* 
+#
+#    Main program which performs a two-electron transformation and then
+#    a second-order energy calculation. 
+#
+# ************************************************************************* 
+# 
+     CALL TRAN_XXOO
+#
+     CALL TRAN_XIXI
+#
+     CALL TRAN_XJXJ
+#
+     CALL TRAN_XIXJ
+#
+     CALL MP2_UHF
+# 
+     execute sip_barrier totenerg
+     ENDSIAL MP2_N6_UHF  
+#

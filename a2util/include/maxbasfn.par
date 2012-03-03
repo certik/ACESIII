@@ -1,0 +1,17 @@
+#ifndef _MAXBASFN_PAR_
+#define _MAXBASFN_PAR_
+c maxbasfn.par : begin
+
+c MAXBASFN := the maximum number of (Cartesian) basis functions
+
+c This parameter is the same as MXCBF. Do NOT change this without changing
+c mxcbf.par as well.
+
+      INTEGER MAXBASFN
+#   ifdef F_64BIT
+      PARAMETER (MAXBASFN=1000)
+#   else
+      PARAMETER (MAXBASFN=255)
+#   endif
+c maxbasfn.par : end
+#endif /* _MAXBASFN_PAR_ */

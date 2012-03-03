@@ -1,0 +1,72 @@
+
+#ifndef _CONST_PAR_
+#define _CONST_PAR_
+
+#include <const.h>
+
+      M_REAL
+     &    zero,one,two,three,four,five,six,seven,eight,nine,ten
+
+      parameter (zero =0.0d0)
+      parameter (one  =1.0d0)
+      parameter (two  =2.0d0)
+      parameter (three=3.0d0)
+      parameter (four =4.0d0)
+      parameter (five =5.0d0)
+      parameter (six  =6.0d0)
+      parameter (seven=7.0d0)
+      parameter (eight=8.0d0)
+      parameter (nine =9.0d0)
+      parameter (ten  =1.0d1)
+
+      M_REAL
+     &    half,third,fourth,fifth,sixth
+
+      parameter (half  =one/two)
+      parameter (third =one/three)
+      parameter (fourth=one/four)
+      parameter (fifth =one/five)
+      parameter (sixth =one/six)
+
+      M_REAL
+     &    pi
+
+      parameter (pi    =CONST_pi)
+
+c Hopefully we can get away from storing a bunch of strings
+#define SYM_C1   1
+#define SYM_Ci   2
+#define SYM_Cs   3
+#define SYM_Cn   4
+#define SYM_Dn   5
+#define SYM_Cnv  6
+#define SYM_Cnh  7
+#define SYM_Dnh  8
+#define SYM_Dnd  9
+#define SYM_Sn  10
+#define SYM_T   11
+#define SYM_Th  12
+#define SYM_Td  13
+#define SYM_O   14
+#define SYM_Oh  15
+#define SYM_I   16
+#define SYM_Ih  17
+#define SYM_CXv 18
+#define SYM_DXh 19
+
+c Abelian groups
+#define SYM_D2h 20
+#define SYM_C2h 21
+#define SYM_C2v 22
+#define SYM_D2  23
+#define SYM_C2  24
+
+c The following constants are generated in a3const.F.
+
+      M_REAL
+     &    CONST_nan
+
+      common /const/ CONST_nan
+
+#endif /* _CONST_PAR_ */
+

@@ -1,0 +1,57 @@
+
+The str_* routines perform a number of useful operations on strings.
+
+integer functions
+=================================================================
+strlen(str)
+   This returns the length of the string as it appears to a human (i.e.
+   it returns the location of the last non-space character).  0 is returned
+   if the string doesn't contain any non-blank characters.
+findex(string,substring)
+fcindex(string,char)
+fclindex(string,charlist)
+   Return the position of the first occurence of substring, char, or
+   any of the characters in charlist in string respectively.  If no
+   occurence is found, 0 is returned.
+lindex(string,substring)
+lcindex(string,char)
+lclindex(string,charlist)
+   Return the position of the last occurence.
+nindex(string,substring,ind)
+ncindex(string,char,ind)
+nclindex(string,charlist,ind)
+   Returns the position of the next occurence AFTER postion ind.  If
+   ind=0, the search starts at the start of the string.  If ind is
+   greater than the length of the string, 0 is returned.
+pindex(string,substring,ind)
+pcindex(string,char,ind)
+pclindex(string,charlist,ind)
+   Returns the position of the previous occurence BEFORE position.  If
+   ind=0 or ind is greater than the length of the string, the search
+   starts at the end of the string.
+fncindex(string,char)
+fnclindex(string,charlist)
+lncindex(string,char)
+lnclindex(string,charlist)
+nncindex(string,char,index)
+nnclindex(string,charlist,index)
+pncindex(string,char,index)
+pnclindex(string,charlist,index)
+   Return the positions of the occurences that are NOT the character
+   or one of the characters in the character list.
+
+logical functions
+=================================================================
+streq(str1,str2,insensitive)
+   This returns .true. if str1 and str2 are equal.  The comparison can
+   be case insensitive.
+
+subroutines
+=================================================================
+upcase(str)
+   This function converts str to all uppercase.
+delspc (instr, outstr)
+   This strips all the spaces and tabs from instr.  The resulting string
+   is returned as outstr (both instr and outstr may be the same string
+   in the calling program).
+

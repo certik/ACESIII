@@ -1,0 +1,17 @@
+      Release Notes for ACESIII version 3.0.5
+
+1. Modify compiler to support new format execute command: execute <array> <tag>, where tag is a floating point constant.  Modified the list_to_blocks command to allow a tag argument to be decoded.  Modified the read_list_to_blocks command to read arrays off the BLOCKDATA file in the order given by tags, if specified.
+
+2. Added symcor capcbility.  Fixed jobflow detection code to allow automatic selection of SIAL_PROGRAM parameters to perform numerical and analytical frequency calculations.  Also properly selects jobflows based on use of the GRAD_CALC=NUMERICAL and VIB=FINDIF parameters.
+
+3. Added check for ECP parameter.  Job will abort if ECP=ON is coded.
+
+4. New SCF programs: scf_aguess.sial, scf_rhf_aguess.sial, and scf_uhf_aguess.sial.
+
+5. Bug fix: Certain vebrational frequency jobs crashed when restarting in SCF, due to not having the FLAGS array read in from JOBARC.  This is now fixed.
+
+6. Bug fix: If a SCF run failed to converge, it exited and the following SIAL program crashed due to the server code not being properly initialized.  This has now been fixed.
+
+7. The maximum number of orbitals supported in the joda/geopt/symcor code within ACESIII has been increased from 255 to 1000.  This allows the capability to perform geometry optimizations/finite difference frequency calculations on larger jobs.
+
+

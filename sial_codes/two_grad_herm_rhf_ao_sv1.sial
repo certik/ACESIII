@@ -1,0 +1,2783 @@
+#  Copyright (c) 2003-2010 University of Florida
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  The GNU General Public License is included in this distribution
+#  in the file COPYRIGHT.
+                    SIAL TWO_HERM_GRAD_V2_CO   
+#
+# This SIAL program computes the one and two particle density 
+# matrices. It is functional and debugged. This code backtransforms 
+# the two particle density matrix so that only it need be stored.   
+# The one-particle intermediates are not computed in this SIAL code. 
+#
+#                  ##################### 
+#                  #  WORKING VERSION  #
+#                  ##################### 
+#
+# Note that use of permutational symmetry has not been incorporated 
+#
+# PROCEDURES OPTIMIZED 
+# -------------------- 
+#
+# ---------------------------------------------------------------------------------------- 
+#
+# Declare indeces
+# ---------------
+#
+      aoindex mu     = 1, norb
+      aoindex nu     = 1, norb
+      aoindex lambda = 1, norb
+      aoindex sigma  = 1, norb
+#
+      moaindex i = baocc, eaocc
+      moaindex i1= baocc, eaocc
+      moaindex i2= baocc, eaocc
+      moaindex i3= baocc, eaocc
+#
+      moaindex a = bavirt, eavirt
+      moaindex a1= bavirt, eavirt
+      moaindex a2= bavirt, eavirt
+      moaindex a3= bavirt, eavirt
+#
+      moaindex j = baocc, eaocc
+      moaindex j1= baocc, eaocc
+      moaindex j2= baocc, eaocc
+      moaindex j3= baocc, eaocc
+#
+      moaindex b = bavirt, eavirt
+      moaindex b1= bavirt, eavirt
+      moaindex b2= bavirt, eavirt
+      moaindex b3= bavirt, eavirt
+#      
+      moaindex p = baocc, eavirt
+      moaindex p1= baocc, eavirt
+      moaindex p2= baocc, eavirt
+      moaindex p3= baocc, eavirt
+#
+      moaindex q = baocc, eavirt
+      moaindex q1= baocc, eavirt
+      moaindex q2= baocc, eavirt
+      moaindex q3= baocc, eavirt
+#
+      temp dx1(mu,nu,lambda,sigma) 
+      temp dy1(mu,nu,lambda,sigma) 
+      temp dz1(mu,nu,lambda,sigma) 
+      temp dx2(mu,nu,lambda,sigma) 
+      temp dy2(mu,nu,lambda,sigma) 
+      temp dz2(mu,nu,lambda,sigma) 
+      temp dx3(mu,nu,lambda,sigma) 
+      temp dy3(mu,nu,lambda,sigma) 
+      temp dz3(mu,nu,lambda,sigma) 
+      temp dx4(mu,nu,lambda,sigma) 
+      temp dy4(mu,nu,lambda,sigma) 
+      temp dz4(mu,nu,lambda,sigma) 
+#
+# Declare served arrays
+# ---------------------
+#
+      served T2old_aa(a,i,a1,i1)
+      served T2old_ab(a,i,b,j)
+      served Dijab_aa(i,i1,a,a1)
+      served Dijab_ab(i,j,a,b)
+      served Dijkl_aa(i2,i,i3,i1)
+      served Dijkl_ab(i,j,i1,j1)
+
+      served Vibja_aaaa(i,a,i1,a1)
+      served Dibja_aaaa(i,a,i1,a1)
+      served Vibja_abab(i,b,i1,b1)
+      served Dibja_abab(i,b,i1,b1)
+      served Vibja_baba(j,a,j1,a1)
+      served Dibja_baba(j,a,j1,a1)
+      served Dibja_baab(j,a,i,b)
+      served Vibja_baab(j,a,i,b)
+      served Dibja_abba(i,b,j,a)
+      served Vibja_abba(i,b,j,a) 
+
+      served Dabci_aaaa(a,a2,a1,i)
+      served Dabci_abab(a,b,a1,j)
+      served Dabci_baba(b,a,b1,i)
+      served Dijka_aaaa(i,i2,i1,a)
+      served Dijka_abab(i,j,i1,b)
+      served Dijka_baba(j,i,j1,a)
+      served Dxaai(mu,a,a1,i) 
+      served Dxxai(mu,nu,a1,i) 
+      served Dxxxi(mu,nu,sigma,i) 
+      served Dxbbj(mu,b,b1,j) 
+      served Dxxbj(mu,nu,b1,j) 
+      served Dxxxj(mu,nu,sigma,j) 
+#
+      served Dxbaj(mu,b,a1,j) 
+      served Dxxaj(mu,nu,a1,j) 
+      served Dxabi(mu,a,b1,i) 
+      served Dxxbi(mu,nu,b1,i) 
+      served Dxiii(mu,i,i1,i2) 
+      served Dxxii(mu,nu,i1,i2) 
+      served Dxjjj(mu,j,j1,j2) 
+      served Dxxjj(mu,nu,j1,j2) 
+      served Dxjij(mu,j,i1,j2) 
+      served Dxxij(mu,nu,i1,j2) 
+      served Diaix(i,a,i1,sigma) 
+      served Dixix(i,nu,i1,sigma) 
+      served Dxiix(nu,i,i1,sigma) 
+      served Dixxx(i,nu,lambda,sigma) 
+      served Djbjx(j,b,j1,sigma) 
+      served Djxjx(j,nu,j1,sigma) 
+      served Dxjjx(nu,j,j1,sigma) 
+      served Djxxx(j,nu,lambda,sigma) 
+#
+      served Dibix(i,b,i1,sigma) 
+      served Djajx(j,a,j1,sigma) 
+      served Dibjx(i,b,j1,sigma) 
+      served Dixjx(i,nu,j1,sigma) 
+      served Dixxj(i,nu,sigma,j1) 
+      served Djaix(j,a,i1,sigma) 
+      served Djxix(j,nu,i1,sigma) 
+      served Diiax(i,i1,a,sigma) 
+      served Diixx(i,i1,lambda,sigma) 
+      served Djjbx(j,j1,b,sigma) 
+      served Djjxx(j,j1,lambda,sigma) 
+      served Dijax(i,j1,a,sigma) 
+      served Dijxx(i,j1,lambda,sigma) 
+      served Diiix(i,i1,i2,sigma) 
+      served Djjjx(j,j1,j2,sigma) 
+      served Dijix(i,j1,i2,sigma) 
+      served Djijx(j,i1,j2,sigma) 
+      served Djixx(j,i1,lambda,sigma) 
+#
+      served I3AA(i,a,i1,i2) 
+      served I3AB(i,a,j,j1) 
+      served I3BA(j,b,i,i1) 
+      served I3BB(j,b,j1,j2) 
+#
+      served TAO_aa(mu,i,nu,i1)  
+      served TAO_ab(mu,i,nu,j)  
+#
+# Done declare served arrays
+# --------------------------
+#
+      distributed t1a_old(a,i)
+# 
+      distributed Doldai_a(a,i)
+      distributed DOR_ii(i,i1)
+      distributed DOR_aa(a,a1)
+      distributed DpqA(mu,nu) 
+      distributed DHFA(mu,nu) 
+      temp Tpq(mu,nu) 
+      temp Txx(mu,nu) 
+      temp Txi(mu,i) 
+      temp Txj(mu,j) 
+#
+      distributed Dij_a(i,i1) 
+      distributed Dab_a(a,a1) 
+      distributed Dii(i,i1)
+      distributed Daa(a1,a)
+      distributed Djj(j,j1)
+#
+      temp PXXXX(mu,nu,lambda,sigma) 
+      temp TXXXX(mu,nu,lambda,sigma) 
+      temp T1XXXX(mu,nu,lambda,sigma) 
+      temp T2XXXX(mu,nu,lambda,sigma) 
+      temp T3XXXX(mu,nu,lambda,sigma) 
+      temp P1XXXX(mu,nu,lambda,sigma) 
+#
+      temp Txaai(mu,a,a1,i) 
+      temp Txxai(mu,nu,a1,i) 
+      temp Txxxi(mu,nu,sigma,i) 
+      temp T1xxxi(mu,nu,sigma,i) 
+      temp Txixx(mu,i,lambda,sigma) 
+      temp T1xixx(mu,i,lambda,sigma) 
+#
+      temp Txbbj(mu,b,b1,j) 
+      temp Txxbj(mu,nu,b1,j) 
+      temp Txxxj(mu,nu,sigma,j) 
+      temp T1xxxj(mu,nu,sigma,j) 
+      temp Txjxx(mu,j,lambda,sigma) 
+      temp T1xjxx(mu,j,lambda,sigma) 
+#
+      temp Txbaj(mu,b,a1,j) 
+      temp Txxaj(mu,nu,a1,j) 
+#
+      temp Txabi(mu,a,b1,i) 
+      temp Txxbi(mu,nu,b1,i) 
+#
+      temp Txiii(mu,i,i1,i2) 
+      temp T1xiii(mu,i,i1,i2) 
+      temp Txxii(mu,nu,i1,i2) 
+      temp T1xxii(mu,nu,i1,i2) 
+#
+      temp Txjjj(mu,j,j1,j2) 
+      temp T1xjjj(mu,j,j1,j2) 
+      temp Txxjj(mu,nu,j1,j2) 
+      temp T1xxjj(mu,nu,j1,j2) 
+#
+      temp Txjij(mu,j,i1,j2) 
+      temp T1xjij(mu,j,i1,j2) 
+      temp Txxij(mu,nu,i1,j2) 
+      temp T1xxij(mu,nu,i1,j2) 
+#
+      temp Tiaix(i,a,i1,sigma) 
+      temp T1iaix(i,a,i1,sigma) 
+      temp Tixix(i,nu,i1,sigma) 
+      temp T1ixix(i,nu,i1,sigma) 
+      temp Tixxx(i,nu,lambda,sigma) 
+      temp T1ixxx(i,nu,lambda,sigma) 
+      temp Txiix(nu,i,i1,sigma) 
+      temp T1xiix(nu,i,i1,sigma) 
+#
+      temp Tjbjx(j,b,j1,sigma) 
+      temp T1jbjx(j,b,j1,sigma) 
+      temp Tjxjx(j,nu,j1,sigma) 
+      temp T1jxjx(j,nu,j1,sigma) 
+      temp Tjxxx(j,nu,lambda,sigma) 
+      temp T1jxxx(j,nu,lambda,sigma) 
+      temp Txjjx(nu,j,j1,sigma) 
+      temp T1xjjx(nu,j,j1,sigma) 
+#
+      temp Tibix(i,b,i1,sigma) 
+      temp T1ibix(i,b,i1,sigma) 
+#
+      temp Tjajx(j,a,j1,sigma) 
+      temp T1jajx(j,a,j1,sigma) 
+
+      temp Tibjx(i,b,j1,sigma) 
+      temp T1ibjx(i,b,j1,sigma) 
+      temp Tixjx(i,nu,j1,sigma) 
+      temp Tixxj(i,nu,sigma,j1)    
+      temp T1ixxj(i,nu,sigma,j1)    
+#
+      temp Tjaix(j,a,i1,sigma) 
+      temp T1jaix(j,a,i1,sigma) 
+      temp Tjxix(j,nu,i1,sigma) 
+#
+      temp Tiiax(i,i1,a,sigma) 
+      temp T1iiax(i,i1,a,sigma) 
+      temp Tiixx(i,i1,lambda,sigma) 
+      temp T1iixx(i,i1,lambda,sigma) 
+#
+      temp Tjjbx(j,j1,b,sigma) 
+      temp T1jjbx(j,j1,b,sigma) 
+      temp Tjjxx(j,j1,lambda,sigma) 
+      temp T1jjxx(j,j1,lambda,sigma) 
+#
+      temp Tijax(i,j1,a,sigma) 
+      temp T1ijax(i,j1,a,sigma) 
+      temp Tijxx(i,j1,lambda,sigma) 
+      temp T1ijxx(i,j1,lambda,sigma) 
+#
+      temp Tiiix(i,i1,i2,sigma) 
+#
+      temp Tjjjx(j,j1,j2,sigma) 
+#
+      temp Tijix(i,j1,i2,sigma) 
+#
+      temp Tjijx(j,i1,j2,sigma) 
+#
+      temp Tjixx(j,i1,lambda,sigma) 
+#
+# Define Local arrays 
+# ------------------- 
+#
+     local Laa(a,a1) 
+     distributed L1aa(a1,a) 
+     local Lbb(b,b1) 
+     local L1bb(b1,b) 
+     local Lai(a,i) 
+     distributed L1ai(a1,i) 
+     local Lbj(b,j) 
+     local L1bj(b1,j) 
+#
+     local Lxxai(mu,nu,a2,i) 
+     local Lxxaj(mu,nu,a1,j) 
+     local Lxxbj(mu,nu,b2,j) 
+     local Lxxbi(mu,nu,b,i) 
+#
+#    ------------------------------------------------------------------------
+#
+# Declare temporary arrays
+# ------------------------
+#
+      temp Taiai(p,i,p1,i1)
+      temp T1aiai(p,i,p1,i1)
+#
+      temp  Tiaia(i,a,i1,a1)
+      temp T1iaia(i,a,i1,a1)
+      temp T2iaia(i,a,i1,a1)
+      temp T3iaia(i,a,i1,a1)
+      temp T4iaia(i,a,i1,a1)
+      temp TAiaia(i,a,i1,a1)
+      temp  Tjbjb(j,b,j1,b1)
+      temp T1jbjb(j,b,j1,b1)
+      temp T2jbjb(j,b,j1,b1)
+      temp T3jbjb(j,b,j1,b1)
+      temp T4jbjb(j,b,j1,b1)
+      temp TAjbjb(j,b,j1,b1)
+      temp  Tiajb(i,a,j,b)
+      temp T1iajb(i,a,j,b)
+      temp T2iajb(i,a,j,b)
+      temp TAiajb(i,a,j,b)
+      temp  Tibib(i,b,i1,b1)
+      temp T1ibib(i,b,i1,b1)
+      temp T2ibib(i,b,i1,b1)
+      temp TAibib(i,b,i1,b1)
+      temp  Tjaja(j,a,j1,a1)
+      temp T1jaja(j,a,j1,a1)
+      temp T2jaja(j,a,j1,a1)
+      temp TAjaja(j,a,j1,a1)
+#
+      temp Tbjbj(q,j,q1,j1)
+      temp Lbjbj(q,j,q1,j1)
+      temp Taibj(p,i,q,j)
+      temp T1aibj(p,i,q,j)
+#
+      temp tmp1_aiai(a,i,a1,i1)
+      temp tmp2_aiai(a,i,a1,i1)
+      temp tmp1_bjbj(b,j,b1,j1)
+      temp tmp2_bjbj(b,j,b1,j1)
+      temp tmp1_aibj(a,i,b,j)
+#
+      temp Tai(a,i)
+      temp T1ai(a,i)
+      temp Tbj(b,j)
+      temp T1bj(b,j)
+#
+      temp Taa(a,a1)
+      temp T1aa(a,a1)
+      temp Tbb(b,b1)
+      temp T1bb(b,b1)
+      temp Tae_a(a,a1)
+      temp Tia(i,a)
+      temp T1ia(i,a)
+      temp T2ia(i,a)
+      temp T3ia(i,a)
+      temp T4ia(i,a)
+      temp Tjb(j,b)
+      temp T1jb(j,b)
+      temp T2jb(j,b)
+      temp T3jb(j,b)
+      temp T4jb(j,b)
+      temp Tme_a(i,a)
+#
+      temp Tii(i,i1)
+      temp T1ii(i,i1)
+      temp Tjj(j,j1)
+      temp T1jj(j,j1)
+      temp Tmi_a(i,i1)
+#
+      temp Liaai(i,a,a1,i1) 
+      temp Tiaai(i,a,a1,i1) 
+      temp T1iaai(i,a,a1,i1) 
+      temp Ljbbj(j,b,b1,j1) 
+      temp Tjbbj(j,b,b1,j1) 
+      temp T1jbbj(j,b,b1,j1) 
+      temp Liabj(i,a,b,j) 
+      temp Tiabj(i,a,b,j) 
+      temp Lbjai(b,j,a,i) 
+      temp Tbjai(b,j,a,i) 
+      temp Ljbai(j,b,a,i) 
+      temp Tjbai(j,b,a,i) 
+      temp Taaaa(a,a1,a2,a3) 
+      temp T1aaaa(a,a1,a2,a3) 
+      temp Taabb(a,a1,b,b1) 
+      temp T1aabb(a,a1,b,b1) 
+      temp Tbbbb(b,b1,b2,b3) 
+      temp T1bbbb(b,b1,b2,b3) 
+      temp Tiiii(i,i1,i2,i3) 
+      temp T1iiii(i,i1,i2,i3) 
+      temp Tiijj(i,i1,j,j1) 
+      temp T1iijj(i,i1,j,j1) 
+      temp Tjjjj(j,j1,j2,j3) 
+      temp T1jjjj(j,j1,j2,j3) 
+      temp Tiiaa(i,i1,a,a1) 
+      temp TAiiaa(i,i1,a,a1) 
+      temp T1iiaa(i,i1,a,a1) 
+      temp T2iiaa(i,i1,a,a1) 
+      temp Tiibb(i,i1,b,b1) 
+      temp T1iibb(i,i1,b,b1) 
+      temp T2iibb(i,i1,b,b1) 
+      temp TAiibb(i,i1,b,b1) 
+      temp Tjjaa(j,j1,a,a1) 
+      temp T1jjaa(j,j1,a,a1) 
+      temp T2jjaa(j,j1,a,a1) 
+      temp TAjjaa(j,j1,a,a1) 
+      temp Tjjbb(j,j1,b,b1) 
+      temp TAjjbb(j,j1,b,b1) 
+      temp T1jjbb(j,j1,b,b1) 
+      temp T2jjbb(j,j1,b,b1) 
+      temp T1iabj(i,a,b,j) 
+      temp T1jbai(j,b,a,i) 
+      temp T1bjia(b,j,i,a) 
+      temp Tiaii(i,a,i1,i2) 
+      temp Tjbjj(j,b,j1,j2) 
+      temp Tiajj(i,a,j,j1) 
+      temp Tjbii(j,b,i,i1) 
+      temp Taaai(a,a1,a2,i) 
+      temp T1aaai(a,a1,a2,i) 
+      temp Taabj(a,a1,b,j) 
+      temp T1aabj(a,a1,b,j) 
+      temp Tbbai(b,b1,a,i) 
+      temp T1bbai(b,b1,a,i) 
+      temp Tbbbj(b,b1,b2,j) 
+      temp T1bbbj(b,b1,b2,j) 
+      temp Tiiia(i,i1,i2,a) 
+      temp T1iiia(i,i1,i2,a) 
+      temp  Tiijb(i,i1,j,b) 
+      temp T1iijb(i,i1,j,b) 
+      temp  Tjjia(j,j1,i,a) 
+      temp T1jjia(j,j1,i,a) 
+      temp  Tjjjb(j,j1,j2,b) 
+      temp T1jjjb(j,j1,j2,b) 
+      temp  Tijab(i,j,a,b) 
+      temp T1ijab(i,j,a,b) 
+      temp T2ijab(i,j,a,b) 
+      temp  Tabab(a,b,a1,b1) 
+      temp T1abab(a,b,a1,b1) 
+      temp  Tijij(i,j,i1,j1) 
+      temp T1ijij(i,j,i1,j1) 
+      temp  Tjbia(j,b,i,a) 
+      temp T1jbia(j,b,i,a) 
+      temp T2jbia(j,b,i,a) 
+      temp  Tabaj(a,b,a1,j) 
+      temp T1abaj(a,b,a1,j) 
+      temp  Tbabi(b,a,b1,i) 
+      temp T1babi(b,a,b1,i) 
+      temp  Tijib(i,j,i1,b) 
+      temp T1ijib(i,j,i1,b) 
+      temp  Tjija(j,i,j1,a) 
+      temp T1jija(j,i,j1,a) 
+      temp  Tjaib(j,a,i,b) 
+      temp  Tibja(i,b,j,a) 
+      temp  Tbibi(b,i1,b1,i) 
+      temp T1bibi(b,i1,b1,i) 
+      temp  Lbibi(b,i1,b1,i) 
+      temp  Tajaj(a,j1,a1,j)  
+      temp  Lajaj(a,j1,a1,j) 
+#
+      temp Tiixa(i,i1,sigma,a1)
+      temp Tibaj(i,b,a,j1)        
+      temp Tjaaj(j,a1,a,j1)       
+      temp Taijb(a,i,j,b)    
+      temp Taaii(a,a1,i,i1) 
+      temp Tbbjj(b,b1,j,j1) 
+      temp Tabij(a,b,i1,j1) 
+      temp Tbaji(b,a,j,i) 
+      temp Tiiai(i,i1,a,i2) 
+      temp Tjjbj(j,j1,b,j2) 
+      temp Tijaj(i,j,a,j1) 
+      temp Tjibi(j,i,b,i1) 
+      temp Tbiaj(b,i,a,j)    
+      temp Tajbi(a,j,b1,i1)  
+#
+      temp Jxi(mu,i) 
+      temp Jxj(mu,j) 
+      temp Ixa(mu,a) 
+      temp Ixb(mu,b) 
+      temp Ixx(mu,mu) 
+      temp I1xx(mu,mu) 
+#
+      temp Zaa(lambda,i,a1,i1) 
+      temp ZZaa(lambda,i,sigma,i1)  
+      temp Zbb(lambda,j,b1,j1) 
+      temp ZZbb(lambda,j,sigma,j1)  
+      temp Zab(lambda,i,b1,j1) 
+      temp ZZab(lambda,i,sigma,j1)  
+#
+      temp Qaa(i,lambda,i1,a1) 
+      temp QQaa(i,lambda,i1,sigma) 
+      temp Qbb(j,lambda,j1,b1)
+      temp QQbb(j,lambda,j1,sigma) 
+      temp  Qab(i,lambda,j,b) 
+      temp QQab(i,lambda,j,sigma) 
+#
+# Define scalar quantities 
+# ------------------------ 
+#
+      scalar etemp 
+      scalar esum
+      scalar enew 
+      scalar eacbd
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+# 
+         PROC CREATE1ARRAY 
+
+              CREATE Dij_a
+              CREATE Dab_a
+              CREATE DpqA 
+              CREATE DhfA  
+         ENDPROC CREATE1ARRAY 
+#
+# PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP 
+#
+
+#
+# --------------------------------------------------------------------------- 
+#
+# In this PROCEDURE the D^{ij}_{ab} block of the two-particle 
+# density matrix is formed. Only the AA spin case is considered.  
+#
+# --------------------------------------------------------------------------- 
+#
+      PROC DIJABAA 
+#     ------------- 
+#
+# Terms 1-5 in Eq. 33 
+# ------------------- 
+#
+      PARDO a, a1, i, i1 
+#
+            REQUEST T2old_aa(a,i,a1,i1)   a1  
+#
+            Tiiaa(i,i1,a,a1)  = T2old_aa(a,i,a1,i1) 
+            Tiiaa(i,i1,a,a1) *= 0.25
+#            
+            PREPARE Dijab_aa(i,i1,a,a1) += Tiiaa(i,i1,a,a1) 
+#
+      ENDPARDO a, a1, i, i1
+      execute server_barrier 
+#
+# Backtransform to the AO basis 
+# ----------------------------- 
+#
+      PARDO sigma, a, i, i1 
+#
+            Tiiax(i,i1,a,sigma) = 0.0  
+#
+            DO a1 
+#
+               REQUEST Dijab_aa(i,i1,a,a1) a1  
+#
+               T1iiax(i,i1,a,sigma) = Dijab_aa(i,i1,a,a1)*ca(sigma,a1) 
+               Tiiax(i,i1,a,sigma) += T1iiax(i,i1,a,sigma)  
+#
+            ENDDO a1  
+#
+            PREPARE Diiax(i,i1,a,sigma) = Tiiax(i,i1,a,sigma) 
+#
+      ENDPARDO sigma, a, i, i1 
+      execute server_barrier 
+#
+      PARDO lambda, sigma, i, i1 
+#
+            Tiixx(i,i1,lambda,sigma) = 0.0  
+#
+            DO a  
+#
+               REQUEST Diiax(i,i1,a,sigma) a  
+#
+               T1iixx(i,i1,lambda,sigma) = Diiax(i,i1,a,sigma)*ca(lambda,a) 
+               Tiixx(i,i1,lambda,sigma)  += T1iixx(i,i1,lambda,sigma)  
+#
+            ENDDO a 
+#
+            Tiixx(i,i1,lambda,sigma)         *= 4.0  
+            PREPARE Diixx(i,i1,lambda,sigma) += Tiixx(i,i1,lambda,sigma) 
+#
+      ENDPARDO lambda, sigma, i, i1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# ----------------------- 
+#
+# --------------------------------------------------------------------------- 
+#
+      ENDPROC DIJABAA 
+#
+# --------------------------------------------------------------------------- 
+#
+#
+# --------------------------------------------------------------------------- 
+#
+# In this PROCEDURE the D^{ij}_{ab} clock of the two-particle 
+# density matrix is formed.  
+#
+# --------------------------------------------------------------------------- 
+#
+# First form one-particle intermediates 
+#
+# --------------------------------------------------------------------------- 
+#
+# Dim(i,m) = Gmi_a(i,m) + l1a_old(m,e)*t1a_old(e,i)  
+#
+# Dea(e,a) = Gae_a(e,a) - l1a_old(m,e)*t1a_old(a,m) 
+#
+# --------------------------------------------------------------------------- 
+#
+      PROC DIJABAB 
+#     ------------- 
+#
+# One-particle intermediates computed in AA/BB blocks  
+# ---------------------------------------------------  
+#
+# Terms 1-5 in Eq. 33 
+# ------------------- 
+#
+      PARDO a, b, i, j 
+#
+            REQUEST T2old_ab(a,i,b,j)   b  
+#
+            Tijab(i,j,a,b)  = T2old_ab(a,i,b,j) 
+            Tijab(i,j,a,b) *= 0.25
+#            
+            PREPARE Dijab_ab(i,j,a,b) += Tijab(i,j,a,b) 
+#
+      ENDPARDO a, b, i, j 
+      
+      execute server_barrier
+#
+# Backtransform to the AO basis 
+# ----------------------------- 
+#
+      PARDO a, sigma, i, j1 
+#
+            Tijax(i,j1,a,sigma) = 0.0  
+#
+            DO b1  
+#
+               REQUEST Dijab_ab(i,j1,a,b1) b1  
+#
+               T1ijax(i,j1,a,sigma) = Dijab_ab(i,j1,a,b1)*ca(sigma,b1) 
+               Tijax(i,j1,a,sigma) += T1ijax(i,j1,a,sigma)  
+#
+            ENDDO b1  
+#
+            PREPARE Dijax(i,j1,a,sigma) = Tijax(i,j1,a,sigma) 
+#
+      ENDPARDO a, sigma, i, j1 
+      execute server_barrier 
+#
+      PARDO lambda, sigma, i, j1 
+#
+            Tijxx(i,j1,lambda,sigma) = 0.0  
+#
+            DO a  
+#
+               REQUEST Dijax(i,j1,a,sigma) a  
+#
+               T1ijxx(i,j1,lambda,sigma)  = Dijax(i,j1,a,sigma)*ca(lambda,a) 
+               Tijxx(i,j1,lambda,sigma)  += T1ijxx(i,j1,lambda,sigma)  
+#
+            ENDDO a 
+#
+            Tijxx(i,j1,lambda,sigma)         *= 8.0  
+            PREPARE Dijxx(i,j1,lambda,sigma) += Tijxx(i,j1,lambda,sigma) 
+#
+      ENDPARDO lambda, sigma, i, j1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# ----------------------- 
+#
+# --------------------------------------------------------------------------- 
+#
+      ENDPROC DIJABAB 
+#
+# --------------------------------------------------------------------------- 
+#
+# --------------------------------------------------------------------------- 
+#
+      PROC DIJAB 
+#     ----------- 
+#
+# Create gamma arrays and one-particle intermediates 
+# Note that Dii and Daa are computed in DIJABAA and 
+# Djj and Dbb are computed in DIJABBB. 
+# -------------------------------------------------- 
+#
+              CALL DIJABAA 
+              CALL DIJABAB 
+#
+      ENDPROC DIJAB 
+#     ------------- 
+#
+# --------------------------------------------------------------------------- 
+#
+#
+# -----------------------------------------------------------------------------
+#
+#
+# ---------------------------------------------------------------------------- 
+#
+# Expression programmed: 
+#
+# D^{ij}_{kl} = 1/16 P_+(ij,kl) \lambda^{ij}_{ef} \tau^{ef}_{kl} 
+# Note that 4* result is kept to be consistent with aces. 
+#
+# Equivalent to gamma3 
+#
+# ---------------------------------------------------------------------------- 
+#
+      PROC DIJKLAAAA 
+#     -------------- 
+#
+#
+      PARDO a, a1, i, i1  
+#
+            REQUEST T2old_aa(a,i,a1,i1) a1  
+            Tiiaa(i,i1,a,a1) = T2old_aa(a,i,a1,i1)  
+#
+            DO i2 
+            DO i3 
+#
+               REQUEST T2old_aa(a,i2,a1,i3) i3  
+               Taaii(a,a1,i2,i3) = T2old_aa(a,i2,a1,i3) 
+#
+               Tiiii(i,i1,i2,i3)           = Tiiaa(i,i1,a,a1)*Taaii(a,a1,i2,i3)  
+#
+               Tiiii(i,i1,i2,i3)          *= 0.5  
+               PREPARE Dijkl_aa(i,i1,i2,i3)   += Tiiii(i,i1,i2,i3) 
+            ENDDO i3 
+            ENDDO i2 
+#
+      ENDPARDO a, a1, i, i1  
+      execute sip_barrier 
+      execute server_barrier 
+#
+# Perform backtransformation to AO representation 
+# ----------------------------------------------- 
+#
+      PARDO mu, i1, i2, i3  
+#
+            Txiii(mu,i1,i2,i3) = 0.0  
+#
+            DO i  
+#
+               REQUEST Dijkl_aa(i,i1,i2,i3) i3  
+               REQUEST Dijkl_aa(i,i1,i3,i2) i3  
+#
+               Tiiii(i,i1,i2,i3)   = Dijkl_aa(i,i1,i2,i3) 
+               T1iiii(i,i1,i2,i3)  = Dijkl_aa(i,i1,i3,i2)  
+               Tiiii(i,i1,i2,i3)  -= T1iiii(i,i1,i2,i3) 
+#
+               T1xiii(mu,i1,i2,i3) = Tiiii(i,i1,i2,i3)*ca(mu,i) 
+               Txiii(mu,i1,i2,i3) += T1xiii(mu,i1,i2,i3)  
+#
+            ENDDO i  
+#
+            PREPARE Dxiii(mu,i1,i2,i3) = Txiii(mu,i1,i2,i3) 
+#
+      ENDPARDO mu, i1, i2, i3  
+#
+      execute server_barrier 
+      PARDO nu, i2, i3, mu  
+#
+            Tiixx(i2,i3,mu,nu) = 0.0  
+#
+            DO i1  
+#
+               REQUEST Dxiii(mu,i1,i2,i3) i3  
+#
+               T1iixx(i2,i3,mu,nu)  = Dxiii(mu,i1,i2,i3)*ca(nu,i1) 
+               Tiixx(i2,i3,mu,nu)  += T1iixx(i2,i3,mu,nu)  
+#
+            ENDDO i1  
+#
+            Tiixx(i2,i3,mu,nu)         *= 0.25  
+            PREPARE Diixx(i2,i3,mu,nu) += Tiixx(i2,i3,mu,nu) 
+#
+      ENDPARDO nu, i2, i3, mu 
+      execute server_barrier 
+#
+# Done backtransformation 
+# ----------------------- 
+#
+      ENDPROC DIJKLAAAA 
+#     ----------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+# Expression programmed: 
+#
+# D^{iJ}_{kL} = 1/8 P_+(iJ,kL) \lambda^{iJ}_{eF} \tau^{eF}_{kL} 
+#
+# ---------------------------------------------------------------------------- 
+#
+      PROC DIJKLABAB 
+#     -------------- 
+#
+      PARDO a, b, i, j  
+#
+            REQUEST T2old_ab(a,i,b,j) b
+            Tijab(i,j,a,b) = T2old_ab(a,i,b,j) 
+#
+            DO i1 
+            DO j1 
+#
+               REQUEST T2old_ab(a,i1,b,j1) j1  
+               Tabij(a,b,i1,j1) = T2old_ab(a,i1,b,j1) 
+#
+               Tijij(i,j,i1,j1)           = Tijab(i,j,a,b)*Tabij(a,b,i1,j1)   
+#
+               PREPARE Dijkl_ab(i,j,i1,j1)   += Tijij(i,j,i1,j1) 
+            ENDDO j1 
+            ENDDO i1 
+#
+      ENDPARDO a, b, i, j  
+      execute sip_barrier 
+      execute server_barrier 
+#
+# Perform backtransformation to AO representation 
+# ----------------------------------------------- 
+#
+      PARDO mu, i1, j, j1  
+#
+            Txjij(mu,j,i1,j1) = 0.0  
+#
+            DO i 
+#
+               REQUEST Dijkl_ab(i,j,i1,j1) j1  
+#
+               T1xjij(mu,j,i1,j1) = Dijkl_ab(i,j,i1,j1)*ca(mu,i) 
+               Txjij(mu,j,i1,j1) += T1xjij(mu,j,i1,j1)   
+#
+            ENDDO i 
+#
+            PREPARE Dxjij(mu,j,i1,j1) = Txjij(mu,j,i1,j1) 
+#
+      ENDPARDO mu, i1, j, j1  
+      execute server_barrier 
+#
+      PARDO i1, nu, j1, mu  
+#
+            Tijxx(i1,j1,mu,nu) = 0.0  
+#
+            DO j 
+#
+               REQUEST Dxjij(mu,j,i1,j1) j1  
+#
+               T1ijxx(i1,j1,mu,nu) = Dxjij(mu,j,i1,j1)*ca(nu,j) 
+               Tijxx(i1,j1,mu,nu) += T1ijxx(i1,j1,mu,nu)  
+#
+            ENDDO j 
+#
+            PREPARE Dijxx(i1,j1,mu,nu) += Tijxx(i1,j1,mu,nu) 
+#
+      ENDPARDO i1, nu, j1, mu 
+      execute server_barrier 
+#
+# Done backtransformation 
+# ----------------------- 
+#
+      ENDPROC DIJKLABAB 
+#     ----------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+      PROC DIJKL 
+#     ---------- 
+#
+           CALL DIJKLAAAA 
+           CALL DIJKLABAB 
+#
+      ENDPROC DIJKL 
+#     ------------- 
+#
+# ---------------------------------------------------------------------------- 
+#
+# Equivalent to gamma4*4 --> factor of 4 to match aces  
+#
+# ----------------------------------------------------------------------------
+#
+      PROC DIBJAAAAA 
+#     -------------- 
+#
+#
+      PARDO a, a1, i, i1 
+#
+            GET                              t1a_old(a,i) 
+            Tai(a,i) = t1a_old(a,i)
+            GET                              t1a_old(a1,i1) 
+# 
+            Tiaia(i,a1,i1,a)               = Tai(a,i)^t1a_old(a1,i1)   
+            Tiaia(i,a1,i1,a)              *= 0.25 
+#
+            PREPARE Dibja_aaaa(i,a1,i1,a) += Tiaia(i,a1,i1,a)  
+#
+      ENDPARDO a, a1, i, i1 
+#
+      PARDO a, i, a2, i2  
+#
+            REQUEST     T2old_aa(a,i,a2,i2) i2  
+            Tiaai(i2,a2,a,i)               = T2old_aa(a,i,a2,i2)
+#
+            DO i1  
+#
+               DO a1 
+#
+                  REQUEST                          T2old_aa(a1,i1,a2,i2) i2
+#
+                  T1iaai(i1,a1,a,i)              = T2old_aa(a1,i1,a2,i2)*Tiaai(i2,a2,a,i)  
+                  Tiaia(i,a1,i1,a)               = T1iaai(i1,a1,a,i)   
+                  Tiaia(i,a1,i1,a)              *= 0.25 
+                  PREPARE Dibja_aaaa(i,a1,i1,a) += Tiaia(i,a1,i1,a)  
+#
+               ENDDO a1 
+            ENDDO i1 
+#
+      ENDPARDO a, i, a2, i2  
+#
+      PARDO a, i, b, j  
+#
+            REQUEST T2old_ab(a,i,b,j)j  
+            Tjbia(j,b,i,a)                 = T2old_ab(a,i,b,j)
+            
+#
+            DO i1 
+            DO a1 
+#
+               REQUEST                          T2old_ab(a1,i1,b,j) a1  
+# 
+               T2iaia(i1,a1,i,a)              = T2old_ab(a1,i1,b,j)*Tjbia(j,b,i,a)  
+               Tiaia(i,a1,i1,a)               = T2iaia(i1,a1,i,a)  
+               Tiaia(i,a1,i1,a)              *= 0.25 
+#
+               PREPARE Dibja_aaaa(i,a1,i1,a) += Tiaia(i,a1,i1,a)   
+#
+            ENDDO a1  
+            ENDDO i1 
+#
+      ENDPARDO a, i, b, j  
+      execute server_barrier 
+#
+# Backtransform to AO representation 
+# ---------------------------------- 
+#
+      PARDO sigma, a1, i, i1 
+#
+            Tiaix(i,a1,i1,sigma) = 0.0  
+#
+            DO a 
+#
+               REQUEST Dibja_aaaa(i,a1,i1,a) a  
+#
+               T1iaix(i,a1,i1,sigma)  = Dibja_aaaa(i,a1,i1,a)*ca(sigma,a) 
+               Tiaix(i,a1,i1,sigma)  += T1iaix(i,a1,i1,sigma)   
+#
+            ENDDO a 
+#
+            PREPARE Diaix(i,a1,i1,sigma) = Tiaix(i,a1,i1,sigma) 
+#
+      ENDPARDO sigma, a1, i, i1 
+      execute server_barrier 
+#
+      PARDO sigma, nu, i, i1 
+#
+            Txiix(nu,i,i1,sigma) = 0.0  
+            Tixix(i,nu,i1,sigma) = 0.0  
+#
+            DO a1  
+#
+               REQUEST Diaix(i,a1,i1,sigma) a1  
+#
+               T1ixix(i,nu,i1,sigma) = Diaix(i,a1,i1,sigma)*ca(nu,a1)  
+               T1xiix(nu,i,i1,sigma) = T1ixix(i,nu,i1,sigma)  
+#
+               Tixix(i,nu,i1,sigma) += T1ixix(i,nu,i1,sigma)  
+               Txiix(nu,i,i1,sigma) += T1xiix(nu,i,i1,sigma)  
+#
+            ENDDO a1 
+#
+            Txiix(nu,i,i1,sigma) *=  4.0  
+            Tixix(i,nu,i1,sigma) *= -4.0  
+#
+            PREPARE Dixix(i,nu,i1,sigma) += Tixix(i,nu,i1,sigma) 
+            PREPARE Dxiix(nu,i,i1,sigma) += Txiix(nu,i,i1,sigma) 
+#
+      ENDPARDO sigma, nu, i, i1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# -----------------------
+#
+      ENDPROC DIBJAAAAA 
+#     ------------------ 
+#
+# The D(iB,jA) block of the two-particle density matrix is calculated. 
+#
+      PROC DIBJAABAB 
+#     -------------- 
+#
+      PARDO i, b1, j, a  
+#
+            REQUEST T2old_ab(a,i,b1,j) j  
+            Taibj(a,i,b1,j) = T2old_ab(a,i,b1,j)
+#
+            DO i1 
+            DO b 
+#
+               REQUEST                          T2old_ab(a,i1,b,j) j 
+#
+               Tibib(i1,b1,i,b)               = T2old_ab(a,i1,b,j)*Taibj(a,i,b1,j) 
+               Tibib(i1,b1,i,b)              *= 0.25
+               PREPARE Dibja_abab(i1,b1,i,b) += Tibib(i1,b1,i,b) 
+#
+            ENDDO b 
+            ENDDO i1 
+#
+      ENDPARDO i, b1, j, a  
+#
+      execute sip_barrier 
+      execute server_barrier 
+#
+# Backtransform to AO representation 
+# ---------------------------------- 
+#
+      PARDO sigma, b1, i, i1 
+#
+            Tibix(i,b1,i1,sigma) = 0.0  
+#
+            DO b 
+#
+               REQUEST Dibja_abab(i,b1,i1,b) b  
+#
+               T1ibix(i,b1,i1,sigma) = Dibja_abab(i,b1,i1,b)*ca(sigma,b) 
+               Tibix(i,b1,i1,sigma) += T1ibix(i,b1,i1,sigma)  
+#
+            ENDDO b 
+#
+            PREPARE Dibix(i,b1,i1,sigma) = Tibix(i,b1,i1,sigma) 
+#
+      ENDPARDO sigma, b1, i, i1 
+      execute server_barrier 
+#
+      PARDO sigma, nu, i, i1 
+#
+            Tixix(i,nu,i1,sigma) = 0.0  
+#
+            DO b1  
+#
+               REQUEST Dibix(i,b1,i1,sigma) b1  
+#
+               T1ixix(i,nu,i1,sigma) = Dibix(i,b1,i1,sigma)*ca(nu,b1)  
+               Tixix(i,nu,i1,sigma) += T1ixix(i,nu,i1,sigma)  
+#
+            ENDDO b1 
+#
+            Tixix(i,nu,i1,sigma)         *= -4.0  
+            PREPARE Dixix(i,nu,i1,sigma) += Tixix(i,nu,i1,sigma) 
+#
+      ENDPARDO sigma, nu, i, i1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# -----------------------
+#
+      ENDPROC DIBJAABAB 
+#     ------------------ 
+#
+# The D(Ib,Ja) block of the two-particle density matrix is calculated. 
+#
+      PROC DIBJABABA 
+#     --------------  
+#
+      PARDO a, j1, b, i  
+#
+            REQUEST T2old_ab(a,i,b,j1) j1  
+            Tibaj(i,b,a,j1)                = T2old_ab(a,i,b,j1) 
+#
+            DO j  
+            DO a1 
+#
+               REQUEST                          T2old_ab(a1,i,b,j) b   
+#
+               Tjaib(j,a1,i,b)                = T2old_ab(a1,i,b,j) 
+               Tjaaj(j,a1,a,j1)               = Tjaib(j,a1,i,b)*Tibaj(i,b,a,j1) 
+               Tjaja(j,a,j1,a1)               = Tjaaj(j,a1,a,j1) 
+               Tjaja(j,a,j1,a1)              *= 0.25
+               PREPARE Dibja_baba(j,a,j1,a1) += Tjaja(j,a,j1,a1) 
+#
+            ENDDO a1  
+            ENDDO j  
+#
+      ENDPARDO a, j1, b, i  
+#
+      execute sip_barrier 
+      execute server_barrier 
+#
+# Backtransform to AO representation 
+# ---------------------------------- 
+#
+      PARDO sigma, a1, j, j1 
+#
+            Tjajx(j,a1,j1,sigma) = 0.0  
+#
+            DO a 
+#
+               REQUEST Dibja_baba(j,a1,j1,a) a  
+#
+               T1jajx(j,a1,j1,sigma) = Dibja_baba(j,a1,j1,a)*ca(sigma,a) 
+               Tjajx(j,a1,j1,sigma) += T1jajx(j,a1,j1,sigma)  
+#
+            ENDDO a 
+#
+            PREPARE Djajx(j,a1,j1,sigma) = Tjajx(j,a1,j1,sigma) 
+#
+      ENDPARDO sigma, a1, j, j1 
+      execute server_barrier 
+#
+      PARDO sigma, nu, j, j1 
+#
+            Tjxjx(j,nu,j1,sigma) = 0.0  
+#
+            DO a1 
+#
+               REQUEST Djajx(j,a1,j1,sigma) a1  
+#
+               T1jxjx(j,nu,j1,sigma) = Djajx(j,a1,j1,sigma)*ca(nu,a1)  
+               Tjxjx(j,nu,j1,sigma) += T1jxjx(j,nu,j1,sigma)  
+#
+            ENDDO a1 
+#
+            Tjxjx(j,nu,j1,sigma)         *= -4.0  
+            PREPARE Djxjx(j,nu,j1,sigma) += Tjxjx(j,nu,j1,sigma) 
+#
+      ENDPARDO sigma, nu, j, j1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# -----------------------
+#
+      ENDPROC DIBJABABA 
+#     ------------------ 
+#
+#
+      PROC DIBJAABBA 
+#     --------------- 
+#
+      PARDO i, a, b, j 
+#
+            GET t1a_old(a,i)
+            Tai(a,i) = t1a_old(a,i) 
+            GET t1a_old(b,j) 
+#
+            Tiajb(i,a,j,b)               = Tai(a,i)^t1a_old(b,j)
+            Tibja(i,b,j,a)               = Tiajb(i,a,j,b) 
+            Tibja(i,b,j,a)              *= 0.25
+            PREPARE Dibja_abba(i,b,j,a) += Tibja(i,b,j,a)  
+#
+      ENDPARDO i, a, b, j 
+#
+      PARDO a, i, a1, i1  
+#
+            REQUEST T2old_aa(a,i,a1,i1) i1  
+#
+            DO j 
+            DO b 
+#
+               REQUEST                        T2old_ab(a1,i1,b,j) i1  
+               Taibj(a,i,b,j)               = T2old_aa(a,i,a1,i1)*T2old_ab(a1,i1,b,j)  
+               Tibja(i,b,j,a)               = Taibj(a,i,b,j) 
+               Tibja(i,b,j,a)              *= 0.25
+               PREPARE Dibja_abba(i,b,j,a) += Tibja(i,b,j,a)  
+#
+            ENDDO b 
+            ENDDO j 
+#
+      ENDPARDO a, i, a1, i1  
+#
+      PARDO a, i, b1, j1  
+#
+            REQUEST T2old_ab(a,i,b1,j1) j1  
+#
+            DO j 
+            DO b 
+#
+               REQUEST                        T2old_aa(b1,j1,b,j) j1  
+#
+               Taibj(a,i,b,j)               = T2old_ab(a,i,b1,j1)*T2old_aa(b1,j1,b,j)
+#
+               Tibja(i,b,j,a)               = Taibj(a,i,b,j)  
+               Tibja(i,b,j,a)              *= 0.25
+               PREPARE Dibja_abba(i,b,j,a) += Tibja(i,b,j,a)  
+#
+            ENDDO b 
+            ENDDO j  
+#
+      ENDPARDO a, i, b1, j1   
+#
+      execute sip_barrier 
+      execute server_barrier 
+#
+# Backtransform to AO representation 
+# ---------------------------------- 
+#
+      PARDO sigma, b1, i, j1 
+#
+            Tibjx(i,b1,j1,sigma) = 0.0  
+#
+            DO a 
+#
+               REQUEST Dibja_abba(i,b1,j1,a) a  
+#
+               T1ibjx(i,b1,j1,sigma) = Dibja_abba(i,b1,j1,a)*ca(sigma,a) 
+               Tibjx(i,b1,j1,sigma) += T1ibjx(i,b1,j1,sigma)  
+#
+            ENDDO a 
+#
+            PREPARE Dibjx(i,b1,j1,sigma) = Tibjx(i,b1,j1,sigma) 
+#
+      ENDPARDO sigma, b1, i, j1 
+      execute server_barrier 
+#
+      PARDO sigma, nu, i, j1 
+#
+            Tixxj(i,nu,sigma,j1) = 0.0  
+#
+            DO b1 
+#
+               REQUEST Dibjx(i,b1,j1,sigma) b1 
+#
+               T1ixxj(i,nu,sigma,j1) = Dibjx(i,b1,j1,sigma)*ca(nu,b1)  
+               Tixxj(i,nu,sigma,j1) += T1ixxj(i,nu,sigma,j1)  
+#
+            ENDDO b1 
+#
+            Tixxj(i,nu,sigma,j1)         *= 4.0  
+            PREPARE Dixxj(i,nu,sigma,j1) += Tixxj(i,nu,sigma,j1) 
+#
+      ENDPARDO sigma, nu, i, j1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# -----------------------
+#
+      ENDPROC DIBJAABBA 
+#     ------------------ 
+# 
+      PROC DIBJABAAB 
+#     --------------- 
+#
+      PARDO j, b, a, i  
+#
+            GET t1a_old(a,i)
+            Tai(a,i) = t1a_old(a,i)
+            GET t1a_old(b,j)
+#
+            Tjbia(j,b,i,a)               = t1a_old(b,j)^Tai(a,i)
+            Tjaib(j,a,i,b)               = Tjbia(j,b,i,a)
+            Tjaib(j,a,i,b)              *= 0.25
+            PREPARE Dibja_baab(j,a,i,b) += Tjaib(j,a,i,b)
+#
+      ENDPARDO j, b, a, i
+#
+      PARDO j, b, i1, a1   
+#
+            REQUEST T2old_ab(a1,i1,b,j) i1 
+#
+            DO i
+            DO a
+#
+               REQUEST                        T2old_aa(a1,i1,a,i) i1
+#
+               Tbjai(b,j,a,i)               = T2old_ab(a1,i1,b,j)*T2old_aa(a1,i1,a,i)
+               Tjaib(j,a,i,b)               = Tbjai(b,j,a,i)            
+               Tjaib(j,a,i,b)              *= 0.25
+#
+               PREPARE Dibja_baab(j,a,i,b) += Tjaib(j,a,i,b)
+#
+            ENDDO a
+            ENDDO i
+#
+      ENDPARDO j, b, i1, a1  
+#
+      PARDO j, b, j1, b1   
+#
+            REQUEST T2old_aa(b,j,b1,j1) j1 
+#
+            DO i
+            DO a
+#
+               REQUEST                        T2old_ab(a,i,b1,j1) j1
+               Tbjai(b,j,a,i)                = T2old_aa(b,j,b1,j1)*T2old_ab(a,i,b1,j1)
+               Tjaib(j,a,i,b)               = Tbjai(b,j,a,i)
+               Tjaib(j,a,i,b)              *= 0.25
+               PREPARE Dibja_baab(j,a,i,b) += Tjaib(j,a,i,b)
+#
+            ENDDO a
+            ENDDO i
+#
+      ENDPARDO j, b, j1, b1  
+#
+      execute server_barrier  
+#
+# Backtransform to AO representation 
+# ---------------------------------- 
+#
+      PARDO sigma, a1, j, i1 
+#
+            Tjaix(j,a1,i1,sigma) = 0.0  
+#
+            DO b 
+#
+               REQUEST Dibja_baab(j,a1,i1,b) b  
+#
+               T1jaix(j,a1,i1,sigma) = Dibja_baab(j,a1,i1,b)*ca(sigma,b) 
+               Tjaix(j,a1,i1,sigma) += T1jaix(j,a1,i1,sigma)  
+#
+            ENDDO b 
+#
+            PREPARE Djaix(j,a1,i1,sigma) = Tjaix(j,a1,i1,sigma) 
+#
+      ENDPARDO sigma, a1, j, i1 
+      execute server_barrier 
+#
+      PARDO sigma, nu, j, i1 
+#
+            Tixxj(i1,sigma,nu,j) = 0.0  
+#
+            DO a1 
+#
+               REQUEST Djaix(j,a1,i1,sigma) a1  
+#
+               T1ixxj(i1,sigma,nu,j) = Djaix(j,a1,i1,sigma)*ca(nu,a1)  
+               Tixxj(i1,sigma,nu,j) += T1ixxj(i1,sigma,nu,j)  
+#
+            ENDDO a1 
+#
+            Tixxj(i1,sigma,nu,j)         *= 4.0  
+            PREPARE Dixxj(i1,sigma,nu,j) += Tixxj(i1,sigma,nu,j) 
+#
+      ENDPARDO sigma, nu, j, i1 
+      execute server_barrier 
+#
+# Done backtransformation 
+# -----------------------
+#
+      ENDPROC DIBJABAAB
+#     ------------------ 
+#
+# ----------------------------------------------------------------------------
+#
+      PROC DIBJA  
+#
+        CALL DIBJAAAAA # BTRAN OK
+#
+        CALL DIBJAABAB # BTRAN OK 
+        CALL DIBJABABA # BTRAN OK 
+#
+        CALL DIBJABAAB # BTRAN OK  
+        CALL DIBJAABBA # BTRAN OK  
+#
+      ENDPROC DIBJA 
+#
+# ----------------------------------------------------------------------------
+#
+# 
+# ------------------------------------------------------------------------- 
+#
+# Start the calculation of the D^{ab}_{ci} type contributions to the
+# density. Equivalent to Gamma5   
+#
+# ------------------------------------------------------------------------- 
+#
+      PROC DABCIAAAA 
+#     ---------------
+#
+      PARDO a, a1, a2, i 
+#
+            Taaai(a,a1,a2,i)   = 0.0   
+#
+            DO i1 
+#
+               REQUEST              T2old_aa(a,i1,a1,i)   a1
+               GET                  t1a_old(a2,i1)
+#
+               T1aaai(a,a1,a2,i)  = T2old_aa(a,i1,a1,i)*t1a_old(a2,i1)
+               T1aaai(a,a1,a2,i) *= 0.25
+               Taaai(a,a1,a2,i)  += T1aaai(a,a1,a2,i)
+#
+            ENDDO i1 
+# 
+            DO mu 
+#
+               Txaai(mu,a1,a2,i)      = Taaai(a,a1,a2,i)*ca(mu,a) 
+               PREPARE Dxaai(mu,a1,a2,i) += Txaai(mu,a1,a2,i)  
+# 
+            ENDDO mu 
+# 
+      ENDPARDO a, a1, a2, i
+      execute server_barrier 
+#
+# Back transform to full AO representation
+# ---------------------------------------- 
+# 
+      PARDO mu, a1, a2, i 
+#
+            REQUEST Dxaai(mu,a1,a2,i) a1  
+# 
+            DO nu 
+#
+               Txxai(mu,nu,a2,i)      = Dxaai(mu,a1,a2,i)*ca(nu,a1) 
+               PREPARE Dxxai(mu,nu,a2,i) += Txxai(mu,nu,a2,i)  
+# 
+            ENDDO nu 
+# 
+      ENDPARDO mu, a1, a2, i 
+      execute server_barrier 
+#
+      PARDO mu, nu, i 
+#
+            allocate Lxxai(mu,nu,*,i) 
+#
+            DO a2 
+#
+               REQUEST Dxxai(mu,nu,a2,i) i  
+               Lxxai(mu,nu,a2,i) = Dxxai(mu,nu,a2,i) 
+#
+            ENDDO a2 
+#
+            DO lambda 
+#
+               Txxxi(mu,nu,lambda,i) = 0.0 
+# 
+               DO a2   
+#
+                  T1xxxi(mu,nu,lambda,i) = Lxxai(mu,nu,a2,i)*ca(lambda,a2) 
+                  Txxxi(mu,nu,lambda,i) += T1xxxi(mu,nu,lambda,i)  
+# 
+               ENDDO a2  
+#
+               PREPARE Dxxxi(mu,nu,lambda,i) = Txxxi(mu,nu,lambda,i)  
+#
+            ENDDO lambda 
+#
+            deallocate Lxxai(mu,nu,*,i) 
+#
+      ENDPARDO mu, nu, i 
+      execute server_barrier 
+#
+# Done back transformation 
+# ------------------------ 
+#
+      ENDPROC DABCIAAAA 
+#     ------------------
+#
+      PROC DABCIABAB 
+#     --------------- 
+#
+      PARDO a, a1, b, j 
+#
+            Tabaj(a,b,a1,j) = 0.0 
+            
+            DO i
+               REQUEST T2old_ab(a,i,b,j)   j
+               GET                 t1a_old(a1,i) 
+               T1abaj(a,b,a1,j)    = T2old_ab(a,i,b,j)*t1a_old(a1,i)
+               T1abaj(a,b,a1,j)   *= 0.25    
+               Tabaj(a,b,a1,j)    += T1abaj(a,b,a1,j)
+            ENDDO i
+# 
+            DO mu 
+#
+               Txbaj(mu,b,a1,j)      = Tabaj(a,b,a1,j)*ca(mu,a) 
+               PREPARE Dxbaj(mu,b,a1,j) += Txbaj(mu,b,a1,j)  
+# 
+            ENDDO mu 
+#
+      ENDPARDO a, a1, b, j 
+#
+# Back transform to full AO representation
+# ---------------------------------------- 
+# 
+      execute server_barrier 
+      PARDO mu, b, a1, j 
+#
+            REQUEST Dxbaj(mu,b,a1,j) j  
+# 
+            DO nu 
+#
+               Txxaj(mu,nu,a1,j)      = Dxbaj(mu,b,a1,j)*ca(nu,b) 
+               PREPARE Dxxaj(mu,nu,a1,j) += Txxaj(mu,nu,a1,j)  
+# 
+            ENDDO nu 
+# 
+      ENDPARDO mu, b, a1, j 
+      execute server_barrier 
+#
+      PARDO mu, nu, j 
+#
+            allocate Lxxaj(mu,nu,*,j) 
+#
+            DO a1 
+#
+               REQUEST Dxxaj(mu,nu,a1,j) j  
+               Lxxaj(mu,nu,a1,j) = Dxxaj(mu,nu,a1,j) 
+#
+            ENDDO a1 
+# 
+            DO lambda    
+#
+               Txxxj(mu,nu,lambda,j) = 0.0 
+#
+               DO a1  
+#
+                  T1xxxj(mu,nu,lambda,j) = Lxxaj(mu,nu,a1,j)*ca(lambda,a1) 
+                  Txxxj(mu,nu,lambda,j) += T1xxxj(mu,nu,lambda,j)   
+#
+               ENDDO a1  
+#
+               PREPARE Dxxxj(mu,nu,lambda,j) += Txxxj(mu,nu,lambda,j)  
+# 
+            ENDDO lambda   
+#
+            deallocate Lxxaj(mu,nu,*,j) 
+# 
+      ENDPARDO mu, nu, j 
+      execute server_barrier 
+#
+#
+# Done back transformation 
+# ------------------------ 
+#
+      ENDPROC DABCIABAB 
+#     ------------------ 
+#
+      PROC DABCIBABA 
+#     --------------- 
+#
+      PARDO b1, b, a, i 
+#
+            Tbabi(b1,a,b,i) = 0.0 
+#
+            DO j
+               REQUEST T2old_ab(a,i,b1,j) j
+               GET t1a_old(b,j)
+               
+               T1babi(b1,a,b,i) = T2old_ab(a,i,b1,j)*t1a_old(b,j)
+               T1babi(b1,a,b,i)*=0.25
+               Tbabi(b1,a,b,i) += T1babi(b1,a,b,i)
+            
+            ENDDO j
+# 
+            DO mu 
+#
+               Txabi(mu,a,b,i)      = Tbabi(b1,a,b,i)*ca(mu,b1) 
+               PREPARE Dxabi(mu,a,b,i) += Txabi(mu,a,b,i)  
+# 
+            ENDDO mu 
+#
+      ENDPARDO b1, b, a, i 
+#
+# Back transform to full AO representation
+# ---------------------------------------- 
+# 
+      execute server_barrier 
+      PARDO mu, a, b1, i 
+#
+            REQUEST Dxabi(mu,a,b1,i) i  
+# 
+            DO nu 
+#
+               Txxbi(mu,nu,b1,i)      = Dxabi(mu,a,b1,i)*ca(nu,a) 
+               PREPARE Dxxbi(mu,nu,b1,i) += Txxbi(mu,nu,b1,i)  
+# 
+            ENDDO nu 
+# 
+      ENDPARDO mu, a, b1, i 
+      execute server_barrier 
+#
+      PARDO mu, nu, i 
+#
+            allocate Lxxbi(mu,nu,*,i) 
+#
+            DO b 
+#
+               REQUEST Dxxbi(mu,nu,b,i) i  
+               Lxxbi(mu,nu,b,i) = Dxxbi(mu,nu,b,i) 
+#
+            ENDDO b 
+#
+            DO lambda 
+#
+               Txxxi(mu,nu,lambda,i) = 0.0 
+# 
+               DO b  
+#
+                  T1xxxi(mu,nu,lambda,i) = Lxxbi(mu,nu,b,i)*ca(lambda,b) 
+                  Txxxi(mu,nu,lambda,i) += T1xxxi(mu,nu,lambda,i)  
+# 
+               ENDDO b 
+#
+               PREPARE Dxxxi(mu,nu,lambda,i) += Txxxi(mu,nu,lambda,i)  
+#
+            ENDDO lambda 
+#
+            deallocate Lxxbi(mu,nu,*,i) 
+#
+      ENDPARDO mu, nu, i 
+      execute server_barrier 
+#
+#
+# Done back transformation 
+# ------------------------ 
+#
+      ENDPROC DABCIBABA 
+#     ------------------ 
+#
+# Delete distributed intermediate arrays 
+# -------------------------------------- 
+#
+      PROC DABCI  
+#     ---------- 
+#
+# Create distributed intermediate arrays 
+# -------------------------------------- 
+#
+      CALL DABCIAAAA
+      CALL DABCIABAB
+      CALL DABCIBABA
+#
+      ENDPROC DABCI 
+#     ------------- 
+#
+# Equivalent to gamma6 
+#
+# ----------------------------------------------------------------------------- 
+#
+# In this procedure the D(ij,ka) block of the two-particle 
+# density matrix is evaluated. Only the AAAA contribution is computed.  
+#
+# ----------------------------------------------------------------------------- 
+#
+      PROC DIJKAAAAA 
+#     -------------- 
+#
+      PARDO i, i1, i2, a 
+#
+            Tiiia(i,i1,i2,a) = 0.0 
+#
+            DO a1 
+#
+               REQUEST T2old_aa(a1,i,a,i1)   a
+               GET t1a_old(a1,i2) 
+#
+               T1iiia(i,i1,i2,a) = T2old_aa(a1,i,a,i1)*t1a_old(a1,i2) 
+               T1iiia(i,i1,i2,a)*=-0.25  
+               Tiiia(i,i1,i2,a) += T1iiia(i,i1,i2,a) 
+#
+            ENDDO a1 
+#
+            DO sigma 
+#
+               Tiiix(i,i1,i2,sigma)      = Tiiia(i,i1,i2,a)*ca(sigma,a) 
+               PREPARE Diiix(i,i1,i2,sigma) += Tiiix(i,i1,i2,sigma) 
+#
+            ENDDO sigma 
+#
+      ENDPARDO i, i1, i2, a 
+#
+# Backtransform to AO basis
+# ------------------------- 
+#
+      execute server_barrier 
+      PARDO i, i1, lambda, sigma  
+#
+            Tiixx(i,i1,lambda,sigma) = 0.0  
+#
+            DO i2  
+#
+               REQUEST Diiix(i,i1,i2,sigma) i  
+#
+               T1iixx(i,i1,lambda,sigma) = Diiix(i,i1,i2,sigma)*ca(lambda,i2) 
+               Tiixx(i,i1,lambda,sigma) += T1iixx(i,i1,lambda,sigma)  
+#
+            ENDDO i2 
+#
+            Tiixx(i,i1,lambda,sigma)         *= 8.0  
+            PREPARE Diixx(i,i1,lambda,sigma) += Tiixx(i,i1,lambda,sigma) 
+#
+      ENDPARDO i, i1, lambda, sigma   
+      execute server_barrier
+#
+# Done Backtransformation 
+# ----------------------- 
+#
+      ENDPROC DIJKAAAAA 
+#     ----------------- 
+#
+# ----------------------------------------------------------------------------- 
+#
+# ----------------------------------------------------------------------------- 
+#
+# In this procedure the D(iJ,kA) block of the two-particle 
+# density matrix is evaluated. The AB block is computed.  
+#
+# ----------------------------------------------------------------------------- 
+#
+      PROC DIJKAABAB 
+#     -------------- 
+#
+      PARDO i, j, i1, b 
+#
+            Tijib(i,j,i1,b) = 0.0 
+#
+            DO a 
+#
+               REQUEST T2old_ab(a,i,b,j)      b
+               GET t1a_old(a,i1) 
+#
+               T1ijib(i,j,i1,b) = T2old_ab(a,i,b,j)*t1a_old(a,i1) 
+               T1ijib(i,j,i1,b) *= -0.25 
+               Tijib(i,j,i1,b) += T1ijib(i,j,i1,b) 
+               
+            ENDDO a 
+
+#
+            DO sigma 
+#
+               Tijix(i,j,i1,sigma)      = Tijib(i,j,i1,b)*ca(sigma,b) 
+               PREPARE Dijix(i,j,i1,sigma) += Tijix(i,j,i1,sigma) 
+#
+            ENDDO sigma 
+#
+      ENDPARDO i, j, i1, b 
+#
+# Backtransform to AO basis
+# ------------------------- 
+#
+      execute server_barrier 
+      PARDO i, j1, lambda, sigma  
+#
+            Tijxx(i,j1,lambda,sigma) = 0.0  
+#
+            DO i2  
+#
+               REQUEST Dijix(i,j1,i2,sigma) i  
+#
+               T1ijxx(i,j1,lambda,sigma) = Dijix(i,j1,i2,sigma)*ca(lambda,i2) 
+               Tijxx(i,j1,lambda,sigma) += T1ijxx(i,j1,lambda,sigma)  
+#
+            ENDDO i2 
+#
+            Tijxx(i,j1,lambda,sigma)         *= 8.0  
+            PREPARE Dijxx(i,j1,lambda,sigma) += Tijxx(i,j1,lambda,sigma) 
+#
+      ENDPARDO i, j1, lambda, sigma 
+      execute server_barrier
+#
+# Done Backtransformation 
+# ----------------------- 
+#
+      ENDPROC DIJKAABAB 
+#     ----------------- 
+#
+# ----------------------------------------------------------------------------- 
+#
+# ----------------------------------------------------------------------------- 
+#
+# In this procedure the D(Ij,Ka) block of the two-particle 
+# density matrix is evaluated. The BABA block is computed.  
+#
+# ----------------------------------------------------------------------------- 
+#
+      PROC DIJKABABA 
+#     -------------- 
+#
+      PARDO j, i, j1, a 
+#
+            Tjija(j,i,j1,a) = 0.0 
+            DO b 
+#
+               REQUEST T2old_ab(a,i,b,j)   b
+               GET t1a_old(b,j1) 
+#
+               T1jija(j,i,j1,a) = T2old_ab(a,i,b,j)*t1a_old(b,j1)
+               T1jija(j,i,j1,a) *= -0.25  
+               Tjija(j,i,j1,a) += T1jija(j,i,j1,a) 
+#
+            ENDDO b 
+#
+            DO sigma 
+#
+               Tjijx(j,i,j1,sigma)      = Tjija(j,i,j1,a)*ca(sigma,a) 
+               PREPARE Djijx(j,i,j1,sigma) += Tjijx(j,i,j1,sigma) 
+#
+            ENDDO sigma 
+#
+      ENDPARDO j, i, j1, a 
+#
+# Backtransform to AO basis
+# ------------------------- 
+#
+      execute server_barrier 
+      PARDO j, i1, lambda, sigma  
+#
+            Tijxx(i1,j,sigma,lambda) = 0.0  
+#
+            DO j2   
+#
+               REQUEST Djijx(j,i1,j2,sigma) j  
+#
+               T1ijxx(i1,j,sigma,lambda) = Djijx(j,i1,j2,sigma)*ca(lambda,j2) 
+               Tijxx(i1,j,sigma,lambda) += T1ijxx(i1,j,sigma,lambda)   
+#
+            ENDDO j2 
+#
+            Tijxx(i1,j,sigma,lambda)         *= 8.0  
+            PREPARE Dijxx(i1,j,sigma,lambda) += Tijxx(i1,j,sigma,lambda)  
+#
+      ENDPARDO j, i1, lambda, sigma 
+      execute server_barrier
+#
+# Done Backtransformation 
+# ----------------------- 
+#
+      ENDPROC DIJKABABA 
+#     ----------------- 
+#
+# ----------------------------------------------------------------------------- 
+#
+# ----------------------------------------------------------------------------- 
+#
+      PROC DIJKA 
+#     ---------- 
+#
+# Create gamma arrays 
+# ------------------- 
+#
+           CALL DIJKAAAAA 
+           CALL DIJKAABAB 
+           CALL DIJKABABA 
+#
+      ENDPROC DIJKA 
+#     ------------- 
+#
+# ----------------------------------------------------------------------------
+#
+# In this superprocedure the particle-particle block of the relaxed density 
+# matrix is computed. The expressions programmed are: 
+# 
+# D_{ab} = 1/4 P_+(ab) t^{ae}_{mn} \lambda^{mn}_{be}  
+#        + 1/4 P_+(ab) t^{aE}_{mN} \lambda^{mN}_{bE}  
+#        + 1/2 P_+(ab) t^{a}_{m} \lambda^{m}_{b} 
+#
+# D_{AB} = D_{ab} [a<-->A, b<-->B, i<-->I, j<-->J, m<-->M, n<-->N] 
+#
+      PROC DABA 
+#     --------- 
+#
+      PARDO a, a1, i  
+#
+            GET t1a_old(a,i) 
+            Tai(a,i) = t1a_old(a,i)            
+            GET t1a_old(a1,i)
+            T1ai(a1,i) =t1a_old(a1,i)
+#
+            Taa(a,a1)        = Tai(a,i)*T1ai(a1,i)
+            
+            execute energy_denominator_reg_deriv Tai
+            execute energy_denominator_reg_deriv T1ai
+            
+            T1aa(a,a1)       = Tai(a,i)*T1ai(a1,i)
+            T1aa(a,a1)      *= -1.0
+            Taa(a,a1)       += T1aa(a,a1)
+            
+            PUT Dab_a(a,a1) += Taa(a,a1)
+#
+            DO a2 
+            DO i1 
+#
+               REQUEST T2old_aa(a,i,a2,i1) i1  
+               Taiai(a,i,a2,i1) = T2old_aa(a,i,a2,i1)
+               REQUEST T2old_aa(a1,i,a2,i1) i1
+               T1aiai(a1,i,a2,i1) = T2old_aa(a1,i,a2,i1)
+#
+               Taa(a,a1)        = Taiai(a,i,a2,i1)*T1aiai(a1,i,a2,i1)
+               
+               execute energy_denominator_reg_deriv Taiai
+               execute energy_denominator_reg_deriv T1aiai
+               
+               T1aa(a,a1)       = Taiai(a,i,a2,i1)*T1aiai(a1,i,a2,i1)
+               T1aa(a,a1)      *= -1.0
+               Taa(a,a1)       += T1aa(a,a1)
+                              
+               Taa(a,a1)       *= 0.5
+               PUT Dab_a(a,a1) += Taa(a,a1)
+#
+            ENDDO i1 
+            ENDDO a2 
+#
+            DO b 
+            DO j 
+#
+               REQUEST T2old_ab(a,i,b,j) j  
+               Taibj(a,i,b,j) = T2old_ab(a,i,b,j)
+               REQUEST T2old_ab(a1,i,b,j) j
+               T1aibj(a1,i,b,j) = T2old_ab(a1,i,b,j)
+#
+               Taa(a,a1)        = Taibj(a,i,b,j)*T1aibj(a1,i,b,j)
+
+               execute energy_denominator_reg_deriv Taibj
+               execute energy_denominator_reg_deriv T1aibj
+               
+               T1aa(a,a1)       = Taibj(a,i,b,j)*T1aibj(a1,i,b,j)
+               T1aa(a,a1)      *= -1.0
+               Taa(a,a1)       += T1aa(a,a1)   
+               PUT Dab_a(a,a1) += Taa(a,a1)
+#
+            ENDDO j 
+            ENDDO b 
+#
+      ENDPARDO a, a1, i
+#
+      ENDPROC DABA 
+#     ------------ 
+# ----------------------------------------------------------------------------
+#
+      PROC DAB 
+           CALL DABA 
+      ENDPROC DAB 
+#
+# --------------------------------------------------------------------------- 
+#
+# In this superprocedure the occupied-occupied block of the relaxed
+# density matrix is computed. The expressions programmed are:
+#
+# D_{ij} = -1/4 P_+(ij) t^{ef}_{im} \lambda^{jm}_{ef} 
+#          -1/4 P_+(ij) t^{eF}_{iM} \lambda^{jM}_{eF}   
+#          -1/2 P_+(ij) t^{e}_{i} \lambda^{j}_{e}   
+#
+# D_{IJ} = D_{ij} [i<-->I, j<-->J, e<-->E, f<-->F] 
+#
+# --------------------------------------------------------------------------- 
+#
+     PROC DIJA 
+#     --------- 
+#
+      PARDO a, a1, i2 
+#
+            DO i 
+#
+               REQUEST T2old_aa(a,i,a1,i2) i2
+               Taiai(a,i,a1,i2) = T2old_aa(a,i,a1,i2)  
+#
+               DO i1 
+#
+                  REQUEST T2old_aa(a,i1,a1,i2) i2  
+#
+                  Tii(i,i1)        = Taiai(a,i,a1,i2)*T2old_aa(a,i1,a1,i2) 
+                  Tii(i,i1)       *= -0.5
+                  PUT Dij_a(i,i1) += Tii(i,i1) 
+#
+               ENDDO i1 
+               
+               execute energy_denominator_reg_deriv Taiai
+               DO i1
+                  REQUEST T2old_aa(a,i1,a1,i2) i2
+                  T1aiai(a,i1,a1,i2) = T2old_aa(a,i1,a1,i2)
+                  execute energy_denominator_reg_deriv T1aiai
+#                  
+                  Tii(i,i1)        = Taiai(a,i,a1,i2)*T1aiai(a,i1,a1,i2)
+                  Tii(i,i1)       *= 0.5  
+                  PUT Dij_a(i,i1) += Tii(i,i1) 
+              ENDDO i1
+#
+            ENDDO i 
+#
+      ENDPARDO a, a1, i2 
+#
+      PARDO a, b, j 
+#
+            DO i 
+#
+               REQUEST T2old_ab(a,i,b,j) j
+               Taibj(a,i,b,j) = T2old_ab(a,i,b,j) 
+               
+#
+               DO i1 
+#
+                  REQUEST T2old_ab(a,i1,b,j) j  
+#
+                  Tii(i,i1)        = Taibj(a,i,b,j)*T2old_ab(a,i1,b,j) 
+                  Tii(i,i1)       *= -1.0  
+                  PUT Dij_a(i,i1) += Tii(i,i1) 
+#
+               ENDDO i1 
+               
+               execute energy_denominator_reg_deriv Taibj
+               
+               DO i1 
+#
+                  REQUEST T2old_ab(a,i1,b,j) j  
+                  T1aibj(a,i1,b,j) = T2old_ab(a,i1,b,j)
+                  execute energy_denominator_reg_deriv T1aibj
+#
+                  Tii(i,i1)        = Taibj(a,i,b,j)*T1aibj(a,i1,b,j) 
+                  PUT Dij_a(i,i1) += Tii(i,i1) 
+#
+               ENDDO i1 
+#
+            ENDDO i 
+#
+      ENDPARDO a, b, j 
+#
+      PARDO a, i, i1  
+#
+            GET t1a_old(a,i)
+            Tai(a,i) = t1a_old(a,i) 
+            GET t1a_old(a,i1) 
+            T1ai(a,i1) = t1a_old(a,i1)
+#
+            Tii(i,i1)        = Tai(a,i)*T1ai(a,i1)
+            Tii(i,i1)       *= -1.0 
+                        
+            execute energy_denominator_reg_deriv Tai 
+            execute energy_denominator_reg_deriv T1ai
+            
+            T1ii(i,i1)        = Tai(a,i)*T1ai(a,i1)
+            Tii(i,i1)       += T1ii(i,i1)
+            PUT Dij_a(i,i1) += Tii(i,i1) 
+#
+      ENDPARDO a, i, i1  
+#
+      ENDPROC DIJA 
+#     ------------ 
+#
+      PROC DIJ 
+#     ----------- 
+           CALL DIJA 
+      ENDPROC DIJ 
+#     ----------- 
+#
+# --------------------------------------------------------------------------------------
+#
+     PROC DPQRSTODXXXX
+#    ----------------- 
+#
+#    Form Half back transformed cluster array AAAA spin case 
+#    -------------------------------------------------------
+#
+     PARDO a, a1, i, i1
+#
+           REQUEST T2old_aa(a,i,a1,i1) i1 
+#
+           DO lambda
+#
+              Zaa(lambda,i,a1,i1) = T2old_aa(a,i,a1,i1)*ca(lambda,a)
+#
+              DO sigma
+#
+                 ZZaa(lambda,i,sigma,i1)        = Zaa(lambda,i,a1,i1)*ca(sigma,a1)
+                 PREPARE TAO_aa(lambda,i,sigma,i1) += ZZaa(lambda,i,sigma,i1)
+#
+              ENDDO sigma
+#
+           ENDDO lambda
+#
+     ENDPARDO a, a1, i, i1
+     execute server_barrier 
+#
+#    Form Half back transformed cluster array ABAB spin case 
+#    -------------------------------------------------------
+#
+     PARDO a, b, i, j
+#
+           REQUEST T2old_ab(a,i,b,j) j 
+#
+           DO lambda
+#
+              Zab(lambda,i,b,j) = T2old_ab(a,i,b,j)*ca(lambda,a)
+#
+              DO sigma
+#
+                 ZZab(lambda,i,sigma,j)        = Zab(lambda,i,b,j)*ca(sigma,b)
+                 PREPARE TAO_ab(lambda,i,sigma,j) += ZZab(lambda,i,sigma,j)
+#
+              ENDDO sigma
+#
+           ENDDO lambda
+#
+     ENDPARDO a, b, i, j
+
+     execute server_barrier 
+#
+#
+# Remove half transformed quantities 
+# ---------------------------------- 
+# 
+     ENDPROC DPQRSTODXXXX
+#    -------------------- 
+#
+# -----------------------------------------------------------------------------
+#
+      PROC D1TRANS
+#     ------------
+#
+# -----------------------------------------------------------------------------
+#
+#     Transform Dai_aa
+#     ----------------
+      PARDO a, i
+#
+            GET Doldai_a(a,i)
+#
+            DO mu
+#
+               Jxi(mu,i)  = Doldai_a(a,i)*ca(mu,a)
+#
+               DO nu
+#
+                  Ixx(mu,nu)       = Jxi(mu,i)*ca(nu,i)
+                  PUT DpqA(mu,nu) += Ixx(mu,nu)
+                  I1xx(nu,mu)      = Ixx(mu,nu) 
+                  PUT DpqA(nu,mu) += I1xx(nu,mu)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO a, i
+#
+#     Transform Dab_a
+#     ---------------
+      PARDO a, a1
+#
+            GET Dab_a(a,a1)
+            GET          DOR_aa(a,a1)
+            taa(a,a1)  = Dab_a(a,a1) 
+            taa(a,a1) += DOR_aa(a,a1) 
+#
+            DO mu
+#
+               Ixa(mu,a1)  = taa(a,a1)*ca(mu,a)
+#
+               DO nu
+#
+                  Ixx(mu,nu)       = Ixa(mu,a1)*ca(nu,a1)
+                  PUT DpqA(mu,nu) += Ixx(mu,nu)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO a, a1
+#
+#     Transform Dij_aa
+#     ----------------
+      PARDO i, i1
+#
+            GET Dij_a(i,i1)
+            GET          DOR_ii(i,i1)
+            tii(i,i1)  = Dij_a(i,i1)
+            tii(i,i1) += DOR_ii(i,i1)
+#
+            DO mu
+#
+               Jxi(mu,i1)  = tii(i,i1)*ca(mu,i)
+#
+               DO nu
+#
+                  Ixx(mu,nu)       = Jxi(mu,i1)*ca(nu,i1)
+                  PUT DpqA(mu,nu) += Ixx(mu,nu)
+#
+               ENDDO nu
+#
+            ENDDO mu
+#
+      ENDPARDO i, i1
+#
+# -----------------------------------------------------------------------------
+#
+      ENDPROC D1TRANS
+#     ---------------
+#
+      PROC HFDENS  
+#     -----------  
+#
+      PARDO mu, nu, i  
+#
+            Txi(nu,i)        = ca(nu,i) 
+            Tpq(mu,nu)       = ca(mu,i)*Txi(nu,i)  
+            PUT DhfA(mu,nu) += Tpq(mu,nu) 
+#
+      ENDPARDO mu, nu, i  
+#
+      ENDPROC HFDENS  
+#     -------------- 
+#
+# -----------------------------------------------------------------------------
+#
+# The complete two-particle density martix is fully transformed and 'contracted' 
+# with the integral derivatives.  
+# --------------------------------------------------- 
+#
+      PROC PDCONT
+#     ----------- 
+#
+      PARDO mu, nu, lambda, sigma 
+#
+            Txxxx(mu,nu,lambda,sigma) = 0.0
+#
+#           Compute the seperable contribution to the density matrix  
+#           --------------------------------------------------------  
+#
+#           Get 1-particle pieces
+#           ---------------------
+#
+            GET DHFa(mu,lambda)
+            GET DHFa(nu,sigma)
+            GET DHFa(mu,sigma)
+            GET DHFa(nu,lambda)
+#
+            GET DpqA(mu,lambda)
+            GET DpqA(nu,sigma)
+            GET DpqA(mu,sigma)
+            GET DpqA(nu,lambda)
+#
+#           HF only
+#           -------
+            Txx(mu,lambda)             = DHFa(mu,lambda)
+            T1xxxx(mu,nu,lambda,sigma) = Txx(mu,lambda)^DHFa(nu,sigma)
+            T1xxxx(mu,nu,lambda,sigma)*= 4.0
+            Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma)
+#
+            Txx(mu,sigma)              = DHFa(mu,sigma)
+            T1xxxx(mu,nu,lambda,sigma) = Txx(mu,sigma)^DHFa(nu,lambda)
+            T1xxxx(mu,nu,lambda,sigma)*= 2.0
+            Txxxx(mu,nu,lambda,sigma) -= T1xxxx(mu,nu,lambda,sigma)
+#
+            Txxxx(mu,nu,lambda,sigma) *= 0.5
+#
+#           Correlation
+#           -----------
+            T1xxxx(mu,nu,lambda,sigma) = DpqA(mu,lambda)^DHFA(nu,sigma)
+            T1xxxx(mu,nu,lambda,sigma)*= 4.0
+            Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma)
+
+            T1xxxx(mu,nu,lambda,sigma) = DpqA(mu,sigma)^DHFA(nu,lambda)
+            Txxxx(mu,nu,lambda,sigma) -= T1xxxx(mu,nu,lambda,sigma)
+#
+            T1xxxx(mu,nu,lambda,sigma) = DpqA(nu,lambda)^DHFA(mu,sigma)
+            Txxxx(mu,nu,lambda,sigma) -= T1xxxx(mu,nu,lambda,sigma)
+#
+#           Fully transform Diixx 
+#           --------------------- 
+            DO i  
+#
+               Tixxx(i,nu,lambda,sigma) = 0.0 
+#
+               DO i1   
+                  REQUEST Diixx(i,i1,lambda,sigma) i1  
+                  T1ixxx(i,nu,lambda,sigma) = Diixx(i,i1,lambda,sigma)*ca(nu,i1) 
+                  Tixxx(i,nu,lambda,sigma) += T1ixxx(i,nu,lambda,sigma)
+               ENDDO i1   
+#
+               T1xxxx(mu,nu,lambda,sigma) = Tixxx(i,nu,lambda,sigma)*ca(mu,i) 
+               T1xxxx(mu,nu,lambda,sigma)*= 2.0
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma)  
+#
+            ENDDO i 
+#
+#           Fully transform Dijxx 
+#           --------------------- 
+            DO i  
+#
+               Tixxx(i,nu,lambda,sigma) = 0.0 
+#
+               DO j1 
+#
+                  REQUEST Dijxx(i,j1,lambda,sigma) j1  
+                  T1ixxx(i,nu,lambda,sigma) = Dijxx(i,j1,lambda,sigma)*ca(nu,j1) 
+                  Tixxx(i,nu,lambda,sigma) += T1ixxx(i,nu,lambda,sigma) 
+#
+               ENDDO j1  
+#
+               T1xxxx(mu,nu,lambda,sigma) = Tixxx(i,nu,lambda,sigma)*ca(mu,i) 
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma)  
+#
+            ENDDO i 
+#
+#           Fully transform Dixix 
+#           --------------------- 
+            DO i 
+#
+               Tixxx(i,nu,lambda,sigma) = 0.0 
+#
+               DO i1  
+#
+                  REQUEST Dixix(i,nu,i1,sigma) i1  
+                  T1ixxx(i,nu,lambda,sigma) = Dixix(i,nu,i1,sigma)*ca(lambda,i1) 
+                  Tixxx(i,nu,lambda,sigma) += T1ixxx(i,nu,lambda,sigma)
+#
+               ENDDO i1 
+#
+               T1xxxx(mu,nu,lambda,sigma) = Tixxx(i,nu,lambda,sigma)*ca(mu,i)  
+               T1xxxx(mu,nu,lambda,sigma)*= 2.0
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma) 
+#
+            ENDDO i 
+#
+#           Fully transform Dixxj 
+#           --------------------- 
+            DO i 
+#
+               Tixxx(i,nu,lambda,sigma) = 0.0 
+#
+               DO j1  
+#
+                  REQUEST Dixxj(i,nu,lambda,j1) j1  
+                  T1ixxx(i,nu,lambda,sigma) = Dixxj(i,nu,lambda,j1)*ca(sigma,j1) 
+                  Tixxx(i,nu,lambda,sigma) += T1ixxx(i,nu,lambda,sigma)
+#
+               ENDDO j1 
+#
+               T1xxxx(mu,nu,lambda,sigma) = Tixxx(i,nu,lambda,sigma)*ca(mu,i)  
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma) 
+#
+            ENDDO i 
+#
+#           Fully transform Dxiix 
+#           --------------------- 
+            DO i  
+#
+               Txixx(mu,i,lambda,sigma) = 0.0 
+#
+               DO i1   
+                  REQUEST Dxiix(mu,i,i1,sigma) i1  
+                  T1xixx(mu,i,lambda,sigma) = Dxiix(mu,i,i1,sigma)*ca(lambda,i1) 
+                  Txixx(mu,i,lambda,sigma) += T1xixx(mu,i,lambda,sigma)
+               ENDDO i1   
+#
+               T1xxxx(mu,nu,lambda,sigma) = Txixx(mu,i,lambda,sigma)*ca(nu,i) 
+               T1xxxx(mu,nu,lambda,sigma)*= 2.0  
+               Txxxx(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma)  
+#
+            ENDDO i 
+#
+#           Fully transform Dxxxi 
+#           --------------------- 
+            DO i 
+#
+               REQUEST Dxxxi(mu,nu,lambda,i) i  
+#
+               T1xxxx(mu,nu,lambda,sigma)  = Dxxxi(mu,nu,lambda,i)*ca(sigma,i) 
+               T1xxxx(mu,nu,lambda,sigma) *= 16.0  
+               Txxxx(mu,nu,lambda,sigma)  += T1xxxx(mu,nu,lambda,sigma)  
+#
+            ENDDO i 
+#
+#           Contract half-transformed amplitudes to form backtransformed Dabcd  
+#           ------------------------------------------------------------------ 
+#
+            PXXXX(mu,nu,lambda,sigma) = 0.0 
+#
+#           AAAA spin case 
+#           -------------- 
+            DO i 
+            DO i1 
+#
+               REQUEST TAO_AA(mu,i,nu,i1)        i  
+               Txxii(mu,nu,i,i1)          = TAO_AA(mu,i,nu,i1)
+               REQUEST TAO_AA(lambda,i,sigma,i1) i
+               Tiixx(i,i1,lambda,sigma)   = TAO_AA(lambda,i,sigma,i1)
+#
+               T1xxxx(mu,nu,lambda,sigma) = Txxii(mu,nu,i,i1)*Tiixx(i,i1,lambda,sigma)
+               T1xxxx(mu,nu,lambda,sigma)*= 2.0  
+               PXXXX(mu,nu,lambda,sigma) += T1xxxx(mu,nu,lambda,sigma) 
+#
+            ENDDO i1 
+            ENDDO i 
+#
+#           ABAB spin case 
+#           -------------- 
+            DO i 
+            DO j 
+#
+               REQUEST TAO_ab(mu,i,nu,j)        j  
+               Txxij(mu,nu,i,j)            = TAO_AB(mu,i,nu,j)
+               REQUEST TAO_ab(lambda,i,sigma,j) j  
+               Tijxx(i,j,lambda,sigma)     = TAO_ab(lambda,i,sigma,j)
+#
+               T1xxxx(mu,nu,lambda,sigma)  = Txxij(mu,nu,i,j)*Tijxx(i,j,lambda,sigma)  
+               T1xxxx(mu,nu,lambda,sigma) *= 4.0  
+               PXXXX(mu,nu,lambda,sigma)  += T1xxxx(mu,nu,lambda,sigma) 
+#
+            ENDDO j 
+            ENDDO i 
+#
+            Pxxxx(mu,nu,lambda,sigma) *= 0.25  
+            Pxxxx(mu,nu,lambda,sigma) += Txxxx(mu,nu,lambda,sigma)  
+#
+            T1xxxx(mu,lambda,nu,sigma)  = Pxxxx(mu,nu,lambda,sigma) 
+#
+#           INTEGRAL BLOCK 1 
+#           ---------------- 
+            execute der_int_setup dx1(mu,lambda,nu,sigma) 
+            execute der_int_setup dy1(mu,lambda,nu,sigma) 
+            execute der_int_setup dz1(mu,lambda,nu,sigma) 
+            execute der_int_setup dx2(mu,lambda,nu,sigma) 
+            execute der_int_setup dy2(mu,lambda,nu,sigma) 
+            execute der_int_setup dz2(mu,lambda,nu,sigma) 
+            execute der_int_setup dx3(mu,lambda,nu,sigma) 
+            execute der_int_setup dy3(mu,lambda,nu,sigma) 
+            execute der_int_setup dz3(mu,lambda,nu,sigma) 
+            execute der_int_setup dx4(mu,lambda,nu,sigma) 
+            execute der_int_setup dy4(mu,lambda,nu,sigma) 
+            execute der_int_setup dz4(mu,lambda,nu,sigma) 
+#
+            execute compute_derivative_integrals 
+#
+            execute DCONT2 T1xxxx(mu,lambda,nu,sigma) 
+#
+      ENDPARDO mu, nu, lambda, sigma  
+      execute server_barrier 
+#
+      ENDPROC PDCONT 
+#     -------------- 
+#
+      PROC S2DIJ 
+#
+           esum = 0.0 
+           DO i 
+           DO i1 
+#
+              GET Dij_a(i,i1) 
+              etemp = Dij_a(i,i1)*Dij_a(i,i1) 
+              esum += etemp 
+#              execute dump_block Dij_a(i,i1) 
+#
+           ENDDO i1 
+           ENDDO i 
+           execute print_scalar esum 
+#               
+      ENDPROC S2DIJ 
+#
+      PROC S2DAB 
+#
+           esum = 0.0 
+           DO a 
+           DO a1 
+#
+              GET Dab_a(a,a1) 
+              etemp = Dab_a(a,a1)*Dab_a(a,a1) 
+              esum += etemp 
+#              execute dump_block Dab_a(a,a1) 
+#
+           ENDDO a1 
+           ENDDO a 
+           execute print_scalar esum 
+#               
+      ENDPROC S2DAB 
+#
+      PROC S2DIJKL 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, i1, i2, i3 
+#
+            REQUEST Dijkl_aa(i,i1,i2,i3) i  
+            etemp = Dijkl_aa(i,i1,i2,i3)*Dijkl_aa(i,i1,i2,i3)
+            esum += etemp
+#            
+      ENDPARDO i, i1, i2, i3 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew=0.0
+      PARDO i, i1, j, j1 
+#
+            REQUEST Dijkl_ab(i,j,i1,j1) i  
+            etemp = Dijkl_ab(i,j,i1,j1)*Dijkl_ab(i,j,i1,j1)
+            esum += etemp
+#            
+      ENDPARDO i, i1, j, j1 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      ENDPROC S2DIJKL 
+#
+      PROC S2ABCI 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO a, a1, a2, i 
+#
+            REQUEST Dabci_aaaa(a,a1,a2,i) i  
+            etemp = Dabci_aaaa(a,a1,a2,i)*Dabci_aaaa(a,a1,a2,i)
+            esum += etemp
+#
+      ENDPARDO a, a1, a2, i 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO a, a1, b, j 
+#
+            REQUEST Dabci_abab(a,b,a1,j) j  
+            etemp = Dabci_abab(a,b,a1,j)*Dabci_abab(a,b,a1,j)
+            esum += etemp
+#
+      ENDPARDO a, a1, b, j 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO a, b1, b, i 
+#
+            REQUEST Dabci_baba(b,a,b1,i) i   
+            etemp = Dabci_baba(b,a,b1,i)*Dabci_baba(b,a,b1,i)
+            esum += etemp
+#
+      ENDPARDO a, b1, b, i 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      ENDPROC S2ABCI 
+#
+      PROC S2DIJKA 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, i1, i2, a 
+#
+            REQUEST Dijka_aaaa(i,i1,i2,a) a  
+            etemp = Dijka_aaaa(i,i1,i2,a)*Dijka_aaaa(i,i1,i2,a)
+            esum += etemp
+#            
+      ENDPARDO i, i1, i2, a 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, i1, j, b 
+#
+            REQUEST Dijka_abab(i,j,i1,b) b  
+            etemp = Dijka_abab(i,j,i1,b)*Dijka_abab(i,j,i1,b)
+            esum += etemp
+#            
+      ENDPARDO i, i1, j, b 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, j1, j, a 
+#
+            REQUEST Dijka_baba(j,i,j1,a) a  
+            etemp = Dijka_baba(j,i,j1,a)*Dijka_baba(j,i,j1,a)
+            esum += etemp
+#            
+      ENDPARDO i, j1, j, a 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      ENDPROC S2DIJKA 
+#
+      PROC S2DIJAB 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, i1, a, a1  
+#
+            REQUEST Dijab_aa(i,i1,a,a1) a  
+            etemp = Dijab_aa(i,i1,a,a1)*Dijab_aa(i,i1,a,a1)
+            esum += etemp
+#            
+      ENDPARDO i, i1, a,a1 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, j, a, b  
+#
+            REQUEST Dijab_ab(i,j,a,b) a  
+            etemp = Dijab_ab(i,j,a,b)*Dijab_ab(i,j,a,b)
+            esum += etemp
+#            
+      ENDPARDO i, j, a, b 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      ENDPROC S2DIJAB 
+#
+      PROC S2DIBJA 
+#
+      esum = 0.0 
+      enew = 0.0 
+      PARDO i, i1, a, a1  
+#
+            REQUEST Dibja_aaaa(i,a,i1,a1) a  
+            etemp = Dibja_aaaa(i,a,i1,a1)*Dibja_aaaa(i,a,i1,a1)
+            esum += etemp
+#            
+      ENDPARDO i, i1, a, a1 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, i1, b, b1  
+#
+            REQUEST Dibja_abab(i,b,i1,b1) b  
+            etemp = Dibja_abab(i,b,i1,b1)*Dibja_abab(i,b,i1,b1)
+            esum += etemp
+#            
+      ENDPARDO i, i1, b, b1 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO j, j1, a, a1  
+#
+            REQUEST Dibja_baba(j,a,j1,a1) a  
+            etemp = Dibja_baba(j,a,j1,a1)*Dibja_baba(j,a,j1,a1)
+            esum += etemp
+#            
+      ENDPARDO j, j1, a, a1 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, j, a, b  
+#
+            REQUEST Dibja_abba(i,b,j,a) a  
+            etemp = Dibja_abba(i,b,j,a)*Dibja_abba(i,b,j,a)
+            esum += etemp
+#            
+      ENDPARDO i, j, a, b 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      esum = 0.0 
+      enew = 0.0
+      PARDO i, j, a, b  
+#
+            REQUEST Dibja_baab(j,a,i,b) a  
+            etemp = Dibja_baab(j,a,i,b)*Dibja_baab(j,a,i,b)
+            esum += etemp
+#            
+      ENDPARDO i, j, a, b 
+      execute server_barrier
+      collective enew += esum
+      execute print_scalar enew 
+#
+      ENDPROC S2DIBJA 
+#
+# --------------------------------------------------------------------------- 
+# 
+# ----------------------------------------------------------------------------- 
+#
+      PROC DMAIN
+#     ----------
+#
+# Create Tau arrays, single particle intermediates GAE and GMI and DAB, DIJ arrays 
+# -------------------------------------------------------------------------------- 
+         CALL CREATE1ARRAY 
+         execute sip_barrier ca 
+#
+         execute server_barrier 
+#
+# Form DABCD. This is done here as the half-transformed amplitudes used 
+# are not needed anywhere else  
+# ---------------------------------------------------------------------- 
+         CALL DPQRSTODXXXX # BTRAN OK 
+#
+# Form the single particle density DAB and DIJ   
+# --------------------------------------------  
+         CALL DAB 
+         CALL DIJ 
+#
+# Compute the HF density 
+# ---------------------- 
+         CALL HFDENS  
+#
+# Form DIBJA 
+# ---------- 
+         CALL DIBJA # gamma4
+#
+# Form DIJKL 
+# ---------- 
+         CALL DIJKL # gamma3 # BTRAN OK 
+#
+# Form DIJAB  
+# ---------- 
+         CALL DIJAB # gamma1 # BTRAN OK  
+#
+# Form DIJKA  
+# ---------- 
+         CALL DIJKA # gamma6 # BTRAN OK  
+#
+# Form DABCI 
+# ---------- 
+         CALL DABCI # gamma5 # BTRAN OK  
+         execute sip_barrier 
+         execute server_barrier 
+#
+# Backtransform the 1-particle density matrix 
+# ------------------------------------------- 
+         CALL D1TRANS
+         execute sip_barrier 
+#
+# Finally contract with the integral derivatives to get the contribution 
+# to the gradient. 
+# ---------------------------------------------------------------------- 
+#
+         CALL PDCONT 
+#
+      ENDPROC DMAIN
+#     -------------
+#
+# Read converged T and Lambda amplitudes 
+# -------------------------------------- 
+#
+      CREATE t1a_old 
+      CREATE Doldai_a
+      CREATE DOR_ii
+      CREATE DOR_aa
+#
+      execute sip_barrier 
+      execute list_to_blocks t1a_old
+      execute list_to_blocks T2old_aa
+      execute list_to_blocks T2old_ab
+#
+      execute list_to_blocks Doldai_a
+#
+      execute list_to_blocks DOR_ii  
+      execute list_to_blocks DOR_aa   
+      execute read_list_to_blocks
+      execute sip_barrier 
+      execute server_barrier 
+#
+      CALL DMAIN 
+      execute sip_barrier 
+#      CALL S2DIJKL # --> symmetric Matches Aces 
+#     CALL S2DABCD # --> symmetric Matches Aces  
+#     CALL S2DIBJA # --> symmetric Matches Aces  
+#
+#     CALL S2DIJKA # --> symmetric Matches Aces  
+#     CALL S2ABCI  # --> symmetric Matches Aces  
+#     CALL S2DIJAB # --> symmetric Matches Aces  
+# 
+#
+                    ENDSIAL TWO_HERM_GRAD_V2_CO   
+#
+# ---------------------------------------------------------------------- 

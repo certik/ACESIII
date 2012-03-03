@@ -1,0 +1,23 @@
+Ar4 uhf linccsd gradient w/dropmo aug-cc-pvtz basis  
+AR   0.0  0.0  0.0
+AR   0.0  0.0  4.0
+AR   0.0  4.0  0.0
+AR   0.0  4.0  4.0
+
+*ACES2(CALC=LCCSD,BASIS=AUG-CC-PVTZ
+dropmo=1-20
+geom_opt=ric,opt_maxcyc=1
+spherical=on
+CHARGE=1,MULT=2
+REF=UHF,UNITS=BOHR
+COORDINATES=CARTESIAN
+SCF_CONV=6
+SYMMETRY=NONE)
+
+*SIP
+MAXMEM=800
+TIMERS=YES
+SIP_MX_SEGSIZE=25
+SIP_MX_OCC_SEGSIZE=18
+SIP_MX_VIRT_SEGSIZE=21
+REGULARIZER=0.1

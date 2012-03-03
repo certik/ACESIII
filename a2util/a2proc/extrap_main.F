@@ -1,0 +1,30 @@
+
+      SUBROUTINE EXTRAP_MAIN(ARGS,DIMARGS)
+      IMPLICIT NONE
+
+      INTEGER DIMARGS
+      CHARACTER*80 ARGS(DIMARGS)
+
+      INTEGER NATOMS, zFREE, zSCFGD, zTOTGD
+
+#include "machsp.com"
+#include "icore.com"
+#include "istart.com"
+
+      IF (DIMARGS.EQ.0) THEN
+         PRINT *, '@EXTRAP_MAIN: unspecified argument'
+         CALL ERREX
+      END IF
+
+      CALL GETREC(1, "JOBARC", "NREALATM", 1, NATOMS)
+
+      zSCFGD = I0
+      zTOTGD = zSCFGD + 3*NATOMS*IINTFP
+      zFREE  = zTOTGD + 3*NATOMS*IINTFP
+      IF (zFREE-I0.GT.ICRSIZ) cALL INSMEM('EXTRAP_MAIN',zFREE-1,ICRSIZ)
+
+      CALL EXTRAP_GRAD(ICORE(zSCFGD),ICORE(zTOTGD),NATOMS,ARGS(1))
+
+      RETURN
+      END
+

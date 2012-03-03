@@ -1,0 +1,7 @@
+#ifndef _IRC_PAR_
+#define _IRC_PAR_
+
+      Double Precision Step
+      PARAMETER ()
+
+#endif /* _IRC_PAR_ */

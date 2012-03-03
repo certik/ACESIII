@@ -1,0 +1,73 @@
+#ifndef _BASLIMS_PAR_
+#define _BASLIMS_PAR_
+
+c These parameters are gathered from vmol and vdint and are used by ecp
+c as well. It just so happens that the vmol parameters do not exist in
+c vdint and vice versa. LET'S TRY TO KEEP IT THAT WAY!
+
+c VMOL PARAMETERS ------------------------------------------------------
+
+C     MAXPRIM - Maximum number of primitives for a given shell.
+      INTEGER    MAXPRIM
+      PARAMETER (MAXPRIM=72)
+
+C     MAXFNC  - Maximum number of contracted functions for a given shell.
+C               (vmol/readin requires this to be the same as MAXPRIM)
+      INTEGER    MAXFNC
+      PARAMETER (MAXFNC=MAXPRIM)
+
+C     NHT     - Maximum angular momentum
+      INTEGER    NHT
+      PARAMETER (NHT=7)
+
+C     MAXATM  - Maximum number of atoms
+      INTEGER    MAXATM
+      PARAMETER (MAXATM=60)
+
+C     MXTNPR  - Maximum total number of primitives for all symmetry
+C               inequivalent centers.
+      INTEGER    MXTNPR
+      PARAMETER (MXTNPR=MAXPRIM*MAXPRIM)
+
+C     MXTNCC  - Maximum total number of contraction coefficients for
+C               all symmetry inequivalent centers.
+      INTEGER    MXTNCC
+      PARAMETER (MXTNCC=180000)
+
+C     MXTNSH  - Maximum total number of shells for all symmetry
+C               inequivalent centers.
+      INTEGER    MXTNSH
+      PARAMETER (MXTNSH=200)
+
+C     MXCBF   - Maximum number of Cartesian basis functions for the
+C               whole system (NOT the number of contracted functions).
+#include "mxcbf.par"
+
+c VDINT PARAMETERS -----------------------------------------------------
+
+C     MXPRIM - Maximum number of primitives for all symmetry
+C              inequivalent centers.
+      INTEGER    MXPRIM
+      PARAMETER (MXPRIM=MXTNPR)
+
+C     MXSHEL - Maximum number of shells for all symmetry inequivalent centers.
+      INTEGER    MXSHEL
+      PARAMETER (MXSHEL=MXTNSH)
+
+C     MXCORB - Maximum number of contracted basis functions.
+      INTEGER    MXCORB
+      PARAMETER (MXCORB=MXCBF)
+
+C     MXORBT - Length of the upper or lower triangle length of MXCORB.
+      INTEGER    MXORBT
+      PARAMETER (MXORBT=MXCORB*(MXCORB+1)/2)
+
+C     MXAOVC - Maximum number of subshells per center.
+      INTEGER    MXAOVC,    MXAOSQ
+      PARAMETER (MXAOVC=32, MXAOSQ=MXAOVC*MXAOVC)
+
+c     MXCONT - ???
+      INTEGER    MXCONT
+      PARAMETER (MXCONT=MXAOVC)
+
+#endif /* _BASLIMS_PAR_ */

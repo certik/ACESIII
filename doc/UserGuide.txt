@@ -1,0 +1,746 @@
+ACES III User Guide
+
+Overview
+
+ACES III is a program which implements much of the functionality of ACES II in parallel.  The program is designed to run on a number of Unix-based platforms, including AIX, Altix, Cray, and a number of Linux clusters.  Although it retains some features of ACES II, ACES III is a completely new program, based on the Super Instruction Architecture Language (SIAL for short, pronounced "sail") developed by ACES QC in conjunction with the High Performance Computing Modernization Project.  The program was designed to attain excellent performance and scalibility on up to 1000 processors. 
+
+Using ACES III, the following types of calculations can be performed, on both closed shell and open shell molecular systems:
+
+SCF, MBPT(2), and CCSD energy and gradient calculations.
+CCSD(T) energy calculations.
+SCF and MBPT(2) analytic Hessians.
+
+There is also the capability to perform MBPT(2) gradient and Hessian calculations with an ROHF reference.
+
+The serial ACES II contains the capability to do other types of calculations as well. (Insert examples here).  However, new functionality is being continually added to ACES III as the need arises.
+
+
+Quick Start Guide for Running ACES III:
+
+1. Build a run directory on the file system on which you wish to run the job.  Most MPP systems have one or more scratch file systems set up specifically for user jobs.  This is normally the directory on which to set up the run directory.
+2. Two files must be present in the run directory before running the ACES III executable.  These are the ZMAT and GENBAS.  The GENBAS contains the data describing basis set information, exactly as in a serial ACES II run.  The ZMAT is similar to the ACES II ZMAT and contains the user's input parameters.  In addition to the standard ACES II ZMAT, it also may contain a *SIP namelist section with  additional parameters specific to ACES III.  These parameters are described in the Parameter Description section below.  If the default ACES III-specific parameter values are acceptable, there is no need to code the *SIP section, and the ZMAT is identical to that of a normal ACES II run.
+3. A run script should be created to run the job.  This script normally contains parameters for the batch queuing system of the computer platform.  It also must sets an environmental variable ACES_EXE_PATH to the path of the ACES III executable program, xaces3.  Then the script should run the xaces3 executable.  Under many systems this involves execution of the mpirun command.  
+
+Example:
+
+This is an example of a script used on cobalt, an Altix system at NCSA.  This example shows the following :
+
+1. The PBS parameters set the job name, runtime limit, number of processors, and job queue to use.
+2. Some environment variables are set up, including ACES_EXE_PATH.  They must be exported so that each processor spawned by the mpirun command receives the values. 
+3. A run directory is created ($TMPD), and the ZMAT anf GENBAS files are copied into it.  On most systems, it is preferable to also copy the xaces3 file into the run directory for performance reasons, as is done here.
+4. Note the mpirun command.  It runs xaces3 on 4 processors, using $TESTROOT/$atom/$type/CH4_AO_S.out as the stdout file.  The "dplace -s1 -c0-3" is specific to Altix systems, telling the system to "pin" the memory to specific processors instead of allowing it to migrate from one processor to another.
+
+#!/bin/ksh
+
+#PBS -S /bin/ksh
+#PBS -N CH4_AO_S
+#PBS -j oe
+#PBS -l ncpus=4
+#PBS -l walltime=04:00:00
+#PBS -q standard
+
+#######################
+## PORTING VARIABLES ##
+#######################
+
+tag=CH4_AO_S
+atom=CH4
+type=AO_S
+nprocs=4
+out=$tag.out
+
+############################
+#   Set up run environment #
+############################
+
+export WORKDIR=/scratch/users/ponton
+export ACES_EXE_PATH=/u/ac/ponton/ACESII/bin
+export TESTROOT=/u/ac/ponton/xaces3_tests
+
+export MPI_REQUEST_MAX=100000
+
+TMPD=$WORKDIR/$tag
+rm -rf $TMPD
+mkdir -p $TMPD
+
+cd $TMPD
+cp $TESTROOT/$atom/$type/ZMAT .
+cp $TESTROOT/GENBAS .
+cp $ACES_EXE_PATH/xaces3 .
+
+mpirun -np $nprocs dplace -s1 -c0-3 ./xaces3  >$TESTROOT/$atom/$type/CH4_AO_S.out
+
+
+Here is the ZMAT file for this job:
+
+
+CH4
+H    .431     -.762     -.739
+H   -.467      .762     -.426
+H    .778      .198      .739
+H   -.778     -.688      .587
+C   -.008     -.122      .040
+
+*ACES2
+!restart,symmetry=off
+basis=CC-PVTZ,SPHERICAL=OFF,lindep_tol=7 # basis options
+coordinate=cartesian,cc_conv=10,scf_conv=8
+DIRECT=ON,INTEGRALS=GAMESS,FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+COMPANY   = 1 1 3 0
+IOCOMPANY = 2 1 1 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = tran_uhf_ao_sv1.sio
+SIAL_PROGRAM = ccsd_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = lambda_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = one_grad_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = two_grad_uhf_ao_sv1.sio
+
+
+Please note the following:
+1. The *ACES2 section is a normal setup for a serial ACES II CCSD energy calculation.  The only unusual features are that SYMMETRY is turned off, and we have "DIRECT=ON,INTEGRALS=GAMESS,FOCK=AO".  This is not required, it is used to prevent writing out unnecessary large integral files from the serial portion of ACES II code used internally in ACES III. 
+2. In the *SIP section, the COMPANY and IOCOMPANY parameters divide the 4 processors into "companies" of 3 worker processes and 1 server process (more about this later).
+3. The "MAXMEM=900" forces the program to use 900 Mbytes of memory per processor.  Different platforms may allow more or less memory per processor than this.
+4. A number of SIAL_PROGRAM parameters are coded.  These identify a sequence of SIAL programs that will be executed in order to calculate the CCSD gradient.  
+
+
+Super Instruction Architecture
+
+ACES III was developed using the Super Instruction Architecture.  This architecture views all data as a set of multi-dimensional blocks, usually with between 10000 and 250000 floating point numbers per block.  A run-time system, called SIP, was developed to manipulate these blocks efficiently.  Also, a high-level programming language, called SIAL, was implemented, allowing computational chemists to implement algorithms like SCF and CCSD fairly quickly and efficiently as SIAL programs. ACES III runs one or more SIAL programs to achieve its desired computational task.  The SIAL programs are coded in the *SIP section of the ZMAT file as shown above.
+
+The Super Instruction Architecture divides the set of processors into a master process, and a number of worker and server processes.  The master (which is also a worker) performs initialization and clean up chores for each SIAL program. The workers perform the actual computations (tenso contractions, matrix diagonalizations, etc.).  The servers do nothing except store data transferred to them by the workers.  Each server process has a number of scratch files, which are created in the run directory.  These files are used to hold data until the server receives a request from a worker process for the data.  The scratch files may be identified as SCR*, and are retained only for the duration of the SIAL program.
+
+Workers and servers are configured by the COMPANY and IOCOMPANY parameters in the *SIP section of the ZMAT file (described below). Usually, a 3-to-1 ratio of workers to servers has been found to achieve good levels of performance.
+
+A portion of the serial ACES II code, joda, is linked into ACES III, and executed at the beginning of each new SIAL program.  The joda code uses data such as the gradient calculated within the individual SIAL programs to determine criteria for convergence of geometry optimizations and transition state searches, as well as vibrational frequency calculations.  If the necessary parameters are set in the *ACES2 section to do geometry optimization, transition state search, or vibrational frequency calculations, the master process continues looping through all the SIAL programs until joda sets flags which indicate the job should be halted.  At this time, scratch files are cleaned up and the job is terminated by the master.
+
+ACES III has a "coarse grained" restart capability.  Restart is performed at the SIAL program level. Each SIAL program passes data to the next SIAL program in the sequence by writing the data to a BLOCKDATA file in the run directory.  If a job should terminate due to timeout (or some other reason), the run directory contains all necessary information to restart the job.  A user can simply modify the run script so as not to disturb any files in the run directory (except for removing all the SCR* files), and resubmit the job. The master process will restart the job at the beginning of the SIAL program which was in progress at the time the previous job died.  
+
+At the beginning of the job, a dryrun pass is made to estimate if there are enough processors to run the job.  Each SIAL program is scanned in the dryrun to determine memory requirements.  If the dryrun fails, the user should check the printout, which will give an estimate of the minimum number of processors required.
+
+
+*SIP Parameter Description
+
+The following are the parameters which may be coded in the *SIP section.  There are no longer any required parameters. To override any parameter value, a *SIP section must be added to the ZMAT file, with a line specifying the parameter to be overridden.  Examples are given at the end of this document.  
+
+SIP_MX_SEGSIZE 		Blocksize for the atomic orbital dimension of each data block.
+SIP_MX_OCC_SEGSIZE	Blocksize for the occupied orbital dimension (both alpha and beta 					spin) of each data block.
+SIP_MX_VIRT_SEGSIZE	Blocksize for the virtual orbital dimension (both alpha and beta spin) of 				each data block.
+
+MAXMEM  		Amount of RAM per process, in Mbytes. Default is 900.
+
+COMPANY			Description of the company of worker processes.  This consists of 4 					parameters, the company descriptor, platoon descriptor, number of workers in 			the company, and memory per worker.  Only the number of workers is currently 			used by the program, the other fields are required, but not used.  The 			default sets the number of workers at 3/4 of the total number of processors.
+
+IOCOMPANY		Description of the company of I/O server processes. This parameter requires 				the same 4 fields as described under COMPANY above.  The default sets the 			number of I/O servers at 1/4 of the total number of processors.
+
+DEBUG_PRINT		Set DEBUG_PRINT=YES to obtain useful debugging information.  Warning: This 				could generate a large print file.
+
+TIMERS			Set TIMERS=YES to obtain extensive timing data for each SIAL program.  
+
+AUTO_SEG_ALGORITHM	This parameter controls the algorithm used to generate segment sizes when 				the SIP_MX_SEGSIZE, SIP_MX_OCC_SEGSIZE, and SIP_MX_VIRT_SEGSIZE parameters 				are not coded. The possible values are MEMORY_OPTIMIZED, which attempts to 				minimize memory usage, and SEGMENT_OPTIMIZED, which attempts to reduce the 				number of segments into which each coordinate axis is sub-divided. The 					default is SEGMENT_OPTIMIZED.
+
+LOCAL_PATH		The Unix directory path in which to open the server's SCR* files.  The 					default is the directory in which the program is started.
+
+MASTER_IS_WORKER	Obsolete parameter.  In an earlier implementation, the master process was 				not required to also be a worker.  In the current implementation, the master 			is always a process in the worker company.
+
+INTEGRAL_PACKAGE	The only valid value is INTEGRAL_PACKAGE=ERD.  Originally, the program was 				developed with the ability to use both GAMESS and ERD integral packages.  				However, the GAMESS integral package lacked the flexibility to perform the 				necessary derivative integral calculations needed for the different types of 			calculations performed by various SIAL programs.  Therefore, at this time 				only the ERD integral package is supported.
+
+FAST_ERD_MEMCALC	This parameter determines whether ERD integral package memory requirements 				are estimated by a "fast" algorithm or actually pre-calculated directly. For 			large systems using 2nd derivative integral calculations (i. e. Hessians), 				the direct calculation can take a significant amount of time.  To bypass 				this calculation and use the estimation technique, set FAST_ERD_MEMCALC = 				YES.	
+
+NWORKTHREAD		The number of internal memory buffers used by the workers for inter-company 				communication.  Defaults to 20.
+
+The following parameters only apply when using specific SIAL programs.  These parameters are provided for use in "batch-parallel" jobs, in which the natural parallelism of specific types of calculations may be used to break a large problem into a number of smaller ones, and the results combined after all the jobs have completed.
+
+IHESS                   iatom(1) iatom(2)
+
+JHESS                   jatom(1) jatom(2)
+
+   Used in all Hessian SIAL codes.
+   The Hessian can be written as a 4-dimensional array hess(iatom,ix,jatom,jx),
+   where ix,jx = 1, 3.  IHESS and JHESS represent the range of atoms for which
+   the Hessian is computed in the current job.  The default values run the
+   entire calculation in one job.
+
+   Since correlated Hessian calculations can be quite expensive it is useful
+   to allow the user to partition the calculation among several jobs. These
+   jobs may be submitted into a batch queue system, and scheduled more
+   efficiently by the queuing system.  Instead of running a large Hessian
+   calculation over a large number of processors, and having to wait a long
+   time for the processors to become available, it may be preferable to use
+   IHESS and JHESS to reduce the problem to a number of smaller jobs, each one
+   running on a smaller number of processors.
+
+   Another reason for dividing the job using IHESS and JHESS is that ACES III
+   currently does not allow restarts within a SIAL program.  So, instead of
+   running the Hessian calculation as one long-running job, partitioning the
+   job in this way allows the calculation to be done in a number of shorter
+   jobs.  If one of these small jobs aborts due to a hardware problem, the
+   entire amount of time is not lost.
+
+   Note that in order to obtain a correct Hessian the terms with iatom and
+   jatom interchanged must be included in the same job.
+
+   In order to use IHESS and JHESS correctly care must be taken to run the
+   the proper sial codes AND sum the results correctly. Users wishing to
+   perform such calculations should contact the authors as this is a nonstandard
+   application.
+
+ITRIP                   ITRIPS ITRIPE
+
+   ITRIP may be used in any of the SIAL codes for CCSD(T) calculations.  It
+   is used to partition a large job performing CCSD(T) calculations into
+   smaller ones, similar to the way IHESS and JHESS are used to partition
+   Hessian calculations.
+
+   Since the perturbative triples calculation can be written as
+   E = sum(i) sum(abc,jk) Z(abc,ijk)*T(abc,ijk)
+   the contributions E(i) = sum(abc,jk) Z(abc,ijk)*T(abc,ijk)
+   can naturally be computed seperately. ITRIP defines the range of i,
+   and has the default ITRIP = 1 max(NOCCA,NOCCB).  This has the effect of
+   performing the entire calculation as one job.
+
+SUB                     SUBB SUBE
+
+   SUB is used in the CCSD(T) SIAL codes.  It represents the range of
+   occupied data to be held within the program's distributed memory.  This
+   is used to improve disk performance, and has no effect on the results
+   of the calculations.
+
+   Ideally SUB and ITRIP coincide. Note that care must be used if the
+   care must be used if the ITRIP parameter is used to insure that
+   the energy is properly summed. In order to most effectively use
+   the SUB parameter the authors should be contacted.
+
+
+
+Example ZMAT Files
+
+
+The following are some example ZMAT files, showing how to set up the parameters to run different types of ACES III jobs.  For a complete list of current SIAL programs, please see the SIAL Program Inventory document.
+
+1. Geometry optimization job:
+------------------------------
+
+A. SCF(UHF)
+-----------
+
+Ar6 IN aug-cc-pvtz basis
+AR  2.5  2.5  0.0
+AR -2.5  2.5  0.0
+AR  2.5 -2.5  0.0
+AR -2.5 -2.5  0.0
+AR  0.0  0.0  2.5
+AR  0.0  0.0 -2.5
+
+*ACES2
+!restart,symmetry=off
+GEOM_OPT=FULL
+DIRECT=ON,INTEGRALS=GAMESS
+basis=AUG-CC-PVTZ,SPHERICAL=ON,lindep_tol=7 # basis options
+UNITS=BOHR
+coordinate=cartesian
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+SIP_MX_SEGSIZE      = 30
+SIP_MX_OCC_SEGSIZE  = 27
+SIP_MX_VIRT_SEGSIZE = 27
+COMPANY   = 1 1 24 0
+IOCOMPANY = 2 1  8 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+
+B. MP2(UHF) gradient
+--------------------
+
+Ar6 IN aug-cc-pvtz basis
+AR  2.5  2.5  0.0
+AR -2.5  2.5  0.0
+AR  2.5 -2.5  0.0
+AR -2.5 -2.5  0.0
+AR  0.0  0.0  2.5
+AR  0.0  0.0 -2.5
+
+*ACES2
+!restart,symmetry=off
+GEOM_OPT=FULL
+DIRECT=ON,INTEGRALS=GAMESS
+basis=AUG-CC-PVTZ,SPHERICAL=ON,lindep_tol=7 # basis options
+UNITS=BOHR
+coordinate=cartesian
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+SIP_MX_SEGSIZE      = 30
+SIP_MX_OCC_SEGSIZE  = 27
+SIP_MX_VIRT_SEGSIZE = 27
+COMPANY   = 1 1 24 0
+IOCOMPANY = 2 1  8 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = mp2grad_uhf_sv1.sio
+
+C. CCSD(UHF) single point energy
+--------------------------------
+
+Ar6 IN aug-cc-pvtz basis
+AR  2.5  2.5  0.0
+AR -2.5  2.5  0.0
+AR  2.5 -2.5  0.0
+AR -2.5 -2.5  0.0
+AR  0.0  0.0  2.5
+AR  0.0  0.0 -2.5
+
+*ACES2
+!restart,symmetry=off
+DIRECT=ON,INTEGRALS=GAMESS
+GEOM_OPT=FULL
+basis=AUG-CC-PVTZ,SPHERICAL=ON,lindep_tol=7 # basis options
+UNITS=BOHR
+coordinate=cartesian
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+SIP_MX_SEGSIZE      = 30
+SIP_MX_OCC_SEGSIZE  = 27
+SIP_MX_VIRT_SEGSIZE = 27
+COMPANY   = 1 1 24 0
+IOCOMPANY = 2 1  8 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = tran_uhf_ao_sv1.sio
+SIAL_PROGRAM = ccsd_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = lambda_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = one_grad_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = two_grad_uhf_ao_sv1.sio
+
+2. Transition state search:
+---------------------------
+
+*** IMMP Parent ****
+H
+O    1 r2
+H    2 r3    1 a3
+C    3 r4    2 a4    1 d4
+C    4 r5    3 a5    2 d5
+C    4 r6    3 a6    2 d6
+C    4 r7    3 a7    2 d7
+O    7 r8    4 a8    3 d8
+P    8 r9    7 a9    4 d9
+O    9 r10   8 a10   7 d10
+C    9 r11   8 a11   7 d11
+O    9 r12   8 a12   7 d12
+C   12 r13   9 a13   8 d13
+C   13 r14  12 a14   9 d14
+C   14 r15  13 a15  12 d15
+C   14 r16  13 a16  12 d16
+H   11 r17   9 a17   8 d17
+H   11 r18   9 a18   8 d18
+H   11 r19   9 a19   8 d19
+H   14 r20  13 a20  12 d20
+H    5 r21   4 a21   3 d21
+H    5 r22   4 a22   3 d22
+H    5 r23   4 a23   3 d23
+H    6 r24   4 a24   3 d24
+H    6 r25   4 a25   3 d25
+H    6 r26   4 a26   3 d26
+H   16 r27  14 a27  13 d27
+H   16 r28  14 a28  13 d28
+H   16 r29  14 a29  13 d29
+H   15 r30  14 a30  13 d30
+H   15 r31  14 a31  13 d31
+H   15 r32  14 a32  13 d32
+H   13 r33  12 a33   9 d33
+H   13 r34  12 a34   9 d34
+H    7 r35   4 a35   3 d35
+H    7 r36   4 a36   3 d36
+
+r2= 0.9850
+r3= 1.3535
+a3=  95.89
+r4= 1.1815
+a4= 177.56
+d4=  37.23
+r5= 1.5176
+a5= 106.08
+d5= 192.18
+r6= 1.5200
+a6= 105.61
+d6=  71.64
+r7= 1.5143
+a7= 107.34
+d7= 313.45
+r8= 1.4535
+a8= 111.46
+d8= 297.63
+r9= 1.6324
+a9= 119.28
+d9= 104.24
+r10= 1.5034
+a10= 112.49
+d10= 334.93
+r11= 1.7940
+a11= 106.71
+d11= 101.84
+r12= 1.6075
+a12= 102.00
+d12= 207.73
+r13= 1.4638
+a13= 118.79
+d13=  66.07
+r14= 1.5179
+a14= 109.64
+d14= 246.11
+r15= 1.5262
+a15= 111.36
+d15= 298.88
+r16= 1.5289
+a16= 108.97
+d16= 175.32
+r17= 1.0882
+a17= 110.03
+d17=  53.49
+r18= 1.0894
+a18= 108.79
+d18= 293.14
+r19= 1.0887
+a19= 109.21
+d19= 174.20
+r20= 1.0946
+a20= 107.00
+d20=  57.66
+r21= 1.0953
+a21= 110.06
+d21= 183.63
+r22= 1.0908
+a22= 110.38
+d22= 302.93
+r23= 1.0887
+a23= 111.22
+d23=  63.61
+r24= 1.0909
+a24= 111.35
+d24= 299.76
+r25= 1.0900
+a25= 110.26
+d25=  59.75
+r26= 1.0946
+a26= 110.40
+d26= 179.11
+r27= 1.0917
+a27= 111.41
+d27= 301.19
+r28= 1.0911
+a28= 110.49
+d28= 180.76
+r29= 1.0931
+a29= 110.65
+d29=  61.51
+r30= 1.0936
+a30= 110.39
+d30= 296.74
+r31= 1.0915
+a31= 110.61
+d31= 177.36
+r32= 1.0901
+a32= 111.16
+d32=  56.94
+r33= 1.0922
+a33= 105.68
+d33= 126.15
+r34= 1.0916
+a34= 110.06
+d34=   8.91
+r35= 1.0922
+a35= 110.41
+d35=  60.33
+r36= 1.0942
+a36= 110.06
+d36= 181.01
+
+*ACES2
+!restart,symmetry=off
+basis=6-31++G**,mult=2,spherical
+ref=uhf,calc=mbpt(2)
+SCF_MAXCYC=2000
+DIRECT=ON,INTEGRALS=GAMESS
+CC_MAXCYC=600,DAMP_TYP=DAVIDSON,DAMP_TOL=0
+METHOD=TS
+GEOM_OPT=FULL
+
+*SIP
+SIP_MX_SEGSIZE      = 30
+SIP_MX_OCC_SEGSIZE  = 27
+SIP_MX_VIRT_SEGSIZE = 27
+COMPANY   = 1 1 24 0
+IOCOMPANY = 2 1  8 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = tran_uhf_ao_sv1.sio
+SIAL_PROGRAM = ccsd_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = lambda_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = one_grad_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = two_grad_uhf_ao_sv1.sio
+
+
+4. Hessian:
+--------------------
+
+A. SCF(UHF)
+-----------
+
+H2O(-1) in CC-PVQZ basis
+O  0.0  0.0      0.1173
+H  0.1  0.7572  -0.4692
+H  0.0 -0.7572  -0.4692
+
+*ACES2(CALC=SCF,BASIS=CC-PVQZ,MEMORY=10000000,REF=UHF,SPHERICAL=ON
+CC_CONV=8,SCF_CONV=8
+charge=1,multiplicity=2
+DIRECT=ON,INTEGRALS=GAMESS
+COORDINATES=CARTESIAN
+SYMMETRY=OFF)
+
+*SIP
+MAXMEM= 900
+COMPANY   = 1 1 3 0
+IOCOMPANY = 2 1 1 0
+SIP_MX_SEGSIZE      = 29
+SIP_MX_OCC_SEGSIZE  = 5
+SIP_MX_VIRT_SEGSIZE = 28
+SIAL_PROGRAM = scf_uhf_init.sio
+SIAL_PROGRAM = scf_uhf_finish.sio
+SIAL_PROGRAM = hess_uhf_scf.sio
+
+B. MP2(UHF)
+-----------
+
+H2O(-1) in CC-PVQZ basis
+O  0.0  0.0      0.1173
+H  0.1  0.7572  -0.4692
+H  0.0 -0.7572  -0.4692
+
+*ACES2(CALC=SCF,BASIS=CC-PVQZ,MEMORY=10000000,REF=UHF,SPHERICAL=ON
+CC_CONV=8,SCF_CONV=8
+charge=1,multiplicity=2
+DIRECT=ON,INTEGRALS=GAMESS
+COORDINATES=CARTESIAN
+SYMMETRY=OFF)
+
+*SIP
+MAXMEM= 900
+COMPANY   = 1 1 3 0
+IOCOMPANY = 2 1 1 0
+SIP_MX_SEGSIZE      = 29
+SIP_MX_OCC_SEGSIZE  = 5
+SIP_MX_VIRT_SEGSIZE = 28
+SIAL_PROGRAM = scf_uhf_init.sio
+SIAL_PROGRAM = scf_uhf_finish.sio
+SIAL_PROGRAM = hess_uhf_mp2_seg.sio
+
+3. Vibrational frequency calculation:
+-------------------------------------
+
+H2O(-1) in CC-PVQZ basis
+O  0.0  0.0      0.1173
+H  0.1  0.7572  -0.4692
+H  0.0 -0.7572  -0.4692
+
+*ACES2(CALC=SCF,BASIS=CC-PVQZ,MEMORY=10000000,REF=UHF,SPHERICAL=ON
+CC_CONV=8,SCF_CONV=8
+VIB_FINDIF=EXACT
+charge=1,multiplicity=2
+DIRECT=ON,INTEGRALS=GAMESS
+COORDINATES=CARTESIAN
+SYMMETRY=OFF)
+
+*SIP
+MAXMEM= 900
+COMPANY   = 1 1 3 0
+IOCOMPANY = 2 1 1 0
+SIP_MX_SEGSIZE      = 29
+SIP_MX_OCC_SEGSIZE  = 5
+SIP_MX_VIRT_SEGSIZE = 28
+SIAL_PROGRAM = scf_uhf_init.sio
+SIAL_PROGRAM = scf_uhf_finish.sio
+SIAL_PROGRAM = hess_uhf_mp2_seg.sio
+
+5. Single point energy CCSD(T) calculation:
+-------------------------------------------
+
+A. RHF
+------
+
+Ar6 IN aug-cc-pvtz basis
+AR  2.5  2.5  0.0
+AR -2.5  2.5  0.0
+AR  2.5 -2.5  0.0
+AR -2.5 -2.5  0.0
+AR  0.0  0.0  2.5
+AR  0.0  0.0 -2.5
+
+*ACES2
+!restart,symmetry=off
+DIRECT=ON,INTEGRALS=GAMESS
+basis=AUG-CC-PVTZ,SPHERICAL=ON,lindep_tol=7 # basis options
+UNITS=BOHR
+coordinate=cartesian
+FOCK=AO
+ref=rhf,calc=ccsd
+
+*SIP
+SIP_MX_SEGSIZE      = 30
+SIP_MX_OCC_SEGSIZE  = 27
+SIP_MX_VIRT_SEGSIZE = 27
+COMPANY   = 1 1 96 0
+IOCOMPANY = 2 1 32 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_rhf_isymm_diis10.sio
+SIAL_PROGRAM = tran_rhf_ao_sv1.sio
+SIAL_PROGRAM = ccsd_rhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = ccsdpt_rhf_pp.sio
+
+B. UHF
+------
+
+Ar6 IN aug-cc-pvtz basis
+AR  2.5  2.5  0.0
+AR -2.5  2.5  0.0
+AR  2.5 -2.5  0.0
+AR -2.5 -2.5  0.0
+AR  0.0  0.0  2.5
+
+*ACES2
+!restart,symmetry=off
+DIRECT=ON,INTEGRALS=GAMESS
+basis=AUG-CC-PVTZ,SPHERICAL=ON,lindep_tol=7 # basis options
+UNITS=BOHR
+coordinate=cartesian
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+SIP_MX_SEGSIZE      = 30
+SIP_MX_OCC_SEGSIZE  = 27
+SIP_MX_VIRT_SEGSIZE = 27
+COMPANY   = 1 1 96 0
+IOCOMPANY = 2 1 32 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = tran_uhf_ao_sv1.sio
+SIAL_PROGRAM = ccsd_uhf_ao_sv1_diis5.sio
+SIAL_PROGRAM = ccsdpt_uhf_pp.sio
+
+
+6. Single point CCSD gradient(UHF) using ACES II DROPMO:
+--------------------------------------------------------
+
+CH4
+H    .431     -.762     -.739
+H   -.467      .762     -.426
+H    .778      .198      .739
+H   -.778     -.688      .587
+C   -.008     -.122      .040
+
+*ACES2
+!restart,symmetry=off
+dropmo=1-2/30-35
+basis=CC-PVDZ,SPHERICAL=OFF,lindep_tol=7 # basis options
+coordinate=cartesian,cc_conv=8,scf_conv=8
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+SIP_MX_SEGSIZE      = 20
+SIP_MX_OCC_SEGSIZE  = 13
+SIP_MX_VIRT_SEGSIZE = 20
+#AUTO_SEG_ALGORITHM=MEMORY_OPTIMIZED
+COMPANY   = 1 1 3 0
+IOCOMPANY = 2 1 1 0
+MAXMEM    = 900
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = tran_uhf_ao_sv1.sio
+SIAL_PROGRAM = ccsd_uhf_dropmo.sio
+SIAL_PROGRAM = lambda_uhf_dropmo.sio
+SIAL_PROGRAM = expand_cc.sio
+SIAL_PROGRAM = tran_uhf_expanded.sio
+SIAL_PROGRAM = one_grad_uhf_ao_sv1_dropmo_diis5.sio
+SIAL_PROGRAM = two_grad_uhf_ao_sv1_dropmo.sio
+
+
+Any of the previous examples should also work if the *SIP sections are ommitted.  For example, example 6 could be rewritten as follows:
+
+
+CH4
+H    .431     -.762     -.739
+H   -.467      .762     -.426
+H    .778      .198      .739
+H   -.778     -.688      .587
+C   -.008     -.122      .040
+
+*ACES2
+!restart,symmetry=off
+dropmo=1-2/30-35
+basis=CC-PVDZ,SPHERICAL=OFF,lindep_tol=7 # basis options
+coordinate=cartesian,cc_conv=8,scf_conv=8
+FOCK=AO
+ref=uhf,calc=ccsd
+
+In this case, the program determines the segmentation parameters, the worker/server configuration, and even which .sio files to run, all based on the REF, CALC, and DROPMO parameters.  Caution: Some type of calculations performed by the ACES II serial code are not yet supported in ACES III.  An example of this is ECP.  If the program cannot determine the type of calculation from the *ACES2 parameters, and no *SIP section is provided, an error message is printed and the program will abort.
+
+If a user desires to run a different program than that determined by default, a *SIP section must be provided, and all .sio files must be specified, not just the one that is different from the default.  For example, suppose someone wished to run a new integral transformation program, called test_tran.sio.  It might seem that you could rewrite the previous example as follows:
+
+CH4
+H    .431     -.762     -.739
+H   -.467      .762     -.426
+H    .778      .198      .739
+H   -.778     -.688      .587
+C   -.008     -.122      .040
+
+*ACES2
+!restart,symmetry=off
+dropmo=1-2/30-35
+basis=CC-PVDZ,SPHERICAL=OFF,lindep_tol=7 # basis options
+coordinate=cartesian,cc_conv=8,scf_conv=8
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP
+SIAL_PROGRAM = test_tran.sio
+
+
+However, there is no way to determine where in the sequence of .sio programs that test_tran.sio should be placed.  All SIAL_PROGRAM parameters must be specified to correctly override the defaults.  The correct ZMAT coding is as follows:
+
+CH4
+H    .431     -.762     -.739
+H   -.467      .762     -.426
+H    .778      .198      .739
+H   -.778     -.688      .587
+C   -.008     -.122      .040
+
+*ACES2
+!restart,symmetry=off
+dropmo=1-2/30-35
+basis=CC-PVDZ,SPHERICAL=OFF,lindep_tol=7 # basis options
+coordinate=cartesian,cc_conv=8,scf_conv=8
+FOCK=AO
+ref=uhf,calc=ccsd
+
+*SIP 
+SIAL_PROGRAM = scf_uhf_isymm_diis10.sio
+SIAL_PROGRAM = test_tran.sio
+SIAL_PROGRAM = ccsd_uhf_dropmo.sio
+SIAL_PROGRAM = lambda_uhf_dropmo.sio
+SIAL_PROGRAM = expand_cc.sio
+SIAL_PROGRAM = tran_uhf_expanded.sio
+SIAL_PROGRAM = one_grad_uhf_ao_sv1_dropmo_diis5.sio
+SIAL_PROGRAM = two_grad_uhf_ao_sv1_dropmo.sio
+
+
+

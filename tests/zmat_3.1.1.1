@@ -1,0 +1,19 @@
+STABILITY TEST + FOLLOW + PERFORM broken symmetry
+H
+F 1 R
+
+R=1.4
+
+*ACES2
+BASIS=DZP
+SPHERICAL=ON
+REF=UHF
+SYMMETRY=NONE
+CALC=SCF
+
+*SIP
+MAXMEM=900
+TIMERS=YES
+SIAL_PROGRAM=scf_uhf_init.sio
+SIAL_PROGRAM=guess_scf_uhf_finish.sio
+

@@ -1,0 +1,24 @@
+#
+DEFINES_EXTRA += -D_PORTGRP #-D_DEBUG_LVLM2 -D_DEBUG_LVL0
+OPTIMIZE=1
+64BIT=1
+DEBUG=0
+INCDIRS= ./include ../include ../include/mpi ../sbtools/include
+LDFLAGS_NUMLIBS:= -lacml
+DIR_INSTBIN := ../../bin
+DIR_INSTLIB := ../lib
+DIR_SRCLIB  := ${DIR_INSTLIB}
+
+###################################
+## AME and ASL specific settings ##
+###################################
+
+ifeq (${CURR},asv)
+   LIST_DEF_LIBS :=
+   ACES_LINK_LISTS :=
+   LD := $(filter-out -c,${CC})
+   LDFLAGS := ${CFLAGS}
+   LDFLAGS_EXTRA := ../joda/asv_ctl.o
+   LDFLAGS_NUMLIBS :=
+endif
+

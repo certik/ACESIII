@@ -1,0 +1,11 @@
+
+#ifndef _MAXANGSHELL_PAR_
+#define _MAXANGSHELL_PAR_
+
+c ***NOTE*** This is a genuine (though not serious) limit on what Aces3 can do.
+c     12 => s,p,d,f,g,h,i,j,k,l,m,n
+      integer maxangshell
+      parameter (maxangshell=12)
+
+#endif /* _MAXANGSHELL_PAR_ */
+

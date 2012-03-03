@@ -1,0 +1,24 @@
+/Makefile/1.1.1.1/Wed Jul  1 18:54:41 2009//
+/block_map_table_setup.f/1.4/Wed Jun 30 15:58:42 2010//
+/build_segment_table.F/1.5/Wed Jun 30 15:58:42 2010//
+/built_cmp2zmat.F/1.3/Wed Jun 30 15:58:42 2010//
+/determine_stack_blocksizes.f/1.3/Wed Jun 30 15:58:42 2010//
+/get_subrange_segments.f/1.3/Wed Jun 30 15:58:42 2010//
+/get_symbolic_constant.f/1.3/Wed Jun 30 15:58:42 2010//
+/init_c.F/1.3/Wed Jun 30 15:58:42 2010//
+/init_eps.F/1.3/Wed Jun 30 15:58:42 2010//
+/init_fock.F/1.3/Wed Jun 30 15:58:42 2010//
+/init_fockrohf.F/1.3/Wed Jun 30 15:58:42 2010//
+/init_oed_integrals.F/1.3/Wed Jun 30 15:58:42 2010//
+/refill_block_map_table.f/1.3/Wed Jun 30 15:58:42 2010//
+/remap.F/1.3/Wed Jun 30 15:58:42 2010//
+/send_static_data.F/1.3/Wed Jun 30 15:58:42 2010//
+/shells_to_segments.f/1.3/Wed Jun 30 15:58:42 2010//
+/sial_compile_and_send_tables.F/1.3/Wed Jun 30 15:58:42 2010//
+/sial_compile_and_send_tables1.f/1.3/Wed Jun 30 15:58:42 2010//
+/sip_fmain.F/1.6/Wed Jun 30 15:58:42 2010//
+/stack_distribution.f/1.3/Wed Jun 30 15:58:42 2010//
+/vmlgen.f/1.3/Wed Jun 30 15:58:42 2010//
+/vtdemo_init.F/1.10/Wed Jun 30 15:58:42 2010//
+/write_eig_data.F/1.3/Wed Jun 30 15:58:42 2010//
+D

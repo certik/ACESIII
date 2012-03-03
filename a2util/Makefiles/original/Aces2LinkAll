@@ -1,0 +1,22 @@
+#!/bin/ksh
+for i in `cat tmp.txt`
+do
+cp Makefile $i
+cp Makefile.src $i
+cd $i
+rm lib$i.a
+# echo removing *.o in $i
+rm *.o
+# rm Makefile.src
+echo making $i
+# gmake -j6
+# gmake install
+gmake 
+#rm Makefile Makefile.src
+mv lib$i.a /camp/crunch_6/qtp/rjb/Aces2trials/lib_whirl
+mv x$i /camp/crunch_6/qtp/rjb/Aces2trials/bin_whirl
+cd .. 
+echo ' '
+echo $i made
+done
+ 

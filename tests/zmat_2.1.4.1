@@ -1,0 +1,20 @@
+Ar4 test of uhf ccsd(t) energy in an aug-cc-pvtz basis, fullmo
+AR   0.0  0.0  0.0
+AR   0.0  0.0  4.0
+AR   0.0  4.0  0.0
+AR   0.0  4.0  4.0
+
+*ACES2(CALC=CCSD(T),BASIS=AUG-CC-PVTZ
+spherical=on
+CHARGE=1,MULT=2
+REF=UHF,UNITS=BOHR
+COORDINATES=CARTESIAN
+SCF_CONV=6
+SYMMETRY=NONE)
+
+*SIP
+MAXMEM=900
+TIMERS=YES
+SIP_MX_SEGSIZE = 25
+SIP_MX_OCC_SEGSIZE = 18
+SIP_MX_VIRT_SEGSIZE = 33
